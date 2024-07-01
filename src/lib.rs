@@ -519,15 +519,15 @@ mod tests {
         macro_rules! intersect {
             (($a_min:expr, $a_max:expr) -=> ($b_min:expr, $b_max:expr)) => {
                 assert!(
-                    Bounds::from_bounds($a_min, $a_max).intersects(
-                        Bounds::from_bounds($b_min, $b_max)
+                    Bounds2D::from_bounds($a_min, $a_max).intersects(
+                        Bounds2D::from_bounds($b_min, $b_max)
                     )
                 );
             };
             (($a_min:expr, $a_max:expr) -!> ($b_min:expr, $b_max:expr)) => {
                 assert!(
-                    !Bounds::from_bounds($a_min, $a_max).intersects(
-                        Bounds::from_bounds($b_min, $b_max)
+                    !Bounds2D::from_bounds($a_min, $a_max).intersects(
+                        Bounds2D::from_bounds($b_min, $b_max)
                     )
                 );
             };
