@@ -20,9 +20,9 @@ pub enum CellManage<C, T> {
 }
 
 struct TempGrid<T> {
-    cells: Vec<Option<T>>,
-    size: (usize, usize),
-    offset: (i32, i32),
+    pub cells: Vec<Option<T>>,
+    pub size: (usize, usize),
+    pub offset: (i32, i32),
 }
 
 impl<T> TempGrid<T> {
@@ -47,10 +47,6 @@ impl<T> TempGrid<T> {
         // Adjust x and y
         let nx = x - mx;
         let ny = y - my;
-        // Wrap x and y
-        // let (wrap_x, wrap_y) = (self.wrap_offset.0 as i32, self.wrap_offset.1 as i32);
-        // let wx = (nx + wrap_x).rem_euclid(width);
-        // let wy = (ny + wrap_y).rem_euclid(height);
         Some((ny as usize * self.size.0) + nx as usize)
     }
 
@@ -95,6 +91,18 @@ impl<T> TempGrid<T> {
         std::mem::swap(&mut old, cell);
         Some(old)
     }
+
+    pub fn take_cells(self) -> Vec<Option<T>> {
+        self.cells
+    }
+
+    pub fn deconstruct(self) -> ((usize, usize), (i32, i32), Vec<Option<T>>) {
+        (
+            self.size,
+            self.offset,
+            self.cells
+        )
+    }
 }
 
 pub struct RollGrid2D<T> {
@@ -117,8 +125,6 @@ impl<T: Default> RollGrid2D<T> {
 }
 
 impl<T> RollGrid2D<T> {
-
-    
 
     // Constructors
     pub fn new(width: usize, height: usize, grid_offset: (i32, i32)) -> Self {
@@ -178,16 +184,34 @@ impl<T> RollGrid2D<T> {
             let nw = new_width as i32;
             let nh = new_height as i32;
             // Determine what needs to be unloaded
-            let (left, right, top, bottom) = (self.left(), self.right(), self.top(), self.bottom());
+            // let (left, right, top, bottom) = (self.left(), self.right(), self.top(), self.bottom());
             let old_bounds: Bounds2D = self.bounds();
             let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
             if old_bounds.intersects(new_bounds) {
+                let keep = {
+                    let left = new_bounds.left().max(old_bounds.left());
+                    let top = new_bounds.top().max(old_bounds.top());
+                    let right = old_bounds.right().min(new_bounds.right());
+                    let bottom = old_bounds.bottom().min(new_bounds.bottom());
+                    Bounds2D::new((left, top), (right, bottom))
+                };
+                let unload_left = if old_bounds.left() < new_bounds.left() {
+                    Some({
+                        let left = old_bounds.left();
+                        let top = new_bounds.top().max(old_bounds.top());
+                        let right = new_bounds.left();
+                        let bottom = old_bounds.bottom();
+                        Bounds2D::new((left, top), (right, bottom))
+                    })
+                } else {
+                    None
+                };
                 let unload_top = if old_bounds.top() < new_bounds.top() {
                     Some({
                         let left = old_bounds.left();
-                        let right = new_bounds.right().min(old_bounds.right());
                         let top = old_bounds.top();
-                        let bottom = new_bounds.top().min(old_bounds.bottom());
+                        let right = new_bounds.right().min(old_bounds.right());
+                        let bottom = new_bounds.top();
                         Bounds2D::new((left, top), (right, bottom))
                     })
                 } else {
@@ -196,8 +220,8 @@ impl<T> RollGrid2D<T> {
                 let unload_right = if old_bounds.right() > new_bounds.right() {
                     Some({
                         let left = new_bounds.right();
-                        let right = old_bounds.right();
                         let top = old_bounds.top();
+                        let right = old_bounds.right();
                         let bottom = new_bounds.bottom().min(new_bounds.bottom());
                         Bounds2D::new((left, top), (right, bottom))
                     })
@@ -207,27 +231,20 @@ impl<T> RollGrid2D<T> {
                 let unload_bottom = if old_bounds.bottom() > new_bounds.bottom() {
                     Some({
                         let left = new_bounds.left().max(old_bounds.left());
-                        let right = old_bounds.right();
                         let top = new_bounds.bottom();
+                        let right = old_bounds.right();
                         let bottom = old_bounds.bottom();
                         Bounds2D::new((left, top), (right, bottom))
                     })
                 } else {
                     None
                 };
-                let unload_left = if old_bounds.left() < new_bounds.left() {
-                    Some({
-                        let left = old_bounds.left();
-                        let right = new_bounds.left();
-                        let top = new_bounds.top().max(old_bounds.top());
-                        let bottom = old_bounds.bottom();
-                        Bounds2D::new((left, top), (right, bottom))
-                    })
-                } else {
-                    None
-                };
-            } else {
-
+                // TODO: Unload regions, transfer keep region, load regions
+                // To create the load regions, do the same thing as you did for unload regions.
+                todo!()
+            } else { // !old_bounds.intersects(new_bounds)
+                // TODO
+                todo!()
             }
 
     }
