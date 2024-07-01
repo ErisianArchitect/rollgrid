@@ -19,6 +19,84 @@ pub enum CellManage<C, T> {
     Unload(C, Option<T>)
 }
 
+struct TempGrid<T> {
+    cells: Vec<Option<T>>,
+    size: (usize, usize),
+    offset: (i32, i32),
+}
+
+impl<T> TempGrid<T> {
+    pub fn new(size: (usize, usize), offset: (i32, i32)) -> Self {
+        Self {
+            cells: (0..size.0*size.1).map(|_| None).collect(),
+            size,
+            offset
+        }
+    }
+
+    fn offset_index(&self, (x, y): (i32, i32)) -> Option<usize> {
+        let (mx, my) = self.offset;
+        let width = self.size.0 as i32;
+        let height = self.size.1 as i32;
+        if x >= mx + width
+        || y >= my + height
+        || x < mx
+        || y < my {
+            return None;
+        }
+        // Adjust x and y
+        let nx = x - mx;
+        let ny = y - my;
+        // Wrap x and y
+        // let (wrap_x, wrap_y) = (self.wrap_offset.0 as i32, self.wrap_offset.1 as i32);
+        // let wx = (nx + wrap_x).rem_euclid(width);
+        // let wy = (ny + wrap_y).rem_euclid(height);
+        Some((ny as usize * self.size.0) + nx as usize)
+    }
+
+    pub fn get(&self, coord: (i32, i32)) -> Option<&T> {
+        let index = self.offset_index(coord)?;
+        if let Some(cell) = &self.cells[index] {
+            Some(cell)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_mut(&mut self, coord: (i32, i32)) -> Option<&mut T> {
+        let index = self.offset_index(coord)?;
+        if let Some(cell) = &mut self.cells[index] {
+            Some(cell)
+        } else {
+            None
+        }
+    }
+
+    pub fn set(&mut self, coord: (i32, i32), value: T) -> Option<T> {
+        let cell = self.get_mut(coord)?;
+        let mut old = value;
+        std::mem::swap(&mut old, cell);
+        Some(old)
+    }
+    
+    pub fn get_opt(&self, pos: (i32, i32)) -> Option<&Option<T>> {
+        let index = self.offset_index(pos)?;
+        Some(&self.cells[index])
+    }
+
+    pub fn get_opt_mut(&mut self, pos: (i32, i32)) -> Option<&mut Option<T>> {
+        let index = self.offset_index(pos)?;
+        Some(&mut self.cells[index])
+    }
+
+    pub fn set_opt(&mut self, pos: (i32, i32), value: Option<T>) -> Option<Option<T>> {
+        let cell = self.get_opt_mut(pos)?;
+        let mut old = value;
+        std::mem::swap(&mut old, cell);
+        Some(old)
+    }
+}
+
 pub struct RollGrid2D<T> {
     cells: Vec<Option<T>>,
     size: (usize, usize),
@@ -103,17 +181,54 @@ impl<T> RollGrid2D<T> {
             let (left, right, top, bottom) = (self.left(), self.right(), self.top(), self.bottom());
             let old_bounds: Bounds2D = self.bounds();
             let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
-            let unload_top = if old_bounds.top() < new_bounds.top() {
-                Some({
-                    let left = old_bounds.left();
-                    let right = new_bounds.right().min(old_bounds.right());
-                    let top = old_bounds.top();
-                    let bottom = new_bounds.top().min(old_bounds.bottom());
-                    Bounds2D::new((left, top), (right, bottom))
-                })
+            if old_bounds.intersects(new_bounds) {
+                let unload_top = if old_bounds.top() < new_bounds.top() {
+                    Some({
+                        let left = old_bounds.left();
+                        let right = new_bounds.right().min(old_bounds.right());
+                        let top = old_bounds.top();
+                        let bottom = new_bounds.top().min(old_bounds.bottom());
+                        Bounds2D::new((left, top), (right, bottom))
+                    })
+                } else {
+                    None
+                };
+                let unload_right = if old_bounds.right() > new_bounds.right() {
+                    Some({
+                        let left = new_bounds.right();
+                        let right = old_bounds.right();
+                        let top = old_bounds.top();
+                        let bottom = new_bounds.bottom().min(new_bounds.bottom());
+                        Bounds2D::new((left, top), (right, bottom))
+                    })
+                } else {
+                    None
+                };
+                let unload_bottom = if old_bounds.bottom() > new_bounds.bottom() {
+                    Some({
+                        let left = new_bounds.left().max(old_bounds.left());
+                        let right = old_bounds.right();
+                        let top = new_bounds.bottom();
+                        let bottom = old_bounds.bottom();
+                        Bounds2D::new((left, top), (right, bottom))
+                    })
+                } else {
+                    None
+                };
+                let unload_left = if old_bounds.left() < new_bounds.left() {
+                    Some({
+                        let left = old_bounds.left();
+                        let right = new_bounds.left();
+                        let top = new_bounds.top().max(old_bounds.top());
+                        let bottom = old_bounds.bottom();
+                        Bounds2D::new((left, top), (right, bottom))
+                    })
+                } else {
+                    None
+                };
             } else {
-                None
-            };
+
+            }
 
     }
 
@@ -290,13 +405,18 @@ impl<T> RollGrid2D<T> {
         Some((wy as usize * self.size.0) + wx as usize)
     }
 
-    fn get_opt_mut(&mut self, pos: (i32, i32)) -> Option<&mut Option<T>> {
-        let index = self.offset_index(pos)?;
+    pub fn get_opt<C: Into<(i32, i32)>>(&self, coord: C) -> Option<&Option<T>> {
+        let index = self.offset_index(coord.into())?;
+        Some(&self.cells[index])
+    }
+
+    pub fn get_opt_mut<C: Into<(i32, i32)>>(&mut self, coord: C) -> Option<&mut Option<T>> {
+        let index = self.offset_index(coord.into())?;
         Some(&mut self.cells[index])
     }
 
-    fn set_opt(&mut self, pos: (i32, i32), value: Option<T>) -> Option<Option<T>> {
-        let cell = self.get_opt_mut(pos)?;
+    pub fn set_opt<C: Into<(i32, i32)>>(&mut self, coord: C, value: Option<T>) -> Option<Option<T>> {
+        let cell = self.get_opt_mut(coord.into())?;
         let mut old = value;
         std::mem::swap(&mut old, cell);
         Some(old)
