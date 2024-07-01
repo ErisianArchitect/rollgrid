@@ -12,7 +12,7 @@ pub type Coord = (i32, i32);
 // }
 
 /// 
-pub enum CellManage<C: From<Coord>, T> {
+pub enum CellManage<C, T> {
     Load(C),
     /// For when a cell is unloaded.
     /// The callback should return `None`.
@@ -101,7 +101,20 @@ impl<T> RollGrid2D<T> {
             let nh = new_height as i32;
             // Determine what needs to be unloaded
             let (left, right, top, bottom) = (self.left(), self.right(), self.top(), self.bottom());
-            let bounds: Bounds2D = self.bounds();
+            let old_bounds: Bounds2D = self.bounds();
+            let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
+            let unload_top = if old_bounds.top() < new_bounds.top() {
+                Some({
+                    let left = old_bounds.left();
+                    let right = new_bounds.right().min(old_bounds.right());
+                    let top = old_bounds.top();
+                    let bottom = new_bounds.top().min(old_bounds.bottom());
+                    Bounds2D::new((left, top), (right, bottom))
+                })
+            } else {
+                None
+            };
+
     }
 
     // Translation/Repositioning
@@ -512,10 +525,10 @@ mod tests {
 
     #[test]
     pub fn bounds_test() {
-        let a = Bounds2D::from_bounds((0, 0), (3, 3));
-        a.iter().for_each(|(x, y)| {
-            println!("({x}, {y})");
-        });
+        // let a = Bounds2D::from_bounds((0, 0), (3, 3));
+        // a.iter().for_each(|(x, y)| {
+        //     println!("({x}, {y})");
+        // });
         macro_rules! intersect {
             (($a_min:expr, $a_max:expr) -=> ($b_min:expr, $b_max:expr)) => {
                 assert!(
