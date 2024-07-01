@@ -487,6 +487,30 @@ mod tests {
     use super::*;
 
     #[test]
+    pub fn roll_test() {
+        const HEX_CHARS: [char; 16] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+        let mut hex = HEX_CHARS.into_iter();
+        let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
+            hex.next()
+        });
+        fn print_grid(grid: &RollGrid2D<char>) {
+            for y in grid.top()..grid.bottom() {
+                for x in grid.left()..grid.right() {
+                    if let Some(c) = grid.get((x, y)) {
+                        print!("{}", *c);
+                    }
+                }
+                println!();
+            }
+        }
+        print_grid(&grid);
+        grid.translate((1, 1), |old_pos, new_pos, old_value| {
+            old_value
+        });
+        print_grid(&grid);
+    }
+
+    #[test]
     pub fn bounds_test() {
         let a = Bounds::from_bounds((0, 0), (3, 3));
         a.iter().for_each(|(x, y)| {
