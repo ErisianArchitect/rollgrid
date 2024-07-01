@@ -6,9 +6,25 @@ Offset: 1
    old: [0, 1, 2, 3, 4]
    new: [1, 2, 3, 4, 0]
 ```
+As you can see, the 0 was moved to the end of the buffer. 
 Since the 0 was moved to the end of the buffer, it needs to be reloaded, so the move operation will call reload:
 ```
 reload(0, 5, Some(0))
+```
+
+Let's say you had this grid:
+```
+0123
+4567
+89AB
+CDEF
+```
+If you were to translate it by the offset `(1, 1)`, the result would be this grid:
+```
+5674
+9AB8
+DEFC
+1230
 ```
 
 Sorry for the poor explanation, I'll work on the readme eventually.
