@@ -4,11 +4,11 @@ If it were 1D, a move operation might look like this:
 ```
 Offset: 1
    old: [0, 1, 2, 3, 4]
-   new: [4, 0, 1, 2, 3]
+   new: [1, 2, 3, 4, 0]
 ```
-Since the 4 was moved to the front of the buffer, it needs to be reloaded, so the move operation will call reload:
+Since the 0 was moved to the end of the buffer, it needs to be reloaded, so the move operation will call reload:
 ```
-reload(4, -1, Some(4))
+reload(0, 5, Some(0))
 ```
 
 Sorry for the poor explanation, I'll work on the readme eventually.
