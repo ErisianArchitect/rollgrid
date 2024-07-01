@@ -101,7 +101,7 @@ impl<T> RollGrid2D<T> {
             let nh = new_height as i32;
             // Determine what needs to be unloaded
             let (left, right, top, bottom) = (self.left(), self.right(), self.top(), self.bottom());
-            let bounds: Bounds = self.bounds();
+            let bounds: Bounds2D = self.bounds();
     }
 
     // Translation/Repositioning
@@ -359,8 +359,8 @@ impl<T> RollGrid2D<T> {
         self.grid_offset.1 + self.size.1 as i32
     }
 
-    pub fn bounds(&self) -> Bounds {
-        Bounds {
+    pub fn bounds(&self) -> Bounds2D {
+        Bounds2D {
             min: (self.left(), self.top()),
             max: (self.right(), self.bottom())
         }
@@ -374,14 +374,14 @@ impl<T> RollGrid2D<T> {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Bounds {
+pub struct Bounds2D {
     /// Inclusive minimum.
     pub min: (i32, i32),
     /// Exclusive maximum.
     pub max: (i32, i32),
 }
 
-impl Bounds {
+impl Bounds2D {
     pub fn new(min: (i32, i32), max: (i32, i32)) -> Self {
         Self {
             min, 
@@ -428,7 +428,7 @@ impl Bounds {
         }
     }
 
-    pub fn intersects(self, other: Bounds) -> bool {
+    pub fn intersects(self, other: Bounds2D) -> bool {
         let ((aleft, atop), (aright, abottom)) = (self.min, self.max);
         let ((bleft, btop), (bright, bbottom)) = (other.min, other.max);
         aleft < bright
@@ -446,7 +446,7 @@ impl Bounds {
 }
 
 pub struct BoundsIter {
-    bounds: Bounds,
+    bounds: Bounds2D,
     current: (i32, i32),
 }
 
@@ -512,7 +512,7 @@ mod tests {
 
     #[test]
     pub fn bounds_test() {
-        let a = Bounds::from_bounds((0, 0), (3, 3));
+        let a = Bounds2D::from_bounds((0, 0), (3, 3));
         a.iter().for_each(|(x, y)| {
             println!("({x}, {y})");
         });
