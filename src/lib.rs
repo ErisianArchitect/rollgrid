@@ -1,5 +1,6 @@
 mod rollgrid2d;
-mod rollgrid3d;
+// TODO
+// mod rollgrid3d;
 
 const SIZE_TOO_LARGE: &'static str = "Size is too large";
 const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bound";
