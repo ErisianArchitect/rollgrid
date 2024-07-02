@@ -1,5 +1,62 @@
 #![allow(unused)]
 
+use crate::{SIZE_TOO_LARGE, OFFSET_TOO_CLOSE_TO_MAX};
+const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
+
+type Coord = (i32, i32, i32);
+
+pub struct RollGrid3D<T> {
+    cells: Vec<Option<T>>,
+    size: (usize, usize, usize),
+    wrap_offset: (usize, usize, usize),
+    grid_offset: (i32, i32, i32),
+}
+
+impl<T: Default> RollGrid3D<T> {
+    pub fn new_default<C: Into<Coord>>(width: usize, height: usize, depth: usize, grid_offset: C) -> Self {
+        let grid_offset: Coord = grid_offset.into();
+        let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
+        if volume == 0 {
+            panic!("{VOLUME_IS_ZERO}");
+        }
+        Self {
+            cells: (0..volume).map(|_| Some(T::default())).collect(),
+            size: (width, height, depth),
+            grid_offset,
+            wrap_offset: (0, 0, 0)
+        }
+    }
+}
+
+impl<T> RollGrid3D<T> {
+    pub fn new<C: Into<Coord>>(
+        width: usize,
+        height: usize,
+        depth: usize,
+        grid_offset: C
+    ) -> Self {
+        let grid_offset: Coord = grid_offset.into();
+        let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
+        if volume == 0 {
+            panic!("{VOLUME_IS_ZERO}");
+        }
+        if volume > i32::MAX as usize {
+            panic!("{SIZE_TOO_LARGE}");
+        }
+        if grid_offset.0.checked_add(width as i32).is_none()
+        || grid_offset.1.checked_add(height as i32).is_none()
+        || grid_offset.2.checked_add(depth as i32).is_none() {
+            panic!("{OFFSET_TOO_CLOSE_TO_MAX}");
+        }
+        Self {
+            cells: (0..volume).map(|_| None).collect(),
+            size: (width, height, depth),
+            wrap_offset: (0, 0, 0),
+            grid_offset
+        }
+    }
+}
+
 struct TempGrid3D<T> {
     pub cells: Vec<Option<T>>,
     pub size: (usize, usize, usize),
