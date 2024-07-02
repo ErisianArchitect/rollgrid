@@ -659,6 +659,17 @@ impl Bounds2D {
         }
     }
 
+    pub fn from_bounds(a: (i32, i32), b: (i32, i32)) -> Self {
+        let (ax, ay) = a;
+        let (bx, by) = b;
+        let min = (ax.min(bx), ay.min(by));
+        let max = (ax.max(bx), ay.max(by));
+        Self {
+            min,
+            max
+        }
+    }
+
     pub fn width(&self) -> i32 {
         self.max.0 - self.min.0
     }
@@ -687,41 +698,39 @@ impl Bounds2D {
         self.max.1
     }
 
-    pub fn from_bounds(a: (i32, i32), b: (i32, i32)) -> Self {
-        let (ax, ay) = a;
-        let (bx, by) = b;
-        let min = (ax.min(bx), ay.min(by));
-        let max = (ax.max(bx), ay.max(by));
-        Self {
-            min,
-            max
-        }
+    // intersects would need to copy self and other anyway, so
+    // just accept copied values rather than references.
+    pub fn intersects(self, other: Bounds2D) -> bool {
+        let ((ax_min, ay_min), (ax_max, ay_max)) = (self.min, self.max);
+        let ((bx_min, by_min), (bx_max, by_max)) = (other.min, other.max);
+        ax_min < bx_max
+        && bx_min < ax_max
+        && ay_min < by_max
+        && by_min < ay_max
     }
 
-    pub fn intersects(self, other: Bounds2D) -> bool {
-        let ((aleft, atop), (aright, abottom)) = (self.min, self.max);
-        let ((bleft, btop), (bright, bbottom)) = (other.min, other.max);
-        aleft < bright
-        && bleft < aright
-        && atop < bbottom
-        && btop < abottom
+    pub fn contains(self, point: (i32, i32)) -> bool {
+        point.0 >= self.min.0
+        && point.1 >= self.min.0
+        && point.0 < self.max.0
+        && point.1 < self.max.1
     }
 
     /// Iterate the coordinates in the [Bounds2D].
-    pub fn iter(self) -> BoundsIter {
-        BoundsIter {
+    pub fn iter(self) -> Bounds2DIter {
+        Bounds2DIter {
             bounds: self,
             current: self.min,
         }
     }
 }
 
-pub struct BoundsIter {
+pub struct Bounds2DIter {
     bounds: Bounds2D,
     current: (i32, i32),
 }
 
-impl Iterator for BoundsIter {
+impl Iterator for Bounds2DIter {
     type Item = (i32, i32);
 
     fn size_hint(&self) -> (usize, Option<usize>) {
