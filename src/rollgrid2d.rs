@@ -406,10 +406,10 @@ impl<T> RollGrid2D<T> {
         C: Into<(i32, i32)> + From<(i32, i32)>,
         F: FnMut(C, C, Option<T>) -> Option<T> {
             let (old_x, old_y) = self.grid_offset;
-            let (px, py): (i32, i32) = position.into();
+            let (new_x, new_y): (i32, i32) = position.into();
             let offset = (
-                px - old_x,
-                py - old_y
+                new_x - old_x,
+                new_y - old_y
             );
             if offset == (0, 0) {
                 return;
@@ -418,7 +418,6 @@ impl<T> RollGrid2D<T> {
             let width = self.size.0 as i32;
             let height = self.size.1 as i32;
             let (offset_x, offset_y) = offset;
-            let (new_x, new_y) = (old_x + offset_x, old_y + offset_y);
             self.grid_offset = (new_x, new_y);
             // Offset is within bounds, so that means that the grid will be rolled.
             // This allows for bounded reloading of the grid elements.
