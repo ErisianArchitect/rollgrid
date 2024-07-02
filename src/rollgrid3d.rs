@@ -55,6 +55,209 @@ impl<T> RollGrid3D<T> {
             grid_offset
         }
     }
+
+    pub fn new_with_init<C: From<Coord>, F: FnMut(C) -> Option<T>>(
+        width: usize,
+        height: usize,
+        depth: usize,
+        grid_offset: (i32, i32, i32),
+        init: F
+    ) -> Self {
+        let grid_offset: Coord = grid_offset.into();
+        let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
+        if volume == 0 {
+            panic!("{VOLUME_IS_ZERO}");
+        }
+        if volume > i32::MAX as usize {
+            panic!("{SIZE_TOO_LARGE}");
+        }
+        if grid_offset.0.checked_add(width as i32).is_none()
+        || grid_offset.1.checked_add(height as i32).is_none()
+        || grid_offset.2.checked_add(depth as i32).is_none() {
+            panic!("{OFFSET_TOO_CLOSE_TO_MAX}");
+        }
+        Self {
+            // cells: Bounds3D::new(grid_offset, (grid_offset.0 + width as i32, grid_offset.1 + height as i32, grid_offset.2 + depth as i32))
+            //     .iter()
+            //     .map(C::from)
+            //     .map(init)
+            //     .collect(),
+            cells: itertools::iproduct!(0..height as i32, 0..depth as i32, 0..width as i32)
+                .map(|(y, z, x)| C::from((
+                    x + grid_offset.0,
+                    y + grid_offset.1,
+                    z + grid_offset.2
+                )))
+                .map(init)
+                .collect(),
+            size: (width, height, depth),
+            wrap_offset: (0, 0, 0),
+            grid_offset
+        }
+    }
+
+    pub fn reposition<C, F>(&mut self, position: C, reload: F)
+    where
+        C: Into<Coord> + From<Coord>,
+        F: FnMut(C, C, Option<T>) -> Option<T> {
+            let (curx, cury, curz) = self.grid_offset;
+            let (px, py, pz): (i32, i32, i32) = position.into();
+            let offset = (
+                px - curx,
+                py - cury,
+                pz - curz
+            );
+            if offset == (0, 0, 0) {
+                return;
+            }
+            let mut reload = reload;
+            let width = self.size.0 as i32;
+            let height = self.size.1 as i32;
+            let depth = self.size.2 as i32;
+            let (offset_x, offset_y, offset_z) = offset;
+            
+        }
+
+    pub fn relative_offset<C: Into<Coord> + From<Coord> + Copy>(&self, coord: C) -> C {
+        let (x, y, z): (i32, i32, i32) = coord.into();
+        C::from((
+            x - self.grid_offset.0,
+            y - self.grid_offset.1,
+            z - self.grid_offset.2
+        ))
+    }
+
+    fn offset_index(&self, (x, y, z): (i32, i32, i32)) -> Option<usize> {
+        let (mx, my, mz) = self.grid_offset;
+        let width = self.size.0 as i32;
+        let height = self.size.1 as i32;
+        let depth = self.size.2 as i32;
+        if x < mx
+        || y < my
+        || z < mz
+        || x >= mx + width
+        || y >= my + height
+        || z >= mz + depth {
+            return None;
+        }
+        // Adjust x, y, and z
+        let nx = x - mx;
+        let ny = y - my;
+        let nz = z - mz;
+        // Wrap x, y, and z
+        let (wx, wy, wz) = (
+            self.wrap_offset.0 as i32,
+            self.wrap_offset.1 as i32,
+            self.wrap_offset.2 as i32,
+        );
+        let wx = (nx + wx).rem_euclid(width);
+        let wy = (ny + wy).rem_euclid(height);
+        let wz = (nz + wz).rem_euclid(depth);
+        let plane = (self.size.0 * self.size.2);
+        Some(wy as usize * plane + wz as usize * self.size.0 + wx as usize)
+    }
+
+    pub fn get_opt<C: Into<Coord>>(&self, coord: C) -> Option<&Option<T>> {
+        let index = self.offset_index(coord.into())?;
+        Some(&self.cells[index])
+    }
+
+    pub fn get_opt_mut<C: Into<Coord>>(&mut self, coord: C) -> Option<&mut Option<T>> {
+        let index = self.offset_index(coord.into())?;
+        Some(&mut self.cells[index])
+    }
+
+    pub fn set_opt<C: Into<Coord>>(&mut self, coord: C, value: Option<T>) -> Option<Option<T>> {
+        let cell = self.get_opt_mut(coord.into())?;
+        let mut old = value;
+        std::mem::swap(&mut old, cell);
+        Some(old)
+    }
+
+    pub fn get<C: Into<Coord>>(&self, coord: C) -> Option<&T> {
+        let index = self.offset_index(coord.into())?;
+        if let Some(cell) = &self.cells[index] {
+            Some(cell)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_mut<C: Into<Coord>>(&mut self, coord: C) -> Option<&mut T> {
+        let index = self.offset_index(coord.into())?;
+        if let Some(cell) = &mut self.cells[index] {
+            Some(cell)
+        } else {
+            None
+        }
+    }
+
+    pub fn set<C: Into<Coord>>(&mut self, coord: C, value: T) -> Option<T> {
+        let cell = self.get_mut(coord)?;
+        let mut old = value;
+        std::mem::swap(&mut old, cell);
+        Some(old)
+    }
+
+    pub fn size(&self) -> (usize, usize, usize) {
+        self.size
+    }
+
+    /// The size along the X axis.
+    pub fn width(&self) -> usize {
+        self.size.0
+    }
+
+    /// The size along the Y axis.
+    pub fn height(&self) -> usize {
+        self.size.1
+    }
+
+    /// The size along the Z axis.
+    pub fn depth(&self) -> usize {
+        self.size.2
+    }
+
+    pub fn offset(&self) -> (i32, i32, i32) {
+        self.grid_offset
+    }
+
+    pub fn x_min(&self) -> i32 {
+        self.grid_offset.0
+    }
+
+    pub fn y_min(&self) -> i32 {
+        self.grid_offset.1
+    }
+
+    pub fn z_min(&self) -> i32 {
+        self.grid_offset.2
+    }
+
+    pub fn x_max(&self) -> i32 {
+        self.grid_offset.0 + self.size.0 as i32
+    }
+
+    pub fn y_max(&self) -> i32 {
+        self.grid_offset.1 + self.size.1 as i32
+    }
+
+    pub fn z_max(&self) -> i32 {
+        self.grid_offset.2 + self.size.2 as i32
+    }
+
+    pub fn bounds(&self) -> Bounds3D {
+        Bounds3D {
+            min: (self.x_min(), self.y_min(), self.z_min()),
+            max: (self.x_max(), self.y_max(), self.z_max())
+        }
+    }
+
+    /// This is equivalent to the volume (width * height * depth).
+    pub fn len(&self) -> usize {
+        self.size.0 * self.size.1 * self.size.2
+    }
+
 }
 
 struct TempGrid3D<T> {
