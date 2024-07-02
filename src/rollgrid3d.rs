@@ -100,12 +100,12 @@ impl<T> RollGrid3D<T> {
     where
         C: Into<Coord> + From<Coord>,
         F: FnMut(C, C, Option<T>) -> Option<T> {
-            let (curx, cury, curz) = self.grid_offset;
-            let (px, py, pz): (i32, i32, i32) = position.into();
+            let (old_x, old_y, old_z) = self.grid_offset;
+            let (new_x, new_y, new_z): (i32, i32, i32) = position.into();
             let offset = (
-                px - curx,
-                py - cury,
-                pz - curz
+                new_x - old_x,
+                new_y - old_y,
+                new_z - old_z
             );
             if offset == (0, 0, 0) {
                 return;
@@ -115,7 +115,23 @@ impl<T> RollGrid3D<T> {
             let height = self.size.1 as i32;
             let depth = self.size.2 as i32;
             let (offset_x, offset_y, offset_z) = offset;
-            
+            let old_bounds = self.bounds();
+            let new_bounds = Bounds3D::new(
+                (new_x, new_y, new_z),
+                (new_x + width, new_y + height, new_z + depth)
+            );
+            // A cool trick to test whether the translation moves out of bounds.
+            if offset_x.abs() < width
+            && offset_y.abs() < height
+            && offset_z.abs() < depth { // translation in bounds, the hard part.
+                // My plan is to subdivide the reload region into (upto) three parts.
+                // It's very difficult to visualize this stuff, so I used Minecraft to create a rudimentary visualization.
+                // https://i.imgur.com/FdlQTyS.png
+
+            } else { // translation out of bounds, reload everything
+
+            }
+            todo!()
         }
 
     pub fn relative_offset<C: Into<Coord> + From<Coord> + Copy>(&self, coord: C) -> C {
