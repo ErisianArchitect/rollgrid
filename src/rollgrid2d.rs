@@ -1,4 +1,6 @@
 use super::*;
+const AREA_IS_ZERO: &'static str = "Width/Height cannot be 0";
+type Coord = (i32, i32);
 
 struct TempGrid2D<T> {
     pub cells: Vec<Option<T>>,
