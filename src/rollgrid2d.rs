@@ -200,176 +200,183 @@ impl<T> RollGrid2D<T> {
     ///     }
     /// });
     /// ```
-    pub fn resize_and_reposition<C, F>(&mut self, new_width: usize, new_height: usize, new_position: C, manage: F)
+    pub fn resize_and_reposition<C, F>(
+        &mut self,
+        new_width: usize,
+        new_height: usize,
+        new_position: C,
+        manage: F
+    )
     where
         C: Into<Coord> + From<Coord>,
-        F: FnMut(CellManage<C, T>) -> Option<T> {
-            #![allow(unused)]
-            let mut manage = manage;
-            let new_position: Coord = new_position.into();
-            let area = new_width.checked_mul(new_height).expect(SIZE_TOO_LARGE);
-            if area == 0 { panic!("{AREA_IS_ZERO}"); }
-            #[cfg(target_pointer_width = "64")]
-            if area > i32::MAX as usize { panic!("{SIZE_TOO_LARGE}"); }
-            let (new_x, new_y): Coord = new_position.into();
-            let nw = new_width as i32;
-            let nh = new_height as i32;
-            // Determine what needs to be unloaded
-            let old_bounds: Bounds2D = self.bounds();
-            let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
-            if old_bounds.intersects(new_bounds) {
-                let keep = {
-                    let left = new_bounds.left().max(old_bounds.left());
+        F: FnMut(CellManage<C, T>) -> Option<T>
+    {
+        #![allow(unused)]
+        let mut manage = manage;
+        let new_position: Coord = new_position.into();
+        let area = new_width.checked_mul(new_height).expect(SIZE_TOO_LARGE);
+        if area == 0 { panic!("{AREA_IS_ZERO}"); }
+        #[cfg(target_pointer_width = "64")]
+        if area > i32::MAX as usize { panic!("{SIZE_TOO_LARGE}"); }
+        let (new_x, new_y): Coord = new_position.into();
+        let nw = new_width as i32;
+        let nh = new_height as i32;
+        // Determine what needs to be unloaded
+        let old_bounds: Bounds2D = self.bounds();
+        let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
+        if old_bounds.intersects(new_bounds) {
+            let keep = {
+                let left = new_bounds.left().max(old_bounds.left());
+                let top = new_bounds.top().max(old_bounds.top());
+                let right = old_bounds.right().min(new_bounds.right());
+                let bottom = old_bounds.bottom().min(new_bounds.bottom());
+                Bounds2D::new((left, top), (right, bottom))
+            };
+            let unload_left = if old_bounds.left() < new_bounds.left() {
+                Some({
+                    let left = old_bounds.left();
                     let top = new_bounds.top().max(old_bounds.top());
+                    let right = new_bounds.left();
+                    let bottom = old_bounds.bottom();
+                    Bounds2D::new((left, top), (right, bottom))
+                })
+            } else {
+                None
+            };
+            let unload_top = if old_bounds.top() < new_bounds.top() {
+                Some({
+                    let left = old_bounds.left();
+                    let top = old_bounds.top();
+                    let right = new_bounds.right().min(old_bounds.right());
+                    let bottom = new_bounds.top();
+                    Bounds2D::new((left, top), (right, bottom))
+                })
+            } else {
+                None
+            };
+            let unload_right = if old_bounds.right() > new_bounds.right() {
+                Some({
+                    let left = new_bounds.right();
+                    let top = old_bounds.top();
+                    let right = old_bounds.right();
+                    let bottom = new_bounds.bottom().min(new_bounds.bottom());
+                    Bounds2D::new((left, top), (right, bottom))
+                })
+            } else {
+                None
+            };
+            let unload_bottom = if old_bounds.bottom() > new_bounds.bottom() {
+                Some({
+                    let left = new_bounds.left().max(old_bounds.left());
+                    let top = new_bounds.bottom();
+                    let right = old_bounds.right();
+                    let bottom = old_bounds.bottom();
+                    Bounds2D::new((left, top), (right, bottom))
+                })
+            } else {
+                None
+            };
+            let load_left = if new_bounds.left() < old_bounds.left() {
+                Some({
+                    let left = new_bounds.left();
+                    let top = old_bounds.top().max(new_bounds.top());
+                    let right = old_bounds.left();
+                    let bottom = new_bounds.bottom();
+                    Bounds2D::new((left, top), (right, bottom))
+                })
+            } else {
+                None
+            };
+            let load_top = if new_bounds.top() < old_bounds.top() {
+                Some({
+                    let left = new_bounds.left();
+                    let top = new_bounds.top();
                     let right = old_bounds.right().min(new_bounds.right());
+                    let bottom = old_bounds.top();
+                    Bounds2D::new((left, top), (right, bottom))
+                })
+            } else {
+                None
+            };
+            let load_right = if new_bounds.right() > old_bounds.right() {
+                Some({
+                    let left = old_bounds.right();
+                    let top = new_bounds.top();
+                    let right = new_bounds.right();
                     let bottom = old_bounds.bottom().min(new_bounds.bottom());
                     Bounds2D::new((left, top), (right, bottom))
+                })
+            } else {
+                None
+            };
+            let load_bottom = if new_bounds.bottom() > old_bounds.bottom() {
+                Some({
+                    let left = old_bounds.left().max(new_bounds.left());
+                    let top = old_bounds.bottom();
+                    let right = new_bounds.right();
+                    let bottom = new_bounds.bottom();
+                    Bounds2D::new((left, top), (right, bottom))
+                })
+            } else {
+                None
+            };
+            let mut temp_grid = TempGrid2D::<T>::new((new_width, new_height), new_position);
+            keep.iter().for_each(|pos| {
+                let self_index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let other_index = temp_grid.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let cell = self.cells[self_index].take();
+                temp_grid.cells[other_index] = cell;
+            });
+            macro_rules! unload_region {
+                ($region:expr) => {
+                    if let Some(region) = $region {
+                        region.iter().for_each(|pos| {
+                            let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                            let cell = self.cells[index].take();
+                            manage(CellManage::Unload(C::from(pos), cell));
+                        });
+                    }
                 };
-                let unload_left = if old_bounds.left() < new_bounds.left() {
-                    Some({
-                        let left = old_bounds.left();
-                        let top = new_bounds.top().max(old_bounds.top());
-                        let right = new_bounds.left();
-                        let bottom = old_bounds.bottom();
-                        Bounds2D::new((left, top), (right, bottom))
-                    })
-                } else {
-                    None
-                };
-                let unload_top = if old_bounds.top() < new_bounds.top() {
-                    Some({
-                        let left = old_bounds.left();
-                        let top = old_bounds.top();
-                        let right = new_bounds.right().min(old_bounds.right());
-                        let bottom = new_bounds.top();
-                        Bounds2D::new((left, top), (right, bottom))
-                    })
-                } else {
-                    None
-                };
-                let unload_right = if old_bounds.right() > new_bounds.right() {
-                    Some({
-                        let left = new_bounds.right();
-                        let top = old_bounds.top();
-                        let right = old_bounds.right();
-                        let bottom = new_bounds.bottom().min(new_bounds.bottom());
-                        Bounds2D::new((left, top), (right, bottom))
-                    })
-                } else {
-                    None
-                };
-                let unload_bottom = if old_bounds.bottom() > new_bounds.bottom() {
-                    Some({
-                        let left = new_bounds.left().max(old_bounds.left());
-                        let top = new_bounds.bottom();
-                        let right = old_bounds.right();
-                        let bottom = old_bounds.bottom();
-                        Bounds2D::new((left, top), (right, bottom))
-                    })
-                } else {
-                    None
-                };
-                let load_left = if new_bounds.left() < old_bounds.left() {
-                    Some({
-                        let left = new_bounds.left();
-                        let top = old_bounds.top().max(new_bounds.top());
-                        let right = old_bounds.left();
-                        let bottom = new_bounds.bottom();
-                        Bounds2D::new((left, top), (right, bottom))
-                    })
-                } else {
-                    None
-                };
-                let load_top = if new_bounds.top() < old_bounds.top() {
-                    Some({
-                        let left = new_bounds.left();
-                        let top = new_bounds.top();
-                        let right = old_bounds.right().min(new_bounds.right());
-                        let bottom = old_bounds.top();
-                        Bounds2D::new((left, top), (right, bottom))
-                    })
-                } else {
-                    None
-                };
-                let load_right = if new_bounds.right() > old_bounds.right() {
-                    Some({
-                        let left = old_bounds.right();
-                        let top = new_bounds.top();
-                        let right = new_bounds.right();
-                        let bottom = old_bounds.bottom().min(new_bounds.bottom());
-                        Bounds2D::new((left, top), (right, bottom))
-                    })
-                } else {
-                    None
-                };
-                let load_bottom = if new_bounds.bottom() > old_bounds.bottom() {
-                    Some({
-                        let left = old_bounds.left().max(new_bounds.left());
-                        let top = old_bounds.bottom();
-                        let right = new_bounds.right();
-                        let bottom = new_bounds.bottom();
-                        Bounds2D::new((left, top), (right, bottom))
-                    })
-                } else {
-                    None
-                };
-                let mut temp_grid = TempGrid2D::<T>::new((new_width, new_height), new_position);
-                keep.iter().for_each(|pos| {
-                    let self_index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                    let other_index = temp_grid.offset_index(pos).expect(OUT_OF_BOUNDS);
-                    let cell = self.cells[self_index].take();
-                    temp_grid.cells[other_index] = cell;
-                });
-                macro_rules! unload_region {
-                    ($region:expr) => {
-                        if let Some(region) = $region {
-                            region.iter().for_each(|pos| {
-                                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                                let cell = self.cells[index].take();
-                                manage(CellManage::Unload(C::from(pos), cell));
-                            });
-                        }
-                    };
-                }
-                macro_rules! load_region {
-                    ($region:expr) => {
-                        if let Some(region) = $region {
-                            region.iter().for_each(|pos| {
-                                let index = temp_grid.offset_index(pos).expect(OUT_OF_BOUNDS);
-                                let new_value = manage(CellManage::Load(C::from(pos)));
-                                temp_grid.cells[index] = new_value;
-                            });
-                        }
-                    };
-                }
-                unload_region!(unload_left);
-                unload_region!(unload_top);
-                unload_region!(unload_right);
-                unload_region!(unload_bottom);
-                load_region!(load_left);
-                load_region!(load_top);
-                load_region!(load_right);
-                load_region!(load_bottom);
-                self.size = (new_width, new_height);
-                self.grid_offset = new_position;
-                self.cells = temp_grid.take_cells();
-            } else { // !old_bounds.intersects(new_bounds)
-                old_bounds.iter().for_each(|pos| {
-                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                    let value = self.cells[index].take();
-                    manage(CellManage::Unload(C::from(pos), value));
-                });
-                let mut temp_grid = TempGrid2D::<T>::new((new_width, new_height), new_position);
-                new_bounds.iter().for_each(|pos| {
-                    let index = temp_grid.offset_index(pos).expect(OUT_OF_BOUNDS);
-                    let new_value = manage(CellManage::Load(C::from(pos)));
-                    temp_grid.cells[index] = new_value;
-                });
-                self.size = (new_width, new_height);
-                self.grid_offset = new_position;
-                self.cells = temp_grid.take_cells();
             }
+            macro_rules! load_region {
+                ($region:expr) => {
+                    if let Some(region) = $region {
+                        region.iter().for_each(|pos| {
+                            let index = temp_grid.offset_index(pos).expect(OUT_OF_BOUNDS);
+                            let new_value = manage(CellManage::Load(C::from(pos)));
+                            temp_grid.cells[index] = new_value;
+                        });
+                    }
+                };
+            }
+            unload_region!(unload_left);
+            unload_region!(unload_top);
+            unload_region!(unload_right);
+            unload_region!(unload_bottom);
+            load_region!(load_left);
+            load_region!(load_top);
+            load_region!(load_right);
+            load_region!(load_bottom);
+            self.size = (new_width, new_height);
+            self.grid_offset = new_position;
+            self.cells = temp_grid.take_cells();
+        } else { // !old_bounds.intersects(new_bounds)
+            old_bounds.iter().for_each(|pos| {
+                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let value = self.cells[index].take();
+                manage(CellManage::Unload(C::from(pos), value));
+            });
+            let mut temp_grid = TempGrid2D::<T>::new((new_width, new_height), new_position);
+            new_bounds.iter().for_each(|pos| {
+                let index = temp_grid.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let new_value = manage(CellManage::Load(C::from(pos)));
+                temp_grid.cells[index] = new_value;
+            });
+            self.size = (new_width, new_height);
+            self.grid_offset = new_position;
+            self.cells = temp_grid.take_cells();
         }
+    }
 
     // Translation/Repositioning
 
