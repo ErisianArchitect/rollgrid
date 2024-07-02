@@ -2,10 +2,8 @@ mod rollgrid2d;
 mod rollgrid3d;
 
 const SIZE_TOO_LARGE: &'static str = "Size is too large";
-const AREA_IS_ZERO: &'static str = "Width/Height cannot be 0";
 const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bound";
 const OUT_OF_BOUNDS: &'static str = "Out of bounds";
-pub type Coord = (i32, i32);
 
 pub use rollgrid2d::*;
 // pub use rollgrid3d::*;
