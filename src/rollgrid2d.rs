@@ -225,100 +225,85 @@ impl<T> RollGrid2D<T> {
         let old_bounds: Bounds2D = self.bounds();
         let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
         if old_bounds.intersects(new_bounds) {
+            let unload_left = if old_bounds.left() < new_bounds.left() {
+                let left = old_bounds.left();
+                let top = new_bounds.top().max(old_bounds.top());
+                let right = new_bounds.left();
+                let bottom = old_bounds.bottom();
+                Some(Bounds2D::new((left, top), (right, bottom)))
+            } else {
+                None
+            };
+            let unload_top = if old_bounds.top() < new_bounds.top() {
+                let left = old_bounds.left();
+                let top = old_bounds.top();
+                let right = new_bounds.right().min(old_bounds.right());
+                let bottom = new_bounds.top();
+                Some(Bounds2D::new((left, top), (right, bottom)))
+            } else {
+                None
+            };
+            let unload_right = if old_bounds.right() > new_bounds.right() {
+                let left = new_bounds.right();
+                let top = old_bounds.top();
+                let right = old_bounds.right();
+                let bottom = new_bounds.bottom().min(new_bounds.bottom());
+                Some(Bounds2D::new((left, top), (right, bottom)))
+            } else {
+                None
+            };
+            let unload_bottom = if old_bounds.bottom() > new_bounds.bottom() {
+                let left = new_bounds.left().max(old_bounds.left());
+                let top = new_bounds.bottom();
+                let right = old_bounds.right();
+                let bottom = old_bounds.bottom();
+                Some(Bounds2D::new((left, top), (right, bottom)))
+            } else {
+                None
+            };
+            let load_left = if new_bounds.left() < old_bounds.left() {
+                let left = new_bounds.left();
+                let top = old_bounds.top().max(new_bounds.top());
+                let right = old_bounds.left();
+                let bottom = new_bounds.bottom();
+                Some(Bounds2D::new((left, top), (right, bottom)))
+            } else {
+                None
+            };
+            let load_top = if new_bounds.top() < old_bounds.top() {
+                let left = new_bounds.left();
+                let top = new_bounds.top();
+                let right = old_bounds.right().min(new_bounds.right());
+                let bottom = old_bounds.top();
+                Some(Bounds2D::new((left, top), (right, bottom)))
+            } else {
+                None
+            };
+            let load_right = if new_bounds.right() > old_bounds.right() {
+                let left = old_bounds.right();
+                let top = new_bounds.top();
+                let right = new_bounds.right();
+                let bottom = old_bounds.bottom().min(new_bounds.bottom());
+                Some(Bounds2D::new((left, top), (right, bottom)))
+            } else {
+                None
+            };
+            let load_bottom = if new_bounds.bottom() > old_bounds.bottom() {
+                let left = old_bounds.left().max(new_bounds.left());
+                let top = old_bounds.bottom();
+                let right = new_bounds.right();
+                let bottom = new_bounds.bottom();
+                Some(Bounds2D::new((left, top), (right, bottom)))
+            } else {
+                None
+            };
+            // This is the region that is kept. It is not unloaded or loaded. It is just copied.
             let keep = {
                 let left = new_bounds.left().max(old_bounds.left());
                 let top = new_bounds.top().max(old_bounds.top());
                 let right = old_bounds.right().min(new_bounds.right());
                 let bottom = old_bounds.bottom().min(new_bounds.bottom());
                 Bounds2D::new((left, top), (right, bottom))
-            };
-            let unload_left = if old_bounds.left() < new_bounds.left() {
-                Some({
-                    let left = old_bounds.left();
-                    let top = new_bounds.top().max(old_bounds.top());
-                    let right = new_bounds.left();
-                    let bottom = old_bounds.bottom();
-                    Bounds2D::new((left, top), (right, bottom))
-                })
-            } else {
-                None
-            };
-            let unload_top = if old_bounds.top() < new_bounds.top() {
-                Some({
-                    let left = old_bounds.left();
-                    let top = old_bounds.top();
-                    let right = new_bounds.right().min(old_bounds.right());
-                    let bottom = new_bounds.top();
-                    Bounds2D::new((left, top), (right, bottom))
-                })
-            } else {
-                None
-            };
-            let unload_right = if old_bounds.right() > new_bounds.right() {
-                Some({
-                    let left = new_bounds.right();
-                    let top = old_bounds.top();
-                    let right = old_bounds.right();
-                    let bottom = new_bounds.bottom().min(new_bounds.bottom());
-                    Bounds2D::new((left, top), (right, bottom))
-                })
-            } else {
-                None
-            };
-            let unload_bottom = if old_bounds.bottom() > new_bounds.bottom() {
-                Some({
-                    let left = new_bounds.left().max(old_bounds.left());
-                    let top = new_bounds.bottom();
-                    let right = old_bounds.right();
-                    let bottom = old_bounds.bottom();
-                    Bounds2D::new((left, top), (right, bottom))
-                })
-            } else {
-                None
-            };
-            let load_left = if new_bounds.left() < old_bounds.left() {
-                Some({
-                    let left = new_bounds.left();
-                    let top = old_bounds.top().max(new_bounds.top());
-                    let right = old_bounds.left();
-                    let bottom = new_bounds.bottom();
-                    Bounds2D::new((left, top), (right, bottom))
-                })
-            } else {
-                None
-            };
-            let load_top = if new_bounds.top() < old_bounds.top() {
-                Some({
-                    let left = new_bounds.left();
-                    let top = new_bounds.top();
-                    let right = old_bounds.right().min(new_bounds.right());
-                    let bottom = old_bounds.top();
-                    Bounds2D::new((left, top), (right, bottom))
-                })
-            } else {
-                None
-            };
-            let load_right = if new_bounds.right() > old_bounds.right() {
-                Some({
-                    let left = old_bounds.right();
-                    let top = new_bounds.top();
-                    let right = new_bounds.right();
-                    let bottom = old_bounds.bottom().min(new_bounds.bottom());
-                    Bounds2D::new((left, top), (right, bottom))
-                })
-            } else {
-                None
-            };
-            let load_bottom = if new_bounds.bottom() > old_bounds.bottom() {
-                Some({
-                    let left = old_bounds.left().max(new_bounds.left());
-                    let top = old_bounds.bottom();
-                    let right = new_bounds.right();
-                    let bottom = new_bounds.bottom();
-                    Bounds2D::new((left, top), (right, bottom))
-                })
-            } else {
-                None
             };
             let mut temp_grid = TempGrid2D::<T>::new((new_width, new_height), new_position);
             keep.iter().for_each(|pos| {
