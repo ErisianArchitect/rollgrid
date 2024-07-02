@@ -28,3 +28,5 @@ DEFC
 ```
 
 Sorry for the poor explanation, I'll work on the readme eventually.
+
+You can modify this code to fit your purpose.
