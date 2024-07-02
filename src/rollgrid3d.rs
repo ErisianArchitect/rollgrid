@@ -127,7 +127,213 @@ impl<T> RollGrid3D<T> {
                 // My plan is to subdivide the reload region into (upto) three parts.
                 // It's very difficult to visualize this stuff, so I used Minecraft to create a rudimentary visualization.
                 // https://i.imgur.com/FdlQTyS.png
-
+                // There are three pieces. The half piece, the eighth piece, and the quarter piece. (not actual sizes, just representative)
+                // not all three of these regions will be present. There will be cases where only one or two are present.
+                // I'll make the side piece on the y/z axes.
+                // After doing some thinking, I decided I should determine the best place to put the half_region.
+                // Check if it can fit at x_min or x_max
+                // Otherwise check if it can fit in z_min or z_max
+                // Finally check if it can fit in y_min or y_max
+                let (half_region, quarter_region, eighth_region) = if new_bounds.x_min() < old_bounds.x_min() {
+                    let half_region = {
+                        let x_min = new_bounds.x_min();
+                        let y_min = new_bounds.y_min();
+                        let z_min = new_bounds.z_min();
+                        let x_max = old_bounds.x_min();
+                        let y_max = new_bounds.y_max();
+                        let z_max = new_bounds.z_max();
+                        Bounds3D::new(
+                            (x_min, y_min, z_min),
+                            (x_max, y_max, z_max)
+                        )
+                    };
+                    let (quarter_region, eighth_region) = if new_bounds.z_min() < old_bounds.z_min() {
+                        let quarter_region = {
+                            let x_min = old_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = new_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = old_bounds.z_min();
+                            Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            )
+                        };
+                        let eighth_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            let x_min = old_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = old_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = old_bounds.y_min();
+                            let z_max = new_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
+                        } else if new_bounds.y_max() > old_bounds.y_max() {
+                            let x_min = old_bounds.x_min();
+                            let y_min = old_bounds.y_max();
+                            let z_min = old_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = new_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
+                        } else {
+                            None
+                        };
+                        (Some(quarter_region), eighth_region)
+                    } else if new_bounds.z_max() > old_bounds.z_max() {
+                        let quarter_region = {
+                            let x_min = old_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = new_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = new_bounds.z_max();
+                            Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            )
+                        };
+                        let eighth_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            let x_min = old_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = new_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = old_bounds.y_min();
+                            let z_max = old_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
+                        } else if new_bounds.y_max() > old_bounds.y_max() {
+                            let x_min = old_bounds.x_min();
+                            let y_min = old_bounds.y_max();
+                            let z_min = new_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = old_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
+                        } else {
+                            None
+                        };
+                        (Some(quarter_region), eighth_region)
+                    } else { // z is same, x is less
+                        let quarter_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            let x_min = old_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = new_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = old_bounds.y_min();
+                            let z_max = new_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
+                        } else if new_bounds.y_max() > old_bounds.y_max() {
+                            let x_min = old_bounds.x_min();
+                            let y_min = old_bounds.y_max();
+                            let z_min = new_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = new_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
+                        } else {
+                            None
+                        };
+                        (quarter_region, None)
+                    };
+                    (half_region, quarter_region, eighth_region)
+                } else if new_bounds.x_max() > old_bounds.x_max() {
+                    let half_region = {
+                        let x_min = old_bounds.x_max();
+                        let y_min = new_bounds.y_min();
+                        let z_min = new_bounds.z_min();
+                        let x_max = new_bounds.x_max();
+                        let y_max = new_bounds.y_max();
+                        let z_max = new_bounds.z_max();
+                        Bounds3D::new(
+                            (x_min, y_min, z_min),
+                            (x_max, y_max, z_max)
+                        )
+                    };
+                    let (quarter_region, eighth_region) = if new_bounds.z_min() < old_bounds.z_min() {
+                        let quarter_region = {
+                            let x_min = new_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = new_bounds.z_min();
+                            let x_max = old_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = old_bounds.z_min();
+                            Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            )
+                        };
+                        let eighth_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            let x_min = new_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = old_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = old_bounds.y_min();
+                            let z_max = new_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
+                        }else if new_bounds.y_max() > old_bounds.y_max() {
+                            let x_min = new_bounds.x_min();
+                            let y_min = old_bounds.y_max();
+                            let z_min = old_bounds.z_min();
+                            let x_max = old_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = new_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
+                        } else {
+                            None
+                        };
+                        (Some(quarter_region), eighth_region)
+                    } else if new_bounds.z_max() > old_bounds.z_max() {
+                        let quarter_region = {
+                            let x_min = new_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = old_bounds.z_max();
+                            let x_max = old_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = new_bounds.z_max();
+                            Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            )
+                        };
+                        let eighth_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            todo!()
+                        } else if new_bounds.y_max() > old_bounds.y_max() {
+                            todo!()
+                        } else {
+                            todo!()
+                        };
+                        todo!()
+                    } else { // z is equal, x is greater
+                        todo!()
+                    };
+                    (half_region, quarter_region, eighth_region)
+                } else { // x is equal
+                    todo!()
+                };
             } else { // translation out of bounds, reload everything
 
             }
