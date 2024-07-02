@@ -8,15 +8,17 @@ const OUT_OF_BOUNDS: &'static str = "Out of bounds";
 pub type Coord = (i32, i32);
 
 pub use rollgrid2d::*;
-pub use rollgrid3d::*;
+// pub use rollgrid3d::*;
 
 // #[inline(always)]
 // fn iproduct_arg_rev<T>(input: (T, T)) -> (T, T) {
 //     (input.1, input.0)
 // }
 
-/// 
+/// Used in the `manage` callback for loading and unloading cells during resize/reposition operations.
 pub enum CellManage<C, T> {
+    /// For when a cell is loaded.
+    /// The callback should return the new value for the loaded cell.
     Load(C),
     /// For when a cell is unloaded.
     /// The callback should return `None`.
