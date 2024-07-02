@@ -405,11 +405,11 @@ impl<T> RollGrid2D<T> {
     where
         C: Into<(i32, i32)> + From<(i32, i32)>,
         F: FnMut(C, C, Option<T>) -> Option<T> {
-            let (curx, cury) = self.grid_offset;
+            let (old_x, old_y) = self.grid_offset;
             let (px, py): (i32, i32) = position.into();
             let offset = (
-                px - curx,
-                py - cury
+                px - old_x,
+                py - old_y
             );
             if offset == (0, 0) {
                 return;
@@ -418,7 +418,6 @@ impl<T> RollGrid2D<T> {
             let width = self.size.0 as i32;
             let height = self.size.1 as i32;
             let (offset_x, offset_y) = offset;
-            let (old_x, old_y) = self.grid_offset;
             let (new_x, new_y) = (old_x + offset_x, old_y + offset_y);
             self.grid_offset = (new_x, new_y);
             // Offset is within bounds, so that means that the grid will be rolled.
@@ -530,6 +529,14 @@ impl<T> RollGrid2D<T> {
             }
         }
 
+    pub fn relative_offset<C: Into<(i32, i32)> + From<(i32, i32)>>(&self, coord: C) -> C {
+        let (x, y): (i32, i32) = coord.into();
+        C::from((
+            x - self.grid_offset.0,
+            y - self.grid_offset.1
+        ))
+    }
+
     // Utility function(s)
     fn offset_index(&self, (x, y): (i32, i32)) -> Option<usize> {
         let (mx, my) = self.grid_offset;
@@ -551,32 +558,24 @@ impl<T> RollGrid2D<T> {
         Some((wy as usize * self.size.0) + wx as usize)
     }
 
-    pub fn get_opt<C: Into<(i32, i32)>>(&self, coord: C) -> Option<&Option<T>> {
+    pub fn get_opt<C: Into<Coord>>(&self, coord: C) -> Option<&Option<T>> {
         let index = self.offset_index(coord.into())?;
         Some(&self.cells[index])
     }
 
-    pub fn get_opt_mut<C: Into<(i32, i32)>>(&mut self, coord: C) -> Option<&mut Option<T>> {
+    pub fn get_opt_mut<C: Into<Coord>>(&mut self, coord: C) -> Option<&mut Option<T>> {
         let index = self.offset_index(coord.into())?;
         Some(&mut self.cells[index])
     }
 
-    pub fn set_opt<C: Into<(i32, i32)>>(&mut self, coord: C, value: Option<T>) -> Option<Option<T>> {
+    pub fn set_opt<C: Into<Coord>>(&mut self, coord: C, value: Option<T>) -> Option<Option<T>> {
         let cell = self.get_opt_mut(coord.into())?;
         let mut old = value;
         std::mem::swap(&mut old, cell);
         Some(old)
     }
 
-    pub fn relative_offset<C: Into<(i32, i32)> + From<(i32, i32)>>(&self, coord: C) -> C {
-        let (x, y): (i32, i32) = coord.into();
-        C::from((
-            x - self.grid_offset.0,
-            y - self.grid_offset.1
-        ))
-    }
-
-    pub fn get<C: Into<(i32, i32)>>(&self, coord: C) -> Option<&T> {
+    pub fn get<C: Into<Coord>>(&self, coord: C) -> Option<&T> {
         let index = self.offset_index(coord.into())?;
         if let Some(cell) = &self.cells[index] {
             Some(cell)
@@ -585,7 +584,7 @@ impl<T> RollGrid2D<T> {
         }
     }
 
-    pub fn get_mut<C: Into<(i32, i32)>>(&mut self, coord: C) -> Option<&mut T> {
+    pub fn get_mut<C: Into<Coord>>(&mut self, coord: C) -> Option<&mut T> {
         let index = self.offset_index(coord.into())?;
         if let Some(cell) = &mut self.cells[index] {
             Some(cell)
@@ -594,7 +593,7 @@ impl<T> RollGrid2D<T> {
         }
     }
 
-    pub fn set<C: Into<(i32, i32)>>(&mut self, coord: C, value: T) -> Option<T> {
+    pub fn set<C: Into<Coord>>(&mut self, coord: C, value: T) -> Option<T> {
         let cell = self.get_mut(coord)?;
         let mut old = value;
         std::mem::swap(&mut old, cell);
@@ -618,7 +617,7 @@ impl<T> RollGrid2D<T> {
         self.wrap_offset
     }
 
-    pub fn grid_offset(&self) -> (i32, i32) {
+    pub fn offset(&self) -> (i32, i32) {
         self.grid_offset
     }
 
