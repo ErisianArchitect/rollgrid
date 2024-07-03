@@ -1707,6 +1707,7 @@ impl<'a, T> Iterator for RollGrid3DMutIterator<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
+        // Only way to do this is with unsafe code.
         unsafe {
             let cells_ptr = self.grid.cells.as_mut_ptr();
             let cell_ptr = cells_ptr.add(index);
@@ -1825,11 +1826,11 @@ mod tests {
                 }
             }
         }
-        let mut grid = RollGrid3D::new_with_init(4, 4, 4, (0, 0, 0), |pos: (i32, i32, i32)| {
+        let mut grid = RollGrid3D::new_with_init(8, 8, 8, (0, 0, 0), |pos: (i32, i32, i32)| {
             Some(DropCoord::from(pos))
         });
         verify_grid(&grid);
-        grid.resize_and_reposition(2, 2, 2, (-1, -1, -1), |manage| {
+        grid.resize_and_reposition(4, 4, 4, (-1, -1, -1), |manage| {
             match manage {
                 CellManage::Load(pos) => Some(DropCoord::from(pos)),
                 CellManage::Unload(pos, old_value) => {
@@ -1842,7 +1843,7 @@ mod tests {
                 },
             }
         });
-        grid.cells.iter_mut().for_each(|cell| {
+        grid.iter_mut().for_each(|(pos, cell)| {
             if let Some(cell) = cell {
                 cell.unloaded = true;
             }
