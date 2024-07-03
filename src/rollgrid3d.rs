@@ -1726,9 +1726,9 @@ mod tests {
 
     #[test]
     fn wrap_test() {
-        let v = -1i64;
+        let v = i64::MAX;
         let uv = v as u64;
-        println!("{uv}");
+        println!("{}\n{}", i32::MAX as u32, i32::MIN as u32);
     }
 
     #[test]
