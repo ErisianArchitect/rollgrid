@@ -255,6 +255,7 @@ impl<T> RollGrid3D<T> {
                     };
                     (half_region, quarter_region, eighth_region)
                 } else if new_bounds.x_max() > old_bounds.x_max() {
+                    // (half, quarter, eighth) = if
                     let half_region = {
                         let x_min = old_bounds.x_max();
                         let y_min = new_bounds.y_min();
@@ -320,22 +321,213 @@ impl<T> RollGrid3D<T> {
                             )
                         };
                         let eighth_region = if new_bounds.y_min() < old_bounds.y_min() {
-                            todo!()
+                            let x_min = new_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = new_bounds.z_min();
+                            let x_max = old_bounds.x_max();
+                            let y_max = old_bounds.y_min();
+                            let z_max = old_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
                         } else if new_bounds.y_max() > old_bounds.y_max() {
-                            todo!()
+                            let x_min = new_bounds.x_min();
+                            let y_min = old_bounds.y_max();
+                            let z_min = new_bounds.z_min();
+                            let x_max = old_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = old_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
                         } else {
-                            todo!()
+                            None
                         };
-                        todo!()
+                        (Some(quarter_region), eighth_region)
                     } else { // z is equal, x is greater
-                        todo!()
+                        let quarter_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            let x_min = new_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = new_bounds.z_min();
+                            let x_max = old_bounds.x_max();
+                            let y_max = old_bounds.y_min();
+                            let z_max = new_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
+                        } else if new_bounds.y_max() > old_bounds.y_max() {
+                            let x_min = new_bounds.x_min();
+                            let y_min = old_bounds.y_max();
+                            let z_min = new_bounds.z_min();
+                            let x_max = old_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = new_bounds.z_max();
+                            Some(Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            ))
+                        } else {
+                            None
+                        };
+                        (quarter_region, None)
                     };
                     (half_region, quarter_region, eighth_region)
                 } else { // x is equal
-                    todo!()
+                    // (half, quarter, eighth) = if
+                    let (half_region, quarter_region) = if new_bounds.z_min() < old_bounds.z_min() {
+                        if new_bounds.y_min() < old_bounds.y_min() {
+                            let half_region = {
+                                let x_min = new_bounds.x_min();
+                                let y_min = new_bounds.y_min();
+                                let z_min = new_bounds.z_min();
+                                let x_max = new_bounds.x_max();
+                                let y_max = new_bounds.y_max();
+                                let z_max = old_bounds.z_min();
+                                Bounds3D::new(
+                                    (x_min, y_min, z_min),
+                                    (x_max, y_max, z_max)
+                                )
+                            };
+                            let quarter_region = {
+                                let x_min = new_bounds.x_min();
+                                let y_min = new_bounds.y_min();
+                                let z_min = old_bounds.z_min();
+                                let x_max = new_bounds.x_max();
+                                let y_max = old_bounds.y_min();
+                                let z_max = new_bounds.z_max();
+                                Bounds3D::new(
+                                    (x_min, y_min, z_min),
+                                    (x_max, y_max, z_max)
+                                )
+                            };
+                            (half_region, Some(quarter_region))
+                        } else if new_bounds.y_max() > old_bounds.y_max() {
+                            let half_region = {
+                                let x_min = new_bounds.x_min();
+                                let y_min = new_bounds.y_min();
+                                let z_min = new_bounds.z_min();
+                                let x_max = new_bounds.x_max();
+                                let y_max = new_bounds.y_max();
+                                let z_max = old_bounds.z_min();
+                                Bounds3D::new(
+                                    (x_min, y_min, z_min),
+                                    (x_max, y_max, z_max)
+                                )
+                            };
+                            let quarter_region = {
+                                let x_min = new_bounds.x_min();
+                                let y_min = old_bounds.y_max();
+                                let z_min = old_bounds.z_min();
+                                let x_max = new_bounds.x_max();
+                                let y_max = new_bounds.y_max();
+                                let z_max = new_bounds.z_max();
+                                Bounds3D::new(
+                                    (x_min, y_min, z_min),
+                                    (x_max, y_max, z_max)
+                                )
+                            };
+                            (half_region, Some(quarter_region))
+                        } else { // x is equal, y is equal, z is less
+                            // create only half_region
+                            let x_min = new_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = new_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = old_bounds.z_min();
+                            let half_region = Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            );
+                            (half_region, None)
+                        }
+                    } else if new_bounds.z_max() > old_bounds.z_max() { // (half, quarter) = if
+                        // x is equal
+                        if new_bounds.y_min() < old_bounds.y_min() {
+                            // x is equal, z is greater
+                            // (half, Option<quarter>) = if; return (half, quarter)
+                            let half_region = {
+                                let x_min = new_bounds.x_min();
+                                let y_min = new_bounds.y_min();
+                                let z_min = old_bounds.z_max();
+                                let x_max = new_bounds.x_max();
+                                let y_max = new_bounds.y_max();
+                                let z_max = new_bounds.z_max();
+                                Bounds3D::new(
+                                    (x_min, y_min, z_min),
+                                    (x_max, y_max, z_max)
+                                )
+                            };
+                            let quarter_region = {
+                                let x_min = new_bounds.x_min();
+                                let y_min = new_bounds.y_min();
+                                let z_min = new_bounds.z_min();
+                                let x_max = new_bounds.x_max();
+                                let y_max = old_bounds.y_min();
+                                let z_max = old_bounds.z_max();
+                                Bounds3D::new(
+                                    (x_min, y_min, z_min),
+                                    (x_max, y_max, z_max)
+                                )
+                            };
+                            (half_region, Some(quarter_region))
+                        } else if new_bounds.y_max() > old_bounds.y_max() {
+                            // x is equal, z is greater
+                            // (half, Option<quarter>) = if; return (half, quarter)
+                            let half_region = {
+                                let x_min = new_bounds.x_min();
+                                let y_min = new_bounds.y_min();
+                                let z_min = old_bounds.z_max();
+                                let x_max = new_bounds.x_max();
+                                let y_max = new_bounds.y_max();
+                                let z_max = new_bounds.z_max();
+                                Bounds3D::new(
+                                    (x_min, y_min, z_min),
+                                    (x_max, y_max, z_max)
+                                )
+                            };
+                            let quarter_region = {
+                                let x_min = new_bounds.x_min();
+                                let y_min = old_bounds.y_max();
+                                let z_min = new_bounds.z_min();
+                                let x_max = new_bounds.x_max();
+                                let y_max = new_bounds.y_max();
+                                let z_max = old_bounds.z_max();
+                                Bounds3D::new(
+                                    (x_min, y_min, z_min),
+                                    (x_max, y_max, z_max)
+                                )
+                            };
+                            (half_region, Some(quarter_region))
+                        } else { // x is equal, y is equal, z is greater
+                            // (half, Option<quarter>) = if; return (half, quarter)
+                            // no quarter_region
+                            let x_min = new_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = old_bounds.z_max();
+                            let x_max = new_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = new_bounds.z_max();
+                            let half_region = Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            );
+                            (half_region, None)
+                        }
+                    } else {
+                        // x is equal, z is equal
+                        // (half, Option<quarter>) = if; return (half, quarter)
+                        todo!()
+                    };
+                    (half_region, quarter_region, None)
                 };
+                // Now that we have the regions, we can iterate over them to reload cells.
+                todo!()
             } else { // translation out of bounds, reload everything
-
+                todo!()
             }
             todo!()
         }
