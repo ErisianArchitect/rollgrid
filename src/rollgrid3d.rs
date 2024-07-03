@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::{SIZE_TOO_LARGE, OFFSET_TOO_CLOSE_TO_MAX};
+use crate::{OFFSET_TOO_CLOSE_TO_MAX, OUT_OF_BOUNDS, SIZE_TOO_LARGE};
 const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
 
 type Coord = (i32, i32, i32);
@@ -586,19 +586,6 @@ impl<T> RollGrid3D<T> {
                     };
                     (half_region, quarter_region, None)
                 };
-                half_region.iter().for_each(|(x, y, z)| {
-                    println!("   Half: ({x}, {y}, {z})");
-                });
-                if let Some(quarter) = quarter_region {
-                    quarter.iter().for_each(|(x, y, z)| {
-                        println!("Quarter: ({x}, {y}, {z})");
-                    });
-                }
-                if let Some(eighth) = eighth_region {
-                    eighth.iter().for_each(|(x, y, z)| {
-                        println!(" Eighth: ({x}, {y}, {z})");
-                    });
-                }
                 // Calculate new wrap_offset
                 let (wrap_x, wrap_y, wrap_z) = (
                     self.wrap_offset.0,
@@ -613,15 +600,65 @@ impl<T> RollGrid3D<T> {
                 let new_wrap_x = (wrap_x + wrapped_offset_x).rem_euclid(width);
                 let new_wrap_y = (wrap_y + wrapped_offset_y).rem_euclid(height);
                 let new_wrap_z = (wrap_z + wrapped_offset_z).rem_euclid(depth);
+                struct OffsetFix {
+                    /// the old grid offset that we can use to
+                    /// create a relational offset
+                    offset: (i32, i32, i32),
+                    size: (i32, i32, i32),
+                }
+                impl OffsetFix {
+                    fn wrap(&self, pos: (i32, i32, i32)) -> (i32, i32, i32) {
+                        let x = (pos.0 - self.offset.0).rem_euclid(self.size.0) + self.offset.0;
+                        let y = (pos.1 - self.offset.1).rem_euclid(self.size.1) + self.offset.1;
+                        let z = (pos.2 - self.offset.2).rem_euclid(self.size.2) + self.offset.2;
+                        (x, y, z)
+                    }
+                }
+                let fix = OffsetFix {
+                    offset: self.grid_offset,
+                    size: (width, height, depth)
+                };
                 self.wrap_offset = (new_wrap_x, new_wrap_y, new_wrap_z);
                 self.grid_offset = (new_x, new_y, new_z);
+                // iterate regions and reload cells
+                half_region.iter().for_each(|pos| {
+                    let old_pos = fix.wrap(pos);
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    self.cells[index] = reload(C::from(old_pos), C::from(pos), self.cells[index].take());
+                });
+                if let Some(quarter) = quarter_region {
+                    quarter.iter().for_each(|pos| {
+                        let old_pos = fix.wrap(pos);
+                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                        self.cells[index] = reload(C::from(old_pos), C::from(pos), self.cells[index].take());
+                    });
+                }
+                if let Some(eighth) = eighth_region {
+                    eighth.iter().for_each(|pos| {
+                        let old_pos = fix.wrap(pos);
+                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                        self.cells[index] = reload(C::from(old_pos), C::from(pos), self.cells[index].take());
+                    });
+                }
                 // Now that we have the regions, we can iterate over them to reload cells.
-                // todo!()
             } else { // translation out of bounds, reload everything
-                // todo!()
-                // Make sure to update the grid offset
+                self.grid_offset = (new_x, new_y, new_z);
+                for (yi, y) in (new_y..new_y + height).enumerate() {
+                    for (zi, z) in (new_z..new_z + depth).enumerate() {
+                        for (xi, x) in (new_x..new_x + width).enumerate() {
+                            let prior_x = old_x + xi as i32;
+                            let prior_y = old_y + yi as i32;
+                            let prior_z = old_z + zi as i32;
+                            let index = self.offset_index((x, y, z)).expect(OUT_OF_BOUNDS);
+                            self.cells[index] = reload(
+                                C::from((prior_x, prior_y, prior_z)),
+                                C::from((x, y, z)),
+                                self.cells[index].take()
+                            );
+                        }
+                    }
+                }
             }
-            // todo!()
         }
 
     pub fn relative_offset<C: Into<Coord> + From<Coord> + Copy>(&self, coord: C) -> C {
@@ -955,14 +992,74 @@ fn bounds_test() {
     });
 }
 
+// fn print_grid(grid: &RollGrid3D<(i32, i32, i32)>) {
+//     println!("***");
+//     for y in grid.y_min()..grid.y_max() {
+//         println!("### Y = {y:<3} ###");
+//         for z in grid.z_min()..grid.z_max() {
+//             for x in grid.x_min()..grid.x_max() {
+//                 let Some(&(cx, cy, cz)) = grid.get((x, y, z)) else {
+//                     continue;
+//                 };
+//                 print!("({cx:2},{cy:2},{cz:2})");
+//             }
+//             println!();
+//         }
+//     }
+// }
+
 #[test]
 fn reposition_test() {
-    let mut grid = RollGrid3D::new_with_init(2, 2, 2, (0, 0, 0), |(x, y, z)| {
-        Some((x, y, z))
+    fn verify_grid(grid: &RollGrid3D<(i32, i32, i32)>) {
+        let offset = grid.grid_offset;
+        for y in grid.y_min()..grid.y_max() {
+            for z in grid.z_min()..grid.z_max() {
+                for x in grid.x_min()..grid.x_max() {
+                    let pos = (x, y, z);
+                    let cell = grid.get(pos).expect("Cell was None");
+                    assert_eq!(pos, *cell);
+                }
+            }
+        }
+    }
+    fn reload(old: (i32, i32, i32), new: (i32, i32, i32), old_value: Option<(i32, i32, i32)>) -> Option<(i32, i32, i32)> {
+        assert_eq!(Some(old), old_value);
+        Some(new)
+    }
+    let mut grid = RollGrid3D::new_with_init(4, 4, 4, (0, 0, 0), |pos| {
+        Some(pos)
     });
-    println!("Offset: (1, 1, 1)");
-    grid.reposition((1, 1, 1), |old, new, old_val| old_val);
-    println!("Offset: (-1, 1, 1)");
-    grid.reposition((-1, 1, 1), |old, new, old_val| old_val);
+    verify_grid(&grid);
+    for y in -10..11 {
+        for z in -10..11 {
+            for x in -10..11 {
+                grid.reposition((x, y, z), reload);
+                verify_grid(&grid);
+            }
+        }
+    }
+}
 
+#[test]
+fn offsetfix_test() {
+    struct OffsetFix {
+        /// the old grid offset that we can use to
+        /// create a relational offset
+        offset: (i32, i32, i32),
+        size: (i32, i32, i32),
+    }
+    impl OffsetFix {
+        fn wrap(&self, pos: (i32, i32, i32)) -> (i32, i32, i32) {
+            let x = (pos.0 - self.offset.0).rem_euclid(self.size.0) + self.offset.0;
+            let y = (pos.1 - self.offset.1).rem_euclid(self.size.1) + self.offset.1;
+            let z = (pos.2 - self.offset.2).rem_euclid(self.size.2) + self.offset.2;
+            (x, y, z)
+        }
+    }
+    let fix = OffsetFix {
+        offset: (5, 5, 5),
+        size: (4, 4, 4),
+    };
+    let (x, y, z) = fix.wrap((9, 9, 9));
+    println!("({x}, {y}, {z})");
 }
