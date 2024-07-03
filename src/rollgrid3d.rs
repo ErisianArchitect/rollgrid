@@ -1463,6 +1463,14 @@ impl<T> RollGrid3D<T> {
 
 }
 
+impl<T: Copy> RollGrid3D<T> {
+    pub fn get_copy<C: Into<Coord>>(&self, coord: C) -> Option<T> {
+        let coord: Coord = coord.into();
+        let index = self.offset_index(coord)?;
+        self.cells[index]
+    }
+}
+
 struct TempGrid3D<T> {
     pub cells: Vec<Option<T>>,
     pub size: (usize, usize, usize),
