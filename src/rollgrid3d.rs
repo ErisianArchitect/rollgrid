@@ -8,7 +8,7 @@ type Coord = (i32, i32, i32);
 pub struct RollGrid3D<T> {
     cells: Vec<Option<T>>,
     size: (usize, usize, usize),
-    wrap_offset: (usize, usize, usize),
+    wrap_offset: (i32, i32, i32),
     grid_offset: (i32, i32, i32),
 }
 
@@ -135,6 +135,7 @@ impl<T> RollGrid3D<T> {
                 // Otherwise check if it can fit in z_min or z_max
                 // Finally check if it can fit in y_min or y_max
                 let (half_region, quarter_region, eighth_region) = if new_bounds.x_min() < old_bounds.x_min() {
+                    // -X
                     let half_region = {
                         let x_min = new_bounds.x_min();
                         let y_min = new_bounds.y_min();
@@ -148,6 +149,7 @@ impl<T> RollGrid3D<T> {
                         )
                     };
                     let (quarter_region, eighth_region) = if new_bounds.z_min() < old_bounds.z_min() {
+                        // -X -Z
                         let quarter_region = {
                             let x_min = old_bounds.x_min();
                             let y_min = new_bounds.y_min();
@@ -161,6 +163,7 @@ impl<T> RollGrid3D<T> {
                             )
                         };
                         let eighth_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            // eighth: -X -Y -Z
                             let x_min = old_bounds.x_min();
                             let y_min = new_bounds.y_min();
                             let z_min = old_bounds.z_min();
@@ -172,6 +175,7 @@ impl<T> RollGrid3D<T> {
                                 (x_max, y_max, z_max)
                             ))
                         } else if new_bounds.y_max() > old_bounds.y_max() {
+                            // eighth: -X +Y -Z
                             let x_min = old_bounds.x_min();
                             let y_min = old_bounds.y_max();
                             let z_min = old_bounds.z_min();
@@ -183,14 +187,16 @@ impl<T> RollGrid3D<T> {
                                 (x_max, y_max, z_max)
                             ))
                         } else {
+                            // eighth: -X =Y -Z
                             None
                         };
                         (Some(quarter_region), eighth_region)
                     } else if new_bounds.z_max() > old_bounds.z_max() {
+                        // -X +Z
                         let quarter_region = {
                             let x_min = old_bounds.x_min();
                             let y_min = new_bounds.y_min();
-                            let z_min = new_bounds.z_min();
+                            let z_min = old_bounds.z_max();
                             let x_max = new_bounds.x_max();
                             let y_max = new_bounds.y_max();
                             let z_max = new_bounds.z_max();
@@ -200,6 +206,7 @@ impl<T> RollGrid3D<T> {
                             )
                         };
                         let eighth_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            // eighth: -X -Y +Z
                             let x_min = old_bounds.x_min();
                             let y_min = new_bounds.y_min();
                             let z_min = new_bounds.z_min();
@@ -211,6 +218,7 @@ impl<T> RollGrid3D<T> {
                                 (x_max, y_max, z_max)
                             ))
                         } else if new_bounds.y_max() > old_bounds.y_max() {
+                            // eighth: -X +Y +Z
                             let x_min = old_bounds.x_min();
                             let y_min = old_bounds.y_max();
                             let z_min = new_bounds.z_min();
@@ -222,11 +230,14 @@ impl<T> RollGrid3D<T> {
                                 (x_max, y_max, z_max)
                             ))
                         } else {
+                            // eighth: -X =Y +Z
                             None
                         };
                         (Some(quarter_region), eighth_region)
                     } else { // z is same, x is less
+                        // -X =Z
                         let quarter_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            // quarter: -X -Y =Z
                             let x_min = old_bounds.x_min();
                             let y_min = new_bounds.y_min();
                             let z_min = new_bounds.z_min();
@@ -238,6 +249,7 @@ impl<T> RollGrid3D<T> {
                                 (x_max, y_max, z_max)
                             ))
                         } else if new_bounds.y_max() > old_bounds.y_max() {
+                            // quarter: -X +Y =Z
                             let x_min = old_bounds.x_min();
                             let y_min = old_bounds.y_max();
                             let z_min = new_bounds.z_min();
@@ -256,6 +268,7 @@ impl<T> RollGrid3D<T> {
                     (half_region, quarter_region, eighth_region)
                 } else if new_bounds.x_max() > old_bounds.x_max() {
                     // (half, quarter, eighth) = if
+                    // +X
                     let half_region = {
                         let x_min = old_bounds.x_max();
                         let y_min = new_bounds.y_min();
@@ -269,6 +282,7 @@ impl<T> RollGrid3D<T> {
                         )
                     };
                     let (quarter_region, eighth_region) = if new_bounds.z_min() < old_bounds.z_min() {
+                        // +X -Z
                         let quarter_region = {
                             let x_min = new_bounds.x_min();
                             let y_min = new_bounds.y_min();
@@ -282,10 +296,11 @@ impl<T> RollGrid3D<T> {
                             )
                         };
                         let eighth_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            // eighth: +X -Y -Z
                             let x_min = new_bounds.x_min();
                             let y_min = new_bounds.y_min();
                             let z_min = old_bounds.z_min();
-                            let x_max = new_bounds.x_max();
+                            let x_max = old_bounds.x_max();
                             let y_max = old_bounds.y_min();
                             let z_max = new_bounds.z_max();
                             Some(Bounds3D::new(
@@ -293,6 +308,7 @@ impl<T> RollGrid3D<T> {
                                 (x_max, y_max, z_max)
                             ))
                         }else if new_bounds.y_max() > old_bounds.y_max() {
+                            // eighth: +X +Y -Z
                             let x_min = new_bounds.x_min();
                             let y_min = old_bounds.y_max();
                             let z_min = old_bounds.z_min();
@@ -308,6 +324,7 @@ impl<T> RollGrid3D<T> {
                         };
                         (Some(quarter_region), eighth_region)
                     } else if new_bounds.z_max() > old_bounds.z_max() {
+                        // +X +Z
                         let quarter_region = {
                             let x_min = new_bounds.x_min();
                             let y_min = new_bounds.y_min();
@@ -321,6 +338,7 @@ impl<T> RollGrid3D<T> {
                             )
                         };
                         let eighth_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            // eighth: +X -Y +Z
                             let x_min = new_bounds.x_min();
                             let y_min = new_bounds.y_min();
                             let z_min = new_bounds.z_min();
@@ -332,6 +350,7 @@ impl<T> RollGrid3D<T> {
                                 (x_max, y_max, z_max)
                             ))
                         } else if new_bounds.y_max() > old_bounds.y_max() {
+                            // eighth: +X +Y +Z
                             let x_min = new_bounds.x_min();
                             let y_min = old_bounds.y_max();
                             let z_min = new_bounds.z_min();
@@ -347,7 +366,9 @@ impl<T> RollGrid3D<T> {
                         };
                         (Some(quarter_region), eighth_region)
                     } else { // z is equal, x is greater
+                        // +X =Z
                         let quarter_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            // quarter: +X -Y =Z
                             let x_min = new_bounds.x_min();
                             let y_min = new_bounds.y_min();
                             let z_min = new_bounds.z_min();
@@ -359,6 +380,7 @@ impl<T> RollGrid3D<T> {
                                 (x_max, y_max, z_max)
                             ))
                         } else if new_bounds.y_max() > old_bounds.y_max() {
+                            // quarter: +X +Y =Z
                             let x_min = new_bounds.x_min();
                             let y_min = old_bounds.y_max();
                             let z_min = new_bounds.z_min();
@@ -370,15 +392,19 @@ impl<T> RollGrid3D<T> {
                                 (x_max, y_max, z_max)
                             ))
                         } else {
+                            // quarter: +X =Y =Z
                             None
                         };
                         (quarter_region, None)
                     };
                     (half_region, quarter_region, eighth_region)
                 } else { // x is equal
+                    // =X
                     // (half, quarter, eighth) = if
                     let (half_region, quarter_region) = if new_bounds.z_min() < old_bounds.z_min() {
+                        // =X -Z
                         if new_bounds.y_min() < old_bounds.y_min() {
+                            // =X -Y -Z
                             let half_region = {
                                 let x_min = new_bounds.x_min();
                                 let y_min = new_bounds.y_min();
@@ -405,6 +431,7 @@ impl<T> RollGrid3D<T> {
                             };
                             (half_region, Some(quarter_region))
                         } else if new_bounds.y_max() > old_bounds.y_max() {
+                            // =X +Y -Z
                             let half_region = {
                                 let x_min = new_bounds.x_min();
                                 let y_min = new_bounds.y_min();
@@ -431,6 +458,7 @@ impl<T> RollGrid3D<T> {
                             };
                             (half_region, Some(quarter_region))
                         } else { // x is equal, y is equal, z is less
+                            // =X =Y -Z
                             // create only half_region
                             let x_min = new_bounds.x_min();
                             let y_min = new_bounds.y_min();
@@ -445,9 +473,10 @@ impl<T> RollGrid3D<T> {
                             (half_region, None)
                         }
                     } else if new_bounds.z_max() > old_bounds.z_max() { // (half, quarter) = if
-                        // x is equal
+                        // =X
                         if new_bounds.y_min() < old_bounds.y_min() {
                             // x is equal, z is greater
+                            // =X -Y +Z
                             // (half, Option<quarter>) = if; return (half, quarter)
                             let half_region = {
                                 let x_min = new_bounds.x_min();
@@ -476,6 +505,7 @@ impl<T> RollGrid3D<T> {
                             (half_region, Some(quarter_region))
                         } else if new_bounds.y_max() > old_bounds.y_max() {
                             // x is equal, z is greater
+                            // =X +Y +Z
                             // (half, Option<quarter>) = if; return (half, quarter)
                             let half_region = {
                                 let x_min = new_bounds.x_min();
@@ -503,6 +533,7 @@ impl<T> RollGrid3D<T> {
                             };
                             (half_region, Some(quarter_region))
                         } else { // x is equal, y is equal, z is greater
+                            // =X =Y +Z
                             // (half, Option<quarter>) = if; return (half, quarter)
                             // no quarter_region
                             let x_min = new_bounds.x_min();
@@ -519,17 +550,78 @@ impl<T> RollGrid3D<T> {
                         }
                     } else {
                         // x is equal, z is equal
+                        // =X =Z
                         // (half, Option<quarter>) = if; return (half, quarter)
-                        todo!()
+                        let half_region = if new_bounds.y_min() < old_bounds.y_min() {
+                            // =X -Y =Z
+                            let x_min = new_bounds.x_min();
+                            let y_min = new_bounds.y_min();
+                            let z_min = new_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = old_bounds.y_min();
+                            let z_max = new_bounds.z_max();
+                            Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            )
+                        } else if new_bounds.y_max() > old_bounds.y_max() {
+                            // =X +Y =Z
+                            let x_min = new_bounds.x_min();
+                            let y_min = old_bounds.y_max();
+                            let z_min = new_bounds.z_min();
+                            let x_max = new_bounds.x_max();
+                            let y_max = new_bounds.y_max();
+                            let z_max = new_bounds.z_max();
+                            Bounds3D::new(
+                                (x_min, y_min, z_min),
+                                (x_max, y_max, z_max)
+                            )
+                        } else {
+                            // =X =Y =Z: unreachable
+                            // It has already been determined that the bounds
+                            // are offset, therefore this branch is unreachable.
+                            unreachable!()
+                        };
+                        (half_region, None)
                     };
                     (half_region, quarter_region, None)
                 };
+                half_region.iter().for_each(|(x, y, z)| {
+                    println!("   Half: ({x}, {y}, {z})");
+                });
+                if let Some(quarter) = quarter_region {
+                    quarter.iter().for_each(|(x, y, z)| {
+                        println!("Quarter: ({x}, {y}, {z})");
+                    });
+                }
+                if let Some(eighth) = eighth_region {
+                    eighth.iter().for_each(|(x, y, z)| {
+                        println!(" Eighth: ({x}, {y}, {z})");
+                    });
+                }
+                // Calculate new wrap_offset
+                let (wrap_x, wrap_y, wrap_z) = (
+                    self.wrap_offset.0,
+                    self.wrap_offset.1,
+                    self.wrap_offset.2
+                );
+                let (wrapped_offset_x, wrapped_offset_y, wrapped_offset_z) = (
+                    offset_x.rem_euclid(width),
+                    offset_y.rem_euclid(height),
+                    offset_z.rem_euclid(depth)
+                );
+                let new_wrap_x = (wrap_x + wrapped_offset_x).rem_euclid(width);
+                let new_wrap_y = (wrap_y + wrapped_offset_y).rem_euclid(height);
+                let new_wrap_z = (wrap_z + wrapped_offset_z).rem_euclid(depth);
+                self.wrap_offset = (new_wrap_x, new_wrap_y, new_wrap_z);
+                self.grid_offset = (new_x, new_y, new_z);
                 // Now that we have the regions, we can iterate over them to reload cells.
-                todo!()
+                // todo!()
             } else { // translation out of bounds, reload everything
-                todo!()
+                // todo!()
+                // Make sure to update the grid offset
             }
-            todo!()
+            // todo!()
         }
 
     pub fn relative_offset<C: Into<Coord> + From<Coord> + Copy>(&self, coord: C) -> C {
@@ -861,4 +953,16 @@ fn bounds_test() {
     bounds.iter().for_each(|(x, y, z)| {
         println!("({x},{y},{z})");
     });
+}
+
+#[test]
+fn reposition_test() {
+    let mut grid = RollGrid3D::new_with_init(2, 2, 2, (0, 0, 0), |(x, y, z)| {
+        Some((x, y, z))
+    });
+    println!("Offset: (1, 1, 1)");
+    grid.reposition((1, 1, 1), |old, new, old_val| old_val);
+    println!("Offset: (-1, 1, 1)");
+    grid.reposition((-1, 1, 1), |old, new, old_val| old_val);
+
 }
