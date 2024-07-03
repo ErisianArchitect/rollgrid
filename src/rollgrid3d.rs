@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::{OFFSET_TOO_CLOSE_TO_MAX, OUT_OF_BOUNDS, SIZE_TOO_LARGE};
+use crate::{CellManage, OFFSET_TOO_CLOSE_TO_MAX, OUT_OF_BOUNDS, SIZE_TOO_LARGE};
 const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
 
 type Coord = (i32, i32, i32);
@@ -95,6 +95,57 @@ impl<T> RollGrid3D<T> {
             grid_offset
         }
     }
+
+    pub fn resize_and_reposition<C, F>(
+        &mut self,
+        width: usize,
+        height: usize,
+        depth: usize,
+        position: C,
+        manage: F,
+    )
+    where
+        C: Into<Coord> + From<Coord>,
+        F: FnMut(CellManage<C, T>) -> Option<T> {
+            #![allow(unused)]
+            let mut manage = manage;
+            let new_position: Coord = position.into();
+            if new_position == self.grid_offset
+            && (width, height, depth) == self.size {
+                return;
+            }
+            let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
+            if volume == 0 { panic!("{VOLUME_IS_ZERO}"); };
+            #[cfg(target_pointer_width = "64")]
+            if volume > i32::MAX as usize { panic!("{SIZE_TOO_LARGE}"); }
+            let (new_x, new_y, new_z) = new_position;
+            let new_width = width as i32;
+            let new_height = height as i32;
+            let new_depth = depth as i32;
+            let old_bounds = self.bounds();
+            let new_bounds = Bounds3D::new(
+                (new_x, new_y, new_z),
+                (new_x + new_width, new_y + new_height, new_z + new_depth)
+            );
+            if old_bounds.intersects(new_bounds) {
+                
+            } else { // !old_bounds.intersects(new_bounds)
+
+            }
+        }
+    
+    pub fn translate<C, F>(&mut self, offset: C, reload: F)
+    where
+        C: Into<Coord> + From<Coord>,
+        F: FnMut(C, C, Option<T>) -> Option<T> {
+            let (off_x, off_y, off_z): Coord = offset.into();
+            let new_pos = C::from((
+                self.grid_offset.0 + off_x,
+                self.grid_offset.1 + off_y,
+                self.grid_offset.2 + off_z,
+            ));
+            self.reposition(new_pos, reload);
+        }
 
     pub fn reposition<C, F>(&mut self, position: C, reload: F)
     where
@@ -818,6 +869,22 @@ impl<T> TempGrid3D<T> {
         }
     }
 
+    pub fn new_with_init<F: FnMut(Coord) -> Option<T>>(size: (usize, usize, usize), offset: (i32, i32, i32), init: F) -> Self {
+        let bounds = Bounds3D::new(
+            offset,
+            (
+                offset.0 + size.0 as i32,
+                offset.1 + size.1 as i32,
+                offset.2 + size.2 as i32
+            )
+        );
+        Self {
+            cells: bounds.iter().map(init).collect(),
+            size,
+            offset
+        }
+    }
+
     fn offset_index(&self, (x, y, z): (i32, i32, i32)) -> Option<usize> {
         let (mx, my, mz) = self.offset;
         let width = self.size.0 as i32;
@@ -1033,7 +1100,7 @@ fn reposition_test() {
     for y in -10..11 {
         for z in -10..11 {
             for x in -10..11 {
-                grid.reposition((x, y, z), reload);
+                grid.translate((x, y, z), reload);
                 verify_grid(&grid);
             }
         }
