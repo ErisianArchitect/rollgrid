@@ -638,6 +638,20 @@ impl<T> RollGrid2D<T> {
         self.size.0 * self.size.1
     }
 
+    pub fn iter<'a>(&'a self) -> RollGrid2DIterator<'a, T> {
+        RollGrid2DIterator {
+            bounds_iter: self.bounds().iter(),
+            grid: self,
+        }
+    }
+
+    pub fn iter_mut<'a>(&'a mut self) -> RollGrid2DMutIterator<'a, T> {
+        RollGrid2DMutIterator {
+            bounds_iter: self.bounds().iter(),
+            grid: self,
+        }
+    }
+
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -755,5 +769,56 @@ impl Iterator for Bounds2DIter {
             self.current = (self.bounds.min.0, result.1 + 1);
         }
         Some(result)
+    }
+}
+
+pub struct RollGrid2DIterator<'a, T> {
+    grid: &'a RollGrid2D<T>,
+    bounds_iter: Bounds2DIter,
+}
+
+impl<'a, T> Iterator for RollGrid2DIterator<'a, T> {
+    type Item = ((i32, i32), Option<&'a T>);
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.bounds_iter.size_hint()
+    }
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = self.bounds_iter.next()?;
+        let index = self.grid.offset_index(next)?;
+        if let Some(cell) = &self.grid.cells[index] {
+            // I know this looks wonky, but I promise this is correct.
+            Some((next, Some(cell)))
+        } else {
+            Some((next, None))
+        }
+    }
+}
+
+pub struct RollGrid2DMutIterator<'a, T> {
+    grid: &'a mut RollGrid2D<T>,
+    bounds_iter: Bounds2DIter,
+}
+
+impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
+    type Item = ((i32, i32), Option<&'a mut T>);
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.bounds_iter.size_hint()
+    }
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = self.bounds_iter.next()?;
+        let index = self.grid.offset_index(next)?;
+        unsafe {
+            let cells_ptr = self.grid.cells.as_mut_ptr();
+            let cell_ptr = cells_ptr.add(index);
+            if let Some(cell) = &mut *cell_ptr {
+                Some((next, Some(cell)))
+            } else {
+                Some((next, None))
+            }
+        }
     }
 }
