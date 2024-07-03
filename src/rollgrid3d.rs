@@ -1,5 +1,4 @@
 #![allow(unused)]
-
 use crate::{CellManage, OFFSET_TOO_CLOSE_TO_MAX, OUT_OF_BOUNDS, SIZE_TOO_LARGE};
 const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
 
@@ -657,8 +656,30 @@ impl<T> RollGrid3D<T> {
                         manage(CellManage::Unload(C::from(pos), old_value));
                     });
                 }
+                let mut temp_grid = TempGrid3D::new_with_init((width, height, depth), new_position, |pos| {
+                    if old_bounds.contains(pos) {
+                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                        self.cells[index].take()
+                    } else {
+                        manage(CellManage::Load(C::from(pos)))
+                    }
+                });
+                self.size = temp_grid.size;
+                self.grid_offset = temp_grid.offset;
+                self.cells = temp_grid.cells;
+                self.wrap_offset = (0, 0, 0);
             } else { // !old_bounds.intersects(new_bounds)
-
+                old_bounds.iter().for_each(|pos| {
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    manage(CellManage::Unload(C::from(pos), self.cells[index].take()));
+                });
+                let mut temp_grid = TempGrid3D::new_with_init((width, height, depth), new_position, |pos| {
+                    manage(CellManage::Load(C::from(pos)))
+                });
+                self.size = temp_grid.size;
+                self.grid_offset = temp_grid.offset;
+                self.cells = temp_grid.cells;
+                self.wrap_offset = (0, 0, 0);
             }
         }
     
@@ -1579,12 +1600,97 @@ impl Iterator for Bounds3DIter {
     }
 }
 
-#[test]
-fn bounds_test() {
-    let bounds = Bounds3D::new((0, 0, 0), (3, 3, 3));
-    bounds.iter().for_each(|(x, y, z)| {
-        println!("({x},{y},{z})");
-    });
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn reposition_test() {
+        fn verify_grid(grid: &RollGrid3D<(i32, i32, i32)>) {
+            let offset = grid.grid_offset;
+            for y in grid.y_min()..grid.y_max() {
+                for z in grid.z_min()..grid.z_max() {
+                    for x in grid.x_min()..grid.x_max() {
+                        let pos = (x, y, z);
+                        let cell = grid.get(pos).expect("Cell was None");
+                        assert_eq!(pos, *cell);
+                    }
+                }
+            }
+        }
+        fn reload(old: (i32, i32, i32), new: (i32, i32, i32), old_value: Option<(i32, i32, i32)>) -> Option<(i32, i32, i32)> {
+            assert_eq!(Some(old), old_value);
+            Some(new)
+        }
+        let mut grid = RollGrid3D::new_with_init(4, 4, 4, (0, 0, 0), |pos| {
+            Some(pos)
+        });
+        verify_grid(&grid);
+        for y in -10..11 {
+            for z in -10..11 {
+                for x in -10..11 {
+                    grid.translate((x, y, z), reload);
+                    verify_grid(&grid);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn resize_and_reposition_test() {
+        struct DropCoord {
+            coord: (i32, i32, i32),
+            unloaded: bool,
+        }
+        impl From<(i32, i32, i32)> for DropCoord {
+            fn from(value: (i32, i32, i32)) -> Self {
+                Self {
+                    coord: value,
+                    unloaded: false,
+                }
+            }
+        }
+
+        impl Drop for DropCoord {
+            fn drop(&mut self) {
+                assert!(self.unloaded);
+            }
+        }
+        fn verify_grid(grid: &RollGrid3D<DropCoord>) {
+            let offset = grid.grid_offset;
+            for y in grid.y_min()..grid.y_max() {
+                for z in grid.z_min()..grid.z_max() {
+                    for x in grid.x_min()..grid.x_max() {
+                        let pos = (x, y, z);
+                        let cell = grid.get(pos).expect("Cell was None");
+                        assert_eq!(pos, cell.coord);
+                    }
+                }
+            }
+        }
+        let mut grid = RollGrid3D::new_with_init(4, 4, 4, (0, 0, 0), |pos: (i32, i32, i32)| {
+            Some(DropCoord::from(pos))
+        });
+        verify_grid(&grid);
+        grid.resize_and_reposition(1, 1, 1, (-3, 0, 0), |manage| {
+            match manage {
+                CellManage::Load(pos) => Some(DropCoord::from(pos)),
+                CellManage::Unload(pos, old_value) => {
+                    let Some(mut old) = old_value else {
+                        panic!("Was None");
+                    };
+                    old.unloaded = true;
+                    assert_eq!(pos, old.coord);
+                    None
+                },
+            }
+        });
+        grid.cells.iter_mut().for_each(|cell| {
+            if let Some(cell) = cell {
+                cell.unloaded = true;
+            }
+        });
+        verify_grid(&grid);
+    }
 }
 
 // fn print_grid(grid: &RollGrid3D<(i32, i32, i32)>) {
@@ -1602,38 +1708,6 @@ fn bounds_test() {
 //         }
 //     }
 // }
-
-#[test]
-fn reposition_test() {
-    fn verify_grid(grid: &RollGrid3D<(i32, i32, i32)>) {
-        let offset = grid.grid_offset;
-        for y in grid.y_min()..grid.y_max() {
-            for z in grid.z_min()..grid.z_max() {
-                for x in grid.x_min()..grid.x_max() {
-                    let pos = (x, y, z);
-                    let cell = grid.get(pos).expect("Cell was None");
-                    assert_eq!(pos, *cell);
-                }
-            }
-        }
-    }
-    fn reload(old: (i32, i32, i32), new: (i32, i32, i32), old_value: Option<(i32, i32, i32)>) -> Option<(i32, i32, i32)> {
-        assert_eq!(Some(old), old_value);
-        Some(new)
-    }
-    let mut grid = RollGrid3D::new_with_init(4, 4, 4, (0, 0, 0), |pos| {
-        Some(pos)
-    });
-    verify_grid(&grid);
-    for y in -10..11 {
-        for z in -10..11 {
-            for x in -10..11 {
-                grid.translate((x, y, z), reload);
-                verify_grid(&grid);
-            }
-        }
-    }
-}
 
 #[test]
 fn offsetfix_test() {
