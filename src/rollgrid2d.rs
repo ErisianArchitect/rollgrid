@@ -654,6 +654,15 @@ impl<T> RollGrid2D<T> {
 
 }
 
+
+impl<T: Copy> RollGrid2D<T> {
+    pub fn get_copy<C: Into<Coord>>(&self, coord: C) -> Option<T> {
+        let coord: Coord = coord.into();
+        let index = self.offset_index(coord)?;
+        self.cells[index]
+    }
+}
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bounds2D {
     /// Inclusive minimum.
