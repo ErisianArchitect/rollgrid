@@ -98,6 +98,7 @@ impl<T> RollGrid3D<T> {
         C: From<Coord> + Into<Coord>,
         F: FnMut(CellManage<C, T>) -> Option<T> {
             const INFLATE_TOO_LARGE: &'static str = "Cannot inflate more than i32::MAX";
+            const INFLATE_OVERFLOW: &'static str = "Inflate operation results in integer overflow";
             if inflate.0 > i32::MAX as usize { panic!("{INFLATE_TOO_LARGE}"); }
             if inflate.1 > i32::MAX as usize { panic!("{INFLATE_TOO_LARGE}"); }
             if inflate.2 > i32::MAX as usize { panic!("{INFLATE_TOO_LARGE}"); }
@@ -107,9 +108,9 @@ impl<T> RollGrid3D<T> {
                 self.grid_offset.1 - inflate.1 as i32,
                 self.grid_offset.2 - inflate.2 as i32,
             ));
-            let width = self.size.0 + inflate.0 * 2;
-            let height = self.size.1 + inflate.1 * 2;
-            let depth = self.size.2 + inflate.2 * 2;
+            let width = self.size.0.checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW)).expect(INFLATE_OVERFLOW);
+            let height = self.size.1.checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW)).expect(INFLATE_OVERFLOW);
+            let depth = self.size.2.checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW)).expect(INFLATE_OVERFLOW);
             self.resize_and_reposition(width, height, depth, position, manage);
         }
     
@@ -120,18 +121,19 @@ impl<T> RollGrid3D<T> {
     where
         C: From<Coord> + Into<Coord>,
         F: FnMut(CellManage<C, T>) -> Option<T> {
-            const DEFLATE_TOO_LARGE: &'static str = "Cannot deflate more than i32::MAX";
-            if deflate.0 > i32::MAX as usize { panic!("{DEFLATE_TOO_LARGE}"); }
-            if deflate.1 > i32::MAX as usize { panic!("{DEFLATE_TOO_LARGE}"); }
-            if deflate.2 > i32::MAX as usize { panic!("{DEFLATE_TOO_LARGE}"); }
+            const DEFLATE_PAST_I32_MAX: &'static str = "Cannot deflate more than i32::MAX";
+            const DEFLATE_OVERFLOW: &'static str = "Deflate operation results in integer overflow";
+            if deflate.0 > i32::MAX as usize { panic!("{DEFLATE_PAST_I32_MAX}"); }
+            if deflate.1 > i32::MAX as usize { panic!("{DEFLATE_PAST_I32_MAX}"); }
+            if deflate.2 > i32::MAX as usize { panic!("{DEFLATE_PAST_I32_MAX}"); }
             let position = C::from((
                 self.grid_offset.0 + deflate.0 as i32,
                 self.grid_offset.1 + deflate.1 as i32,
                 self.grid_offset.2 + deflate.2 as i32,
             ));
-            let width = self.size.0 - deflate.0 * 2;
-            let height = self.size.1 - deflate.1 * 2;
-            let depth = self.size.2 - deflate.2 * 2;
+            let width = self.size.0.checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW)).expect(DEFLATE_OVERFLOW);
+            let height = self.size.1.checked_sub(deflate.1.checked_mul(2).expect(DEFLATE_OVERFLOW)).expect(DEFLATE_OVERFLOW);
+            let depth = self.size.2.checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW)).expect(DEFLATE_OVERFLOW);
             let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
             if volume == 0 {
                 panic!("{VOLUME_IS_ZERO}");
