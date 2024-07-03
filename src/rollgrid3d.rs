@@ -76,11 +76,6 @@ impl<T> RollGrid3D<T> {
             panic!("{OFFSET_TOO_CLOSE_TO_MAX}");
         }
         Self {
-            // cells: Bounds3D::new(grid_offset, (grid_offset.0 + width as i32, grid_offset.1 + height as i32, grid_offset.2 + depth as i32))
-            //     .iter()
-            //     .map(C::from)
-            //     .map(init)
-            //     .collect(),
             cells: itertools::iproduct!(0..height as i32, 0..depth as i32, 0..width as i32)
                 .map(|(y, z, x)| C::from((
                     x + grid_offset.0,
@@ -95,6 +90,72 @@ impl<T> RollGrid3D<T> {
         }
     }
 
+    pub fn inflate_size<C, F>(&mut self, inflate: usize, manage: F)
+    where
+        C: From<Coord> + Into<Coord>,
+        F: FnMut(CellManage<C, T>) -> Option<T> {
+            if inflate > i32::MAX as usize {
+                panic!("Cannot inflate that much");
+            }
+            let inf = inflate as i32;
+            let position = C::from((
+                self.grid_offset.0 - inf,
+                self.grid_offset.1 - inf,
+                self.grid_offset.2 - inf,
+            ));
+            let width = self.size.0 + inflate * 2;
+            let height = self.size.1 + inflate * 2;
+            let depth = self.size.2 + inflate * 2;
+            self.resize_and_reposition(width, height, depth, position, manage);
+        }
+    
+    pub fn deflate_size<C, F>(&mut self, deflate: usize, manage: F)
+    where
+        C: From<Coord> + Into<Coord>,
+        F: FnMut(CellManage<C, T>) -> Option<T> {
+            if deflate > i32::MAX as usize {
+                panic!("Cannot deflate that much");
+            }
+            let def = deflate as i32;
+            let position = C::from((
+                self.grid_offset.0 + def,
+                self.grid_offset.1 + def,
+                self.grid_offset.2 + def,
+            ));
+            let width = self.size.0 - deflate * 2;
+            let height = self.size.1 - deflate * 2;
+            let depth = self.size.2 - deflate * 2;
+            let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
+            if volume == 0 {
+                panic!("{VOLUME_IS_ZERO}");
+            }
+            self.resize_and_reposition(width, height, depth, position, manage);
+        }
+
+    pub fn resize<C, F>(&mut self, width: usize, height: usize, depth: usize, manage: F)
+    where
+        C: From<Coord> + Into<Coord>,
+        F: FnMut(CellManage<C, T>) -> Option<T> {
+            self.resize_and_reposition(width, height, depth, C::from(self.grid_offset), manage);
+        }
+
+    /// Resize and reposition the grid.
+    /// ```no_run
+    /// grid.resize_and_reposition(3, 3, 3, (4, 4, 4), |action| {
+    ///     match action {
+    ///         CellManage::Load(pos) => {
+    ///             println!("Load: ({},{},{})", pos.0, pos.1, pos.2);
+    ///             // The loaded value
+    ///             Some(pos)
+    ///         }
+    ///         CellManage::Unload(pos, old) => {
+    ///             println!("Unload: ({},{},{})", pos.0, pos.1, pos.2);
+    ///             // Return None for Unload.
+    ///             None
+    ///         }
+    ///     }
+    /// });
+    /// ```
     pub fn resize_and_reposition<C, F>(
         &mut self,
         width: usize,
@@ -1649,7 +1710,6 @@ mod tests {
                 }
             }
         }
-
         impl Drop for DropCoord {
             fn drop(&mut self) {
                 assert!(self.unloaded);
@@ -1671,7 +1731,7 @@ mod tests {
             Some(DropCoord::from(pos))
         });
         verify_grid(&grid);
-        grid.resize_and_reposition(1, 1, 1, (-3, 0, 0), |manage| {
+        grid.resize_and_reposition(2, 2, 2, (-1, -1, -1), |manage| {
             match manage {
                 CellManage::Load(pos) => Some(DropCoord::from(pos)),
                 CellManage::Unload(pos, old_value) => {
