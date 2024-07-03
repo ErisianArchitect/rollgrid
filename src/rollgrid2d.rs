@@ -219,7 +219,7 @@ impl<T> RollGrid2D<T> {
         #[cfg(target_pointer_width = "64")]
         if area > i32::MAX as usize { panic!("{SIZE_TOO_LARGE}"); }
         let (new_x, new_y): Coord = new_position.into();
-        if (new_x, new_y) == self.grid_offset
+        if new_position == self.grid_offset
         && (new_width, new_height) == self.size {
             return;
         }
