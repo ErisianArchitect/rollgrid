@@ -88,10 +88,11 @@ mod tests {
 
     #[test]
     pub fn rollgrid2d_test() {
-        let mut grid = RollGrid2D::new_with_init(2, 2, (-1, -1), |coord: (i32, i32)| {
+        let mut grid = RollGrid2D::new_with_init(2, 2, (0, 0), |coord: (i32, i32)| {
             Some(coord)
         });
         fn print_grid(grid: &RollGrid2D<(i32, i32)>) {
+            println!("***");
             for y in grid.top()..grid.bottom() {
                 for x in grid.left()..grid.right() {
                     if let Some(&(cx, cy)) = grid.get((x, y)) {
@@ -102,6 +103,11 @@ mod tests {
             }
         }
         print_grid(&grid);
+        grid.translate((1, 1), |old, new, old_value| {
+            Some(old)
+        });
+        print_grid(&grid);
+        return;
         grid.inflate_size::<(i32, i32), _>(1, |action| {
             match action {
                 CellManage::Load(pos) => {
