@@ -90,48 +90,56 @@ impl<T> RollGrid3D<T> {
         }
     }
 
-    pub fn inflate_size<C, F>(&mut self, inflate: usize, manage: F)
+    /// Inflate the size by `inflate`, keeping the bounds centered.
+    /// If the size is `(2, 2, 2)` with an offset of `(1, 1, 1)`, and you want to inflate by `(1, 1, 1)`.
+    /// The result of that operation would have a size of `(4, 4, 4)` and an offset of `(0, 0, 0)`.
+    pub fn inflate_size<C, F>(&mut self, inflate: (usize, usize, usize), manage: F)
     where
         C: From<Coord> + Into<Coord>,
         F: FnMut(CellManage<C, T>) -> Option<T> {
-            if inflate > i32::MAX as usize {
-                panic!("Cannot inflate that much");
-            }
-            let inf = inflate as i32;
+            const INFLATE_TOO_LARGE: &'static str = "Cannot inflate more than i32::MAX";
+            if inflate.0 > i32::MAX as usize { panic!("{INFLATE_TOO_LARGE}"); }
+            if inflate.1 > i32::MAX as usize { panic!("{INFLATE_TOO_LARGE}"); }
+            if inflate.2 > i32::MAX as usize { panic!("{INFLATE_TOO_LARGE}"); }
+            // let inf = inflate as i32;
             let position = C::from((
-                self.grid_offset.0 - inf,
-                self.grid_offset.1 - inf,
-                self.grid_offset.2 - inf,
+                self.grid_offset.0 - inflate.0 as i32,
+                self.grid_offset.1 - inflate.1 as i32,
+                self.grid_offset.2 - inflate.2 as i32,
             ));
-            let width = self.size.0 + inflate * 2;
-            let height = self.size.1 + inflate * 2;
-            let depth = self.size.2 + inflate * 2;
+            let width = self.size.0 + inflate.0 * 2;
+            let height = self.size.1 + inflate.1 * 2;
+            let depth = self.size.2 + inflate.2 * 2;
             self.resize_and_reposition(width, height, depth, position, manage);
         }
     
-    pub fn deflate_size<C, F>(&mut self, deflate: usize, manage: F)
+    /// Deflate the size by `deflate`, keeping the bounds centered.
+    /// If the size is `(4, 4, 4)` with an offset of `(0, 0, 0)`, and you want to deflate by `(1, 1, 1)`.
+    /// The result of that operation would have a size of `(2, 2, 2)` and an offset of `(1, 1, 1)`.
+    pub fn deflate_size<C, F>(&mut self, deflate: (usize, usize, usize), manage: F)
     where
         C: From<Coord> + Into<Coord>,
         F: FnMut(CellManage<C, T>) -> Option<T> {
-            if deflate > i32::MAX as usize {
-                panic!("Cannot deflate that much");
-            }
-            let def = deflate as i32;
+            const DEFLATE_TOO_LARGE: &'static str = "Cannot deflate more than i32::MAX";
+            if deflate.0 > i32::MAX as usize { panic!("{DEFLATE_TOO_LARGE}"); }
+            if deflate.1 > i32::MAX as usize { panic!("{DEFLATE_TOO_LARGE}"); }
+            if deflate.2 > i32::MAX as usize { panic!("{DEFLATE_TOO_LARGE}"); }
             let position = C::from((
-                self.grid_offset.0 + def,
-                self.grid_offset.1 + def,
-                self.grid_offset.2 + def,
+                self.grid_offset.0 + deflate.0 as i32,
+                self.grid_offset.1 + deflate.1 as i32,
+                self.grid_offset.2 + deflate.2 as i32,
             ));
-            let width = self.size.0 - deflate * 2;
-            let height = self.size.1 - deflate * 2;
-            let depth = self.size.2 - deflate * 2;
+            let width = self.size.0 - deflate.0 * 2;
+            let height = self.size.1 - deflate.1 * 2;
+            let depth = self.size.2 - deflate.2 * 2;
             let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
             if volume == 0 {
                 panic!("{VOLUME_IS_ZERO}");
             }
             self.resize_and_reposition(width, height, depth, position, manage);
         }
-
+    
+    /// Resize the grid, keeping the offset in the same place.
     pub fn resize<C, F>(&mut self, width: usize, height: usize, depth: usize, manage: F)
     where
         C: From<Coord> + Into<Coord>,
@@ -191,36 +199,11 @@ impl<T> RollGrid3D<T> {
                 // lx means low x   (-X) (-1, 0, 0)
                 // hx means high x  (+X) ( 1, 0, 0)
                 // mx means middle x (X) ( 0, 0, 0)
-                // lx_ly_lz = (-1, -1, -1)
-                // mx_ly_lz = ( 0, -1, -1)
-                // hx_ly_lz = ( 1, -1, -1)
-                // lx_ly_mz = (-1, -1,  0)
-                // mx_ly_mz = ( 0, -1,  0)
-                // hx_ly_mz = ( 1, -1,  0)
-                // lx_ly_hz = (-1, -1,  1)
-                // mx_ly_hz = ( 0, -1,  1)
-                // hx_ly_hz = ( 1, -1,  1)
-                // lx_my_lz = (-1,  0, -1)
-                // mx_my_lz = ( 0,  0, -1)
-                // hx_my_lz = ( 1,  0, -1)
-                // lx_my_mz = (-1,  0,  0)
-                // hx_my_mz = ( 1,  0,  0)
-                // lx_my_hz = (-1,  0,  1)
-                // mx_my_hz = ( 0,  0,  1)
-                // hx_my_hz = ( 1,  0,  1)
-                // lx_hy_lz = (-1,  1, -1)
-                // mx_hy_lz = ( 0,  1, -1)
-                // hx_hy_lz = ( 1,  1, -1)
-                // lx_hy_mz = (-1,  1,  0)
-                // mx_hy_mz = ( 0,  1,  0)
-                // hx_hy_mz = ( 1,  1,  0)
-                // lx_hy_hz = (-1,  1,  1)
-                // mx_hy_hz = ( 0,  1,  1)
-                // hx_hy_hz = ( 1,  1,  1)
                 // These arcane looking identifiers are the names
                 // of the unload sections. There might be 26, there might
                 // be 0. Who knows?
 
+                // This is generated code.
                 // lx_ly_lz = (-1, -1, -1)
                 if old_bounds.x_min() < new_bounds.x_min()
                 && old_bounds.y_min() < new_bounds.y_min()
@@ -1462,6 +1445,20 @@ impl<T> RollGrid3D<T> {
         self.size.0 * self.size.1 * self.size.2
     }
 
+    pub fn iter<'a>(&'a self) -> RollGrid3DIterator<'a, T> {
+        RollGrid3DIterator {
+            bounds_iter: self.bounds().iter(),
+            grid: self,
+        }
+    }
+
+    pub fn iter_mut<'a>(&'a mut self) -> RollGrid3DMutIterator<'a, T> {
+        RollGrid3DMutIterator {
+            bounds_iter: self.bounds().iter(),
+            grid: self,
+        }
+    }
+
 }
 
 struct TempGrid3D<T> {
@@ -1661,9 +1658,100 @@ impl Iterator for Bounds3DIter {
     }
 }
 
+pub struct RollGrid3DIterator<'a, T> {
+    grid: &'a RollGrid3D<T>,
+    bounds_iter: Bounds3DIter,
+}
+
+impl<'a, T> Iterator for RollGrid3DIterator<'a, T> {
+    type Item = ((i32, i32, i32), Option<&'a T>);
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.bounds_iter.size_hint()
+    }
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = self.bounds_iter.next()?;
+        let index = self.grid.offset_index(next)?;
+        if let Some(cell) = &self.grid.cells[index] {
+            // I know this looks wonky, but I promise this is correct.
+            Some((next, Some(cell)))
+        } else {
+            Some((next, None))
+        }
+    }
+}
+
+pub struct RollGrid3DMutIterator<'a, T> {
+    grid: &'a mut RollGrid3D<T>,
+    bounds_iter: Bounds3DIter,
+}
+
+impl<'a, T> Iterator for RollGrid3DMutIterator<'a, T> {
+    type Item = ((i32, i32, i32), Option<&'a mut T>);
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.bounds_iter.size_hint()
+    }
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = self.bounds_iter.next()?;
+        let index = self.grid.offset_index(next)?;
+        unsafe {
+            let cells_ptr = self.grid.cells.as_mut_ptr();
+            let cell_ptr = cells_ptr.add(index);
+            if let Some(cell) = &mut *cell_ptr {
+                Some((next, Some(cell)))
+            } else {
+                Some((next, None))
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn wrap_test() {
+        let v = -1i64;
+        let uv = v as u64;
+        println!("{uv}");
+    }
+
+    #[test]
+    fn iter_test() {
+        let mut grid = RollGrid3D::new_with_init(2, 2, 2, (0, 0, 0), |pos: (i32, i32, i32)| {
+            Some(pos)
+        });
+        grid.iter().for_each(|(pos, cell)| {
+            if let Some(&cell) = cell {
+                assert_eq!(cell, pos);
+            } else {
+                panic!()
+            }
+            let (x, y, z) = pos;
+        });
+        grid.iter_mut().for_each(|(pos, cell)| {
+            if let Some(cell) = cell {
+                cell.0 += 1;
+                cell.1 += 1;
+                cell.2 += 1;
+            }
+        });
+        grid.iter().for_each(|(pos, cell)| {
+            if let Some(&cell) = cell {
+                let (x, y, z) = cell;
+                let pos = (pos.0 + 1, pos.1 + 1, pos.2 + 1);
+                assert_eq!(cell, pos);
+                println!("({x:2},{y:2},{z:2})");
+            } else {
+                panic!()
+            }
+        });
+    }
+
     #[test]
     fn reposition_test() {
         fn verify_grid(grid: &RollGrid3D<(i32, i32, i32)>) {
