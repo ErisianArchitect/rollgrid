@@ -207,6 +207,11 @@ impl<T> RollGrid3D<T> {
                 (new_x + new_width, new_y + new_height, new_z + new_depth)
             );
             if old_bounds.intersects(new_bounds) {
+                // The way this code works is that it subdivides the unload area into 26 potential regions.
+                // It could divide into 6 regions, but I was able to generate the code for 26 regions very
+                // easily, so I'll stick with that for now.
+                // Imagine you have a 3x3x3 grid. That's all the regions except the center one.
+                // These regions are defined by the old and new bounds.
                 // lx means low x   (-X) (-1, 0, 0)
                 // hx means high x  (+X) ( 1, 0, 0)
                 // mx means middle x (X) ( 0, 0, 0)
