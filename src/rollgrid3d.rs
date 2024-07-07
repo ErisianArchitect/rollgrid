@@ -206,517 +206,74 @@ impl<T> RollGrid3D<T> {
                 (new_x, new_y, new_z),
                 (new_x + new_width, new_y + new_height, new_z + new_depth)
             );
-            // Subdivide.
             if old_bounds.intersects(new_bounds) {
-                // The way this code works is that it subdivides the unload area into 26 potential regions.
-                // It could divide into 6 regions, but I was able to generate the code for 26 regions very
-                // easily, so I'll stick with that for now.
-                // Imagine you have a 3x3x3 grid. That's all the regions except the center one.
-                // These regions are defined by the old and new bounds.
-                // lx means low x   (-X) (-1, 0, 0)
-                // hx means high x  (+X) ( 1, 0, 0)
-                // mx means middle x (X) ( 0, 0, 0)
-                // These arcane looking identifiers are the names
-                // of the unload sections. There might be 26, there might
-                // be 0. Who knows?
-
-                // This is generated code.
-                // lx_ly_lz = (-1, -1, -1)
-                if old_bounds.x_min() < new_bounds.x_min()
-                && old_bounds.y_min() < new_bounds.y_min()
-                && old_bounds.z_min() < new_bounds.z_min() {
-                    let x_min = old_bounds.x_min();
-                    let y_min = old_bounds.y_min();
-                    let z_min = old_bounds.z_min();
-                    let x_max = new_bounds.x_min();
-                    let y_max = new_bounds.y_min();
-                    let z_max = new_bounds.z_min();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
+                macro_rules! unload_bounds {
+                    ($cond:expr => xmin = $xmin:expr; ymin = $ymin:expr; zmin = $zmin:expr; xmax = $xmax:expr; ymax = $ymax:expr; zmax = $zmax:expr;) => {
+                        if $cond {
+                            Bounds3D::new(
+                                ($xmin, $ymin, $zmin),
+                                ($xmax, $ymax, $zmax)
+                            ).iter().for_each(|pos| {
+                                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                                manage(CellManage::Unload(C::from(pos), self.cells[index].take()));
+                            });
+                        }
+                    };
                 }
-                // mx_ly_lz = ( 0, -1, -1)
-                if old_bounds.y_min() < new_bounds.y_min()
-                && old_bounds.z_min() < new_bounds.z_min() {
-                    let x_min = old_bounds.x_min().max(new_bounds.x_min());
-                    let y_min = old_bounds.y_min();
-                    let z_min = old_bounds.z_min();
-                    let x_max = old_bounds.x_max().min(new_bounds.x_max());
-                    let y_max = new_bounds.y_min();
-                    let z_max = new_bounds.z_min();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // hx_ly_lz = ( 1, -1, -1)
-                if old_bounds.x_max() > new_bounds.x_max()
-                && old_bounds.y_min() < new_bounds.y_min()
-                && old_bounds.z_min() < new_bounds.z_min() {
-                    let x_min = new_bounds.x_max();
-                    let y_min = old_bounds.y_min();
-                    let z_min = old_bounds.z_min();
-                    let x_max = old_bounds.x_max();
-                    let y_max = new_bounds.y_min();
-                    let z_max = new_bounds.z_min();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // lx_ly_mz = (-1, -1,  0)
-                if old_bounds.x_min() < new_bounds.x_min()
-                && old_bounds.y_min() < new_bounds.y_min() {
-                    let x_min = old_bounds.x_min();
-                    let y_min = old_bounds.y_min();
-                    let z_min = old_bounds.z_min().max(new_bounds.z_min());
-                    let x_max = new_bounds.x_min();
-                    let y_max = new_bounds.y_min();
-                    let z_max = old_bounds.z_max().min(new_bounds.z_max());
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // mx_ly_mz = ( 0, -1,  0)
-                if old_bounds.y_min() < new_bounds.y_min() {
-                    let x_min = old_bounds.x_min().max(new_bounds.x_min());
-                    let y_min = old_bounds.y_min();
-                    let z_min = old_bounds.z_min().max(new_bounds.z_min());
-                    let x_max = old_bounds.x_max().min(new_bounds.x_max());
-                    let y_max = new_bounds.y_min();
-                    let z_max = old_bounds.z_max().min(new_bounds.z_max());
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // hx_ly_mz = ( 1, -1,  0)
-                if old_bounds.x_max() > new_bounds.x_max()
-                && old_bounds.y_min() < new_bounds.y_min() {
-                    let x_min = new_bounds.x_max();
-                    let y_min = old_bounds.y_min();
-                    let z_min = old_bounds.z_min().max(new_bounds.z_min());
-                    let x_max = old_bounds.x_max();
-                    let y_max = new_bounds.y_min();
-                    let z_max = old_bounds.z_max().min(new_bounds.z_max());
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // lx_ly_hz = (-1, -1,  1)
-                if old_bounds.x_min() < new_bounds.x_min()
-                && old_bounds.y_min() < new_bounds.y_min()
-                && old_bounds.z_max() > new_bounds.z_max() {
-                    let x_min = old_bounds.x_min();
-                    let y_min = old_bounds.y_min();
-                    let z_min = new_bounds.z_max();
-                    let x_max = new_bounds.x_min();
-                    let y_max = new_bounds.y_min();
-                    let z_max = old_bounds.z_max();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // mx_ly_hz = ( 0, -1,  1)
-                if old_bounds.y_min() < new_bounds.y_min()
-                && old_bounds.z_max() > new_bounds.z_max() {
-                    let x_min = old_bounds.x_min().max(new_bounds.x_min());
-                    let y_min = old_bounds.y_min();
-                    let z_min = new_bounds.z_max();
-                    let x_max = old_bounds.x_max().min(new_bounds.x_max());
-                    let y_max = new_bounds.y_min();
-                    let z_max = old_bounds.z_max();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // hx_ly_hz = ( 1, -1,  1)
-                if old_bounds.x_max() > new_bounds.x_max()
-                && old_bounds.y_min() < new_bounds.y_min()
-                && old_bounds.z_max() > new_bounds.z_max() {
-                    let x_min = new_bounds.x_max();
-                    let y_min = old_bounds.y_min();
-                    let z_min = new_bounds.z_max();
-                    let x_max = old_bounds.x_max();
-                    let y_max = new_bounds.y_min();
-                    let z_max = old_bounds.z_max();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // lx_my_lz = (-1,  0, -1)
-                if old_bounds.x_min() < new_bounds.x_min()
-                && old_bounds.z_min() < new_bounds.z_min() {
-                    let x_min = old_bounds.x_min();
-                    let y_min = old_bounds.y_min().max(new_bounds.y_min());
-                    let z_min = old_bounds.z_min();
-                    let x_max = new_bounds.x_min();
-                    let y_max = old_bounds.y_max().min(new_bounds.y_max());
-                    let z_max = new_bounds.z_min();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // mx_my_lz = ( 0,  0, -1)
-                if old_bounds.z_min() < new_bounds.z_min() {
-                    let x_min = old_bounds.x_min().max(new_bounds.x_min());
-                    let y_min = old_bounds.y_min().max(new_bounds.y_min());
-                    let z_min = old_bounds.z_min();
-                    let x_max = old_bounds.x_max().min(new_bounds.x_max());
-                    let y_max = old_bounds.y_max().min(new_bounds.y_max());
-                    let z_max = new_bounds.z_min();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // hx_my_lz = ( 1,  0, -1)
-                if old_bounds.x_max() > new_bounds.x_max()
-                && old_bounds.z_min() < new_bounds.z_min() {
-                    let x_min = new_bounds.x_max();
-                    let y_min = old_bounds.y_min().max(new_bounds.y_min());
-                    let z_min = old_bounds.z_min();
-                    let x_max = old_bounds.x_max();
-                    let y_max = old_bounds.y_max().min(new_bounds.y_max());
-                    let z_max = new_bounds.z_min();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // lx_my_mz = (-1,  0,  0)
-                if old_bounds.x_min() < new_bounds.x_min() {
-                    let x_min = old_bounds.x_min();
-                    let y_min = old_bounds.y_min().max(new_bounds.y_min());
-                    let z_min = old_bounds.z_min().max(new_bounds.z_min());
-                    let x_max = new_bounds.x_min();
-                    let y_max = old_bounds.y_max().min(new_bounds.y_max());
-                    let z_max = old_bounds.z_max().min(new_bounds.z_max());
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // hx_my_mz = ( 1,  0,  0)
-                if old_bounds.x_max() > new_bounds.x_max() {
-                    let x_min = new_bounds.x_max();
-                    let y_min = old_bounds.y_min().max(new_bounds.y_min());
-                    let z_min = old_bounds.z_min().max(new_bounds.z_min());
-                    let x_max = old_bounds.x_max();
-                    let y_max = old_bounds.y_max().min(new_bounds.y_max());
-                    let z_max = old_bounds.z_max().min(new_bounds.z_max());
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // lx_my_hz = (-1,  0,  1)
-                if old_bounds.x_min() < new_bounds.x_min()
-                && old_bounds.z_max() > new_bounds.z_max() {
-                    let x_min = old_bounds.x_min();
-                    let y_min = old_bounds.y_min().max(new_bounds.y_min());
-                    let z_min = new_bounds.z_max();
-                    let x_max = new_bounds.x_min();
-                    let y_max = old_bounds.y_max().min(new_bounds.y_max());
-                    let z_max = old_bounds.z_max();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // mx_my_hz = ( 0,  0,  1)
-                if old_bounds.z_max() > new_bounds.z_max() {
-                    let x_min = old_bounds.x_min().max(new_bounds.x_min());
-                    let y_min = old_bounds.y_min().max(new_bounds.y_min());
-                    let z_min = new_bounds.z_max();
-                    let x_max = old_bounds.x_max().min(new_bounds.x_max());
-                    let y_max = old_bounds.y_max().min(new_bounds.y_max());
-                    let z_max = old_bounds.z_max();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // hx_my_hz = ( 1,  0,  1)
-                if old_bounds.x_max() > new_bounds.x_max()
-                && old_bounds.z_max() > new_bounds.z_max() {
-                    let x_min = new_bounds.x_max();
-                    let y_min = old_bounds.y_min().max(new_bounds.y_min());
-                    let z_min = new_bounds.z_max();
-                    let x_max = old_bounds.x_max();
-                    let y_max = old_bounds.y_max().min(new_bounds.y_max());
-                    let z_max = old_bounds.z_max();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // lx_hy_lz = (-1,  1, -1)
-                if old_bounds.x_min() < new_bounds.x_min()
-                && old_bounds.y_max() > new_bounds.y_max()
-                && old_bounds.z_min() < new_bounds.z_min() {
-                    let x_min = old_bounds.x_min();
-                    let y_min = new_bounds.y_max();
-                    let z_min = old_bounds.z_min();
-                    let x_max = new_bounds.x_min();
-                    let y_max = old_bounds.y_max();
-                    let z_max = new_bounds.z_min();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // mx_hy_lz = ( 0,  1, -1)
-                if old_bounds.y_max() > new_bounds.y_max()
-                && old_bounds.z_min() < new_bounds.z_min() {
-                    let x_min = old_bounds.x_min().max(new_bounds.x_min());
-                    let y_min = new_bounds.y_max();
-                    let z_min = old_bounds.z_min();
-                    let x_max = old_bounds.x_max().min(new_bounds.x_max());
-                    let y_max = old_bounds.y_max();
-                    let z_max = new_bounds.z_min();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // hx_hy_lz = ( 1,  1, -1)
-                if old_bounds.x_max() > new_bounds.x_max()
-                && old_bounds.y_max() > new_bounds.y_max()
-                && old_bounds.z_min() < new_bounds.z_min() {
-                    let x_min = new_bounds.x_max();
-                    let y_min = new_bounds.y_max();
-                    let z_min = old_bounds.z_min();
-                    let x_max = old_bounds.x_max();
-                    let y_max = old_bounds.y_max();
-                    let z_max = new_bounds.z_min();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // lx_hy_mz = (-1,  1,  0)
-                if old_bounds.x_min() < new_bounds.x_min()
-                && old_bounds.y_max() > new_bounds.y_max() {
-                    let x_min = old_bounds.x_min();
-                    let y_min = new_bounds.y_max();
-                    let z_min = old_bounds.z_min().max(new_bounds.z_min());
-                    let x_max = new_bounds.x_min();
-                    let y_max = old_bounds.y_max();
-                    let z_max = old_bounds.z_max().min(new_bounds.z_max());
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // mx_hy_mz = ( 0,  1,  0)
-                if old_bounds.y_max() > new_bounds.y_max() {
-                    let x_min = old_bounds.x_min().max(new_bounds.x_min());
-                    let y_min = new_bounds.y_max();
-                    let z_min = old_bounds.z_min().max(new_bounds.z_min());
-                    let x_max = old_bounds.x_max().min(new_bounds.x_max());
-                    let y_max = old_bounds.y_max();
-                    let z_max = old_bounds.z_max().min(new_bounds.z_max());
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // hx_hy_mz = ( 1,  1,  0)
-                if old_bounds.x_max() > new_bounds.x_max()
-                && old_bounds.y_max() > new_bounds.y_max() {
-                    let x_min = new_bounds.x_max();
-                    let y_min = new_bounds.y_max();
-                    let z_min = old_bounds.z_min().max(new_bounds.z_min());
-                    let x_max = old_bounds.x_max();
-                    let y_max = old_bounds.y_max();
-                    let z_max = old_bounds.z_max().min(new_bounds.z_max());
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // lx_hy_hz = (-1,  1,  1)
-                if old_bounds.x_min() < new_bounds.x_min()
-                && old_bounds.y_max() > new_bounds.y_max()
-                && old_bounds.z_max() > new_bounds.z_max() {
-                    let x_min = old_bounds.x_min();
-                    let y_min = new_bounds.y_max();
-                    let z_min = new_bounds.z_max();
-                    let x_max = new_bounds.x_min();
-                    let y_max = old_bounds.y_max();
-                    let z_max = old_bounds.z_max();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // mx_hy_hz = ( 0,  1,  1)
-                if old_bounds.y_max() > new_bounds.y_max()
-                && old_bounds.z_max() > new_bounds.z_max() {
-                    let x_min = old_bounds.x_min().max(new_bounds.x_min());
-                    let y_min = new_bounds.y_max();
-                    let z_min = new_bounds.z_max();
-                    let x_max = old_bounds.x_max().min(new_bounds.x_max());
-                    let y_max = old_bounds.y_max();
-                    let z_max = old_bounds.z_max();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
-                // hx_hy_hz = ( 1,  1,  1)
-                if old_bounds.x_max() > new_bounds.x_max()
-                && old_bounds.y_max() > new_bounds.y_max()
-                && old_bounds.z_max() > new_bounds.z_max() {
-                    let x_min = new_bounds.x_max();
-                    let y_min = new_bounds.y_max();
-                    let z_min = new_bounds.z_max();
-                    let x_max = old_bounds.x_max();
-                    let y_max = old_bounds.y_max();
-                    let z_max = old_bounds.z_max();
-                    let bounds = Bounds3D::new(
-                        (x_min, y_min, z_min),
-                        (x_max, y_max, z_max)
-                    );
-                    bounds.iter().for_each(|pos| {
-                        let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                        let old_value = self.cells[index].take();
-                        manage(CellManage::Unload(C::from(pos), old_value));
-                    });
-                }
+                // Y+ region
+                unload_bounds!(old_bounds.y_max() > new_bounds.y_max() =>
+                    xmin = old_bounds.x_min();
+                    ymin = new_bounds.y_max();
+                    zmin = old_bounds.z_min();
+                    xmax = old_bounds.x_max();
+                    ymax = old_bounds.y_max();
+                    zmax = old_bounds.z_max();
+                );
+                // Y- region
+                unload_bounds!(old_bounds.y_min() < new_bounds.y_min() =>
+                    xmin = old_bounds.x_min();
+                    ymin = old_bounds.y_min();
+                    zmin = old_bounds.z_min();
+                    xmax = old_bounds.x_max();
+                    ymax = new_bounds.y_min();
+                    zmax = old_bounds.z_max();
+                );
+                // Z+ region (row)
+                unload_bounds!(old_bounds.z_max() > new_bounds.z_max() =>
+                    xmin = old_bounds.x_min();
+                    ymin = new_bounds.y_min().max(old_bounds.y_min());
+                    zmin = new_bounds.z_max();
+                    xmax = old_bounds.x_max();
+                    ymax = new_bounds.y_max().min(old_bounds.y_max());
+                    zmax = old_bounds.z_max();
+                );
+                // Z- region (row)
+                unload_bounds!(old_bounds.z_min() < new_bounds.z_min() =>
+                    xmin = old_bounds.x_min();
+                    ymin = new_bounds.y_min().max(old_bounds.y_min());
+                    zmin = old_bounds.z_min();
+                    xmax = old_bounds.x_max();
+                    ymax = new_bounds.y_max().min(old_bounds.y_max());
+                    zmax = new_bounds.z_min();
+                );
+                // X+ region (cube)
+                unload_bounds!(old_bounds.x_max() > new_bounds.x_max() =>
+                    xmin = new_bounds.x_max();
+                    ymin = new_bounds.y_min().max(old_bounds.y_min());
+                    zmin = new_bounds.z_min().max(old_bounds.z_min());
+                    xmax = old_bounds.x_max();
+                    ymax = new_bounds.y_max().min(old_bounds.y_max());
+                    zmax = new_bounds.z_max().min(old_bounds.z_max());
+                );
+                // X- region (cube)
+                unload_bounds!(old_bounds.x_min() < new_bounds.x_min() =>
+                    xmin = old_bounds.x_min();
+                    ymin = new_bounds.y_min().max(old_bounds.y_min());
+                    zmin = new_bounds.z_min().max(old_bounds.z_min());
+                    xmax = new_bounds.x_min();
+                    ymax = new_bounds.y_max().min(old_bounds.y_max());
+                    zmax = new_bounds.z_max().min(old_bounds.z_max());
+                );
                 let mut temp_grid = TempGrid3D::new_with_init((width, height, depth), new_position, |pos| {
                     if old_bounds.contains(pos) {
                         let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
