@@ -179,6 +179,15 @@ impl<T> RollGrid3D<T> {
         F: FnMut(CellManage<C, T>) -> Option<T> {
             #![allow(unused)]
             let mut manage = manage;
+            if width == self.size.0
+            && height == self.size.1
+            && depth == self.size.2 {
+                self.reposition(position, |old_pos, new_pos, old_value| {
+                    manage(CellManage::Unload(old_pos, old_value));
+                    manage(CellManage::Load(new_pos))
+                });
+                return;
+            }
             let new_position: Coord = position.into();
             if new_position == self.grid_offset
             && (width, height, depth) == self.size {
@@ -1826,29 +1835,31 @@ mod tests {
                 }
             }
         }
-        let mut grid = RollGrid3D::new_with_init(8, 8, 8, (0, 0, 0), |pos: (i32, i32, i32)| {
-            Some(DropCoord::from(pos))
+        itertools::iproduct!(
+            1..7, 1..7, 1..7,
+            -1..6, -1..6, -1..6
+        ).for_each(|(width, height, depth, x, y, z)| {
+            let mut grid = RollGrid3D::new_with_init(4, 4, 4, (0,0,0), |pos:(i32, i32, i32)| {
+                Some(DropCoord::from(pos))
+            });
+            grid.resize_and_reposition(width, height, depth, (x, y, z), |action| {
+                match action {
+                    CellManage::Load(pos) => Some(DropCoord::from(pos)),
+                    CellManage::Unload(pos, old_value) => {
+                        let mut old = old_value.expect("Old Value was None");
+                        old.unloaded = true;
+                        assert_eq!(pos, old.coord);
+                        None
+                    }
+                }
+            });
+            grid.iter_mut().for_each(|(pos, cell)| {
+                if let Some(cell) = cell {
+                    cell.unloaded = true;
+                }
+            });
+            verify_grid(&grid);
         });
-        verify_grid(&grid);
-        grid.resize_and_reposition(4, 4, 4, (-1, -1, -1), |manage| {
-            match manage {
-                CellManage::Load(pos) => Some(DropCoord::from(pos)),
-                CellManage::Unload(pos, old_value) => {
-                    let Some(mut old) = old_value else {
-                        panic!("Was None");
-                    };
-                    old.unloaded = true;
-                    assert_eq!(pos, old.coord);
-                    None
-                },
-            }
-        });
-        grid.iter_mut().for_each(|(pos, cell)| {
-            if let Some(cell) = cell {
-                cell.unloaded = true;
-            }
-        });
-        verify_grid(&grid);
     }
 }
 
