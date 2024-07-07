@@ -206,6 +206,7 @@ impl<T> RollGrid3D<T> {
                 (new_x, new_y, new_z),
                 (new_x + new_width, new_y + new_height, new_z + new_depth)
             );
+            // Subdivide.
             if old_bounds.intersects(new_bounds) {
                 // The way this code works is that it subdivides the unload area into 26 potential regions.
                 // It could divide into 6 regions, but I was able to generate the code for 26 regions very
