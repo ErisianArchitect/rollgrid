@@ -214,6 +214,14 @@ impl<T> RollGrid2D<T> {
     {
         #![allow(unused)]
         let mut manage = manage;
+        if new_width == self.size.0
+        && new_height == self.size.1 {
+            self.reposition(new_position, |old_pos, new_pos, old_value| {
+                manage(CellManage::Unload(old_pos, old_value));
+                manage(CellManage::Load(new_pos))
+            });
+            return;
+        }
         let new_position: Coord = new_position.into();
         let area = new_width.checked_mul(new_height).expect(SIZE_TOO_LARGE);
         if area == 0 { panic!("{AREA_IS_ZERO}"); }
