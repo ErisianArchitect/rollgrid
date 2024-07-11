@@ -5,7 +5,7 @@ const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
 type Coord = (i32, i32, i32);
 
 pub struct RollGrid3D<T> {
-    cells: Vec<Option<T>>,
+    cells: Box<[Option<T>]>,
     size: (usize, usize, usize),
     wrap_offset: (i32, i32, i32),
     grid_offset: (i32, i32, i32),
@@ -1044,7 +1044,7 @@ impl<T: Copy> RollGrid3D<T> {
 }
 
 struct TempGrid3D<T> {
-    pub cells: Vec<Option<T>>,
+    pub cells: Box<[Option<T>]>,
     pub size: (usize, usize, usize),
     pub offset: (i32, i32, i32),
 }

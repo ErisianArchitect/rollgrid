@@ -4,7 +4,7 @@ const AREA_IS_ZERO: &'static str = "Width/Height cannot be 0";
 type Coord = (i32, i32);
 
 struct TempGrid2D<T> {
-    pub cells: Vec<Option<T>>,
+    pub cells: Box<[Option<T>]>,
     pub size: (usize, usize),
     pub offset: (i32, i32),
 }
@@ -76,13 +76,13 @@ impl<T> TempGrid2D<T> {
         Some(old)
     }
 
-    pub fn take_cells(self) -> Vec<Option<T>> {
+    pub fn take_cells(self) -> Box<[Option<T>]> {
         self.cells
     }
 }
 
 pub struct RollGrid2D<T> {
-    cells: Vec<Option<T>>,
+    cells: Box<[Option<T>]>,
     size: (usize, usize),
     wrap_offset: (usize, usize),
     grid_offset: (i32, i32),
