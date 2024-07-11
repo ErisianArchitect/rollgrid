@@ -1,12 +1,9 @@
-mod rollgrid2d;
-mod rollgrid3d;
+pub mod rollgrid2d;
+pub mod rollgrid3d;
 
 const SIZE_TOO_LARGE: &'static str = "Size is too large";
 const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bound";
 const OUT_OF_BOUNDS: &'static str = "Out of bounds";
-
-pub use rollgrid2d::*;
-pub use rollgrid3d::*;
 
 // #[inline(always)]
 // fn iproduct_arg_rev<T>(input: (T, T)) -> (T, T) {
@@ -26,6 +23,8 @@ pub enum CellManage<C, T> {
 #[cfg(test)]
 mod tests {
     #![allow(unused)]
+    use rollgrid2d::{RollGrid2D, Bounds2D};
+
     use super::*;
 
     #[test]
