@@ -6,7 +6,7 @@ const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bo
 const OUT_OF_BOUNDS: &'static str = "Out of bounds";
 
 pub use rollgrid2d::*;
-// pub use rollgrid3d::*;
+pub use rollgrid3d::*;
 
 // #[inline(always)]
 // fn iproduct_arg_rev<T>(input: (T, T)) -> (T, T) {
