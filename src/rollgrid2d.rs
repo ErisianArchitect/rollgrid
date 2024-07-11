@@ -84,7 +84,7 @@ impl<T> TempGrid2D<T> {
 pub struct RollGrid2D<T> {
     cells: Box<[Option<T>]>,
     size: (usize, usize),
-    wrap_offset: (usize, usize),
+    wrap_offset: (i32, i32),
     grid_offset: (i32, i32),
 }
 
@@ -435,7 +435,7 @@ impl<T> RollGrid2D<T> {
                 // every single cell, even if it only needed to reload 8 out of 64 cells.
                 let new_rolled_x = (roll_x + wrapped_offset_x).rem_euclid(width);
                 let new_rolled_y = (roll_y + wrapped_offset_y).rem_euclid(height);
-                self.wrap_offset = (new_rolled_x as usize, new_rolled_y as usize);
+                self.wrap_offset = (new_rolled_x, new_rolled_y);
                 let right = new_x + width;
                 let bottom = new_y + height;
                 // Calculate ranges
@@ -610,7 +610,7 @@ impl<T> RollGrid2D<T> {
         self.size.1
     }
 
-    pub fn wrap_offset(&self) -> (usize, usize) {
+    pub fn wrap_offset(&self) -> (i32, i32) {
         self.wrap_offset
     }
 
