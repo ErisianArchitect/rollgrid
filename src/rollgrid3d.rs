@@ -1465,3 +1465,59 @@ fn offsetfix_test() {
     let (x, y, z) = fix.wrap((9, 9, 9));
     println!("({x}, {y}, {z})");
 }
+
+#[test]
+fn offset_index_test() {
+    struct Grid {
+        offset: (i32, i32, i32),
+        size: (i32, i32, i32),
+    }
+    impl Grid {
+        fn offset_index(&self, x: i32, y: i32, z: i32) -> Option<usize> {
+            if x < self.offset.0
+            || y < self.offset.1
+            || z < self.offset.2
+            || x > self.offset.0 + self.size.0
+            || y > self.offset.1 + self.size.1
+            || z > self.offset.2 + self.size.2 {
+                return None;
+            }
+            let x = x - self.offset.0;
+            let y = y - self.offset.1;
+            let z = z - self.offset.2;
+            let wd = self.size.0 * self.size.2;
+            Some((y * wd + z * self.size.0 + x) as usize)
+        }
+        fn index_offset(&self, index: usize) -> Option<(i32, i32, i32)> {
+            let volume = (self.size.0 * self.size.1 * self.size.2) as usize;
+            if index >= volume {
+                return None;
+            }
+            let index = index as i32;
+            let wd = self.size.0 * self.size.2;
+            let y = index / wd;
+            let xz_rem = index.rem_euclid(wd);
+            let z = xz_rem / self.size.0;
+            let x = xz_rem.rem_euclid(self.size.0);
+            Some((x + self.offset.0, y + self.offset.1, z + self.offset.2))
+        }
+    }
+
+    let grid = Grid {
+        offset: (-3, -1, -5),
+        size: (23, 32, 18)
+    };
+    let index = grid.offset_index(0, 0, 0).expect(OUT_OF_BOUNDS);
+    println!("{index}");
+    let (x, y, z) = grid.index_offset(index).expect(OUT_OF_BOUNDS);
+    println!("({x}, {y}, {z})");
+    for y in grid.offset.1..grid.offset.1 + grid.size.1 {
+        for z in grid.offset.2..grid.offset.2 + grid.size.2 {
+            for x in grid.offset.0..grid.offset.0 + grid.size.0 {
+                let index = grid.offset_index(x, y, z).expect(OUT_OF_BOUNDS);
+                let (rx, ry, rz) = grid.index_offset(index).expect(OUT_OF_BOUNDS);
+                assert_eq!((rx, ry, rz), (x, y, z));
+            }
+        }
+    }
+}
