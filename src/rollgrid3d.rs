@@ -1103,14 +1103,16 @@ pub struct Bounds3D {
 }
 
 impl Bounds3D {
-    pub fn new(min: (i32, i32, i32), max: (i32, i32, i32)) -> Self {
+    pub fn new<C: Into<(i32, i32, i32)>>(min: C, max: C) -> Self {
         Self {
-            min,
-            max
+            min: min.into(),
+            max: max.into()
         }
     }
 
-    pub fn from_bounds(a: (i32, i32, i32), b: (i32, i32, i32)) -> Self {
+    pub fn from_bounds<C: Into<(i32, i32, i32)>>(a: C, b: C) -> Self {
+        let a: (i32, i32, i32) = a.into();
+        let b: (i32, i32, i32) = b.into();
         let x_min = a.0.min(b.0);
         let y_min = a.1.min(b.1);
         let z_min = a.2.min(b.2);
@@ -1181,7 +1183,8 @@ impl Bounds3D {
         && bz_min < az_max
     }
 
-    pub fn contains(self, point: (i32, i32, i32)) -> bool {
+    pub fn contains<P: Into<(i32, i32, i32)>>(self, point: P) -> bool {
+        let point: (i32, i32, i32) = point.into();
         point.0 >= self.min.0
         && point.1 >= self.min.1
         && point.2 >= self.min.2

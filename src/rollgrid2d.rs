@@ -680,14 +680,16 @@ pub struct Bounds2D {
 }
 
 impl Bounds2D {
-    pub fn new(min: (i32, i32), max: (i32, i32)) -> Self {
+    pub fn new<C: Into<(i32, i32)>>(min: C, max: C) -> Self {
         Self {
-            min, 
-            max
+            min: min.into(),
+            max: max.into()
         }
     }
 
-    pub fn from_bounds(a: (i32, i32), b: (i32, i32)) -> Self {
+    pub fn from_bounds<C: Into<(i32, i32)>>(a: C, b: C) -> Self {
+        let a: (i32, i32) = a.into();
+        let b: (i32, i32) = b.into();
         let (ax, ay) = a;
         let (bx, by) = b;
         let min = (ax.min(bx), ay.min(by));
@@ -737,7 +739,8 @@ impl Bounds2D {
         && by_min < ay_max
     }
 
-    pub fn contains(self, point: (i32, i32)) -> bool {
+    pub fn contains<P: Into<(i32, i32)>>(self, point: P) -> bool {
+        let point: (i32, i32) = point.into();
         point.0 >= self.min.0
         && point.1 >= self.min.0
         && point.0 < self.max.0
