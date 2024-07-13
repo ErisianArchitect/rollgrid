@@ -1140,8 +1140,8 @@ impl Bounds3D {
         self.max.2 - self.min.2
     }
 
-    pub fn volume(&self) -> i32 {
-        self.width() * self.height() * self.depth()
+    pub fn volume(&self) -> i128 {
+        self.width() as i128 * self.height() as i128 * self.depth() as i128
     }
 
     pub fn x_min(&self) -> i32 {
