@@ -708,8 +708,8 @@ impl Bounds2D {
         self.max.1 - self.min.1
     }
 
-    pub fn area(&self) -> i32 {
-        self.width() * self.height()
+    pub fn area(&self) -> i64 {
+        self.width() as i64 * self.height() as i64
     }
 
     pub fn left(&self) -> i32 {
