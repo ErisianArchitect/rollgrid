@@ -700,12 +700,12 @@ impl Bounds2D {
         }
     }
 
-    pub fn width(&self) -> i32 {
-        self.max.0 - self.min.0
+    pub fn width(&self) -> u32 {
+        (self.max.0 as i64 - self.min.0 as i64) as u32
     }
 
-    pub fn height(&self) -> i32 {
-        self.max.1 - self.min.1
+    pub fn height(&self) -> u32 {
+        (self.max.1 as i64 - self.min.1 as i64) as u32
     }
 
     pub fn area(&self) -> i64 {

@@ -1126,18 +1126,18 @@ impl Bounds3D {
     }
 
     /// The size along the X axis.
-    pub fn width(&self) -> i32 {
-        self.max.0 - self.min.0
+    pub fn width(&self) -> u32 {
+        (self.max.0 as i64 - self.min.0 as i64) as u32
     }
 
     /// The size along the Y axis.
-    pub fn height(&self) -> i32 {
-        self.max.1 - self.min.1
+    pub fn height(&self) -> u32 {
+        (self.max.1 as i64 - self.min.1 as i64) as u32
     }
 
     /// The size along the Z axis.
-    pub fn depth(&self) -> i32 {
-        self.max.2 - self.min.2
+    pub fn depth(&self) -> u32 {
+        (self.max.2 as i64 - self.min.2 as i64) as u32
     }
 
     pub fn volume(&self) -> i128 {
