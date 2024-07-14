@@ -1103,6 +1103,7 @@ pub struct Bounds3D {
 }
 
 impl Bounds3D {
+    #[inline(always)]
     pub fn new<C: Into<(i32, i32, i32)>>(min: C, max: C) -> Self {
         Self {
             min: min.into(),
@@ -1110,6 +1111,7 @@ impl Bounds3D {
         }
     }
 
+    #[inline(always)]
     pub fn from_bounds<C: Into<(i32, i32, i32)>>(a: C, b: C) -> Self {
         let a: (i32, i32, i32) = a.into();
         let b: (i32, i32, i32) = b.into();
@@ -1126,50 +1128,61 @@ impl Bounds3D {
     }
 
     /// The size along the X axis.
+    #[inline(always)]
     pub fn width(&self) -> u32 {
         (self.max.0 as i64 - self.min.0 as i64) as u32
     }
 
     /// The size along the Y axis.
+    #[inline(always)]
     pub fn height(&self) -> u32 {
         (self.max.1 as i64 - self.min.1 as i64) as u32
     }
 
     /// The size along the Z axis.
+    #[inline(always)]
     pub fn depth(&self) -> u32 {
         (self.max.2 as i64 - self.min.2 as i64) as u32
     }
 
+    #[inline(always)]
     pub fn volume(&self) -> i128 {
         self.width() as i128 * self.height() as i128 * self.depth() as i128
     }
 
+    #[inline(always)]
     pub fn x_min(&self) -> i32 {
         self.min.0
     }
 
+    #[inline(always)]
     pub fn y_min(&self) -> i32 {
         self.min.1
     }
     
+    #[inline(always)]
     pub fn z_min(&self) -> i32 {
         self.min.2
     }
 
+    #[inline(always)]
     pub fn x_max(&self) -> i32 {
         self.max.0
     }
 
+    #[inline(always)]
     pub fn y_max(&self) -> i32 {
         self.max.1
     }
 
+    #[inline(always)]
     pub fn z_max(&self) -> i32 {
         self.max.2
     }
 
     // intersects would need to copy self and other anyway, so
     // just accept copied values rather than references.
+    #[inline(always)]
     pub fn intersects(self, other: Bounds3D) -> bool {
         let (ax_min, ay_min, az_min) = self.min;
         let (ax_max, ay_max, az_max) = self.max;
@@ -1183,6 +1196,7 @@ impl Bounds3D {
         && bz_min < az_max
     }
 
+    #[inline(always)]
     pub fn contains<P: Into<(i32, i32, i32)>>(self, point: P) -> bool {
         let point: (i32, i32, i32) = point.into();
         point.0 >= self.min.0
@@ -1193,6 +1207,7 @@ impl Bounds3D {
         && point.2 < self.max.2
     }
 
+    #[inline(always)]
     pub fn iter(self) -> Bounds3DIter {
         Bounds3DIter { bounds: self, current: self.min }
     }
@@ -1206,6 +1221,7 @@ pub struct Bounds3DIter {
 impl Iterator for Bounds3DIter {
     type Item = (i32, i32, i32);
 
+    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         if self.current.2 == self.bounds.max.2 {
             return (0, Some(0));
@@ -1223,6 +1239,7 @@ impl Iterator for Bounds3DIter {
         (volume - index, Some(volume - index))
     }
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.current.1 == self.bounds.max.1 {
             return None;
@@ -1251,10 +1268,12 @@ pub struct RollGrid3DIterator<'a, T> {
 impl<'a, T> Iterator for RollGrid3DIterator<'a, T> {
     type Item = ((i32, i32, i32), Option<&'a T>);
 
+    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.bounds_iter.size_hint()
     }
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
@@ -1275,10 +1294,12 @@ pub struct RollGrid3DMutIterator<'a, T> {
 impl<'a, T> Iterator for RollGrid3DMutIterator<'a, T> {
     type Item = ((i32, i32, i32), Option<&'a mut T>);
 
+    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.bounds_iter.size_hint()
     }
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
@@ -1427,6 +1448,93 @@ mod tests {
             verify_grid(&grid);
         });
     }
+
+    
+    #[test]
+    fn offsetfix_test() {
+        struct OffsetFix {
+            /// the old grid offset that we can use to
+            /// create a relational offset
+            offset: (i32, i32, i32),
+            size: (i32, i32, i32),
+        }
+        impl OffsetFix {
+            fn wrap(&self, pos: (i32, i32, i32)) -> (i32, i32, i32) {
+                let x = (pos.0 - self.offset.0).rem_euclid(self.size.0) + self.offset.0;
+                let y = (pos.1 - self.offset.1).rem_euclid(self.size.1) + self.offset.1;
+                let z = (pos.2 - self.offset.2).rem_euclid(self.size.2) + self.offset.2;
+                (x, y, z)
+            }
+        }
+        let fix = OffsetFix {
+            offset: (5, 5, 5),
+            size: (4, 4, 4),
+        };
+        let (x, y, z) = fix.wrap((9, 9, 9));
+        println!("({x}, {y}, {z})");
+    }
+
+    #[test]
+    fn offset_index_test() {
+        struct Grid {
+            offset: (i32, i32, i32),
+            size: (i32, i32, i32),
+        }
+        impl Grid {
+            fn offset_index(&self, x: i32, y: i32, z: i32) -> Option<usize> {
+                if x < self.offset.0
+                || y < self.offset.1
+                || z < self.offset.2
+                || x > self.offset.0 + self.size.0
+                || y > self.offset.1 + self.size.1
+                || z > self.offset.2 + self.size.2 {
+                    return None;
+                }
+                let x = x - self.offset.0;
+                let y = y - self.offset.1;
+                let z = z - self.offset.2;
+                let wd = self.size.0 * self.size.2;
+                Some((y * wd + z * self.size.0 + x) as usize)
+            }
+            fn index_offset(&self, index: usize) -> Option<(i32, i32, i32)> {
+                let volume = (self.size.0 * self.size.1 * self.size.2) as usize;
+                if index >= volume {
+                    return None;
+                }
+                let index = index as i32;
+                let wd = self.size.0 * self.size.2;
+                let y = index / wd;
+                let xz_rem = index.rem_euclid(wd);
+                let z = xz_rem / self.size.0;
+                let x = xz_rem.rem_euclid(self.size.0);
+                Some((x + self.offset.0, y + self.offset.1, z + self.offset.2))
+            }
+        }
+
+        let grid = Grid {
+            offset: (-3, -1, -5),
+            size: (23, 32, 18)
+        };
+        let index = grid.offset_index(0, 0, 0).expect(OUT_OF_BOUNDS);
+        println!("{index}");
+        let (x, y, z) = grid.index_offset(index).expect(OUT_OF_BOUNDS);
+        println!("({x}, {y}, {z})");
+        for y in grid.offset.1..grid.offset.1 + grid.size.1 {
+            for z in grid.offset.2..grid.offset.2 + grid.size.2 {
+                for x in grid.offset.0..grid.offset.0 + grid.size.0 {
+                    let index = grid.offset_index(x, y, z).expect(OUT_OF_BOUNDS);
+                    let (rx, ry, rz) = grid.index_offset(index).expect(OUT_OF_BOUNDS);
+                    assert_eq!((rx, ry, rz), (x, y, z));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn bounds_test() {
+        let max_bounds = Bounds3D::new((i32::MIN, i32::MIN, i32::MIN), (i32::MAX, i32::MAX, i32::MAX));
+        println!("{}", max_bounds.volume());
+    }
 }
 
 // fn print_grid(grid: &RollGrid3D<(i32, i32, i32)>) {
@@ -1444,83 +1552,3 @@ mod tests {
 //         }
 //     }
 // }
-
-#[test]
-fn offsetfix_test() {
-    struct OffsetFix {
-        /// the old grid offset that we can use to
-        /// create a relational offset
-        offset: (i32, i32, i32),
-        size: (i32, i32, i32),
-    }
-    impl OffsetFix {
-        fn wrap(&self, pos: (i32, i32, i32)) -> (i32, i32, i32) {
-            let x = (pos.0 - self.offset.0).rem_euclid(self.size.0) + self.offset.0;
-            let y = (pos.1 - self.offset.1).rem_euclid(self.size.1) + self.offset.1;
-            let z = (pos.2 - self.offset.2).rem_euclid(self.size.2) + self.offset.2;
-            (x, y, z)
-        }
-    }
-    let fix = OffsetFix {
-        offset: (5, 5, 5),
-        size: (4, 4, 4),
-    };
-    let (x, y, z) = fix.wrap((9, 9, 9));
-    println!("({x}, {y}, {z})");
-}
-
-#[test]
-fn offset_index_test() {
-    struct Grid {
-        offset: (i32, i32, i32),
-        size: (i32, i32, i32),
-    }
-    impl Grid {
-        fn offset_index(&self, x: i32, y: i32, z: i32) -> Option<usize> {
-            if x < self.offset.0
-            || y < self.offset.1
-            || z < self.offset.2
-            || x > self.offset.0 + self.size.0
-            || y > self.offset.1 + self.size.1
-            || z > self.offset.2 + self.size.2 {
-                return None;
-            }
-            let x = x - self.offset.0;
-            let y = y - self.offset.1;
-            let z = z - self.offset.2;
-            let wd = self.size.0 * self.size.2;
-            Some((y * wd + z * self.size.0 + x) as usize)
-        }
-        fn index_offset(&self, index: usize) -> Option<(i32, i32, i32)> {
-            let volume = (self.size.0 * self.size.1 * self.size.2) as usize;
-            if index >= volume {
-                return None;
-            }
-            let index = index as i32;
-            let wd = self.size.0 * self.size.2;
-            let y = index / wd;
-            let xz_rem = index.rem_euclid(wd);
-            let z = xz_rem / self.size.0;
-            let x = xz_rem.rem_euclid(self.size.0);
-            Some((x + self.offset.0, y + self.offset.1, z + self.offset.2))
-        }
-    }
-
-    let grid = Grid {
-        offset: (-3, -1, -5),
-        size: (23, 32, 18)
-    };
-    let index = grid.offset_index(0, 0, 0).expect(OUT_OF_BOUNDS);
-    println!("{index}");
-    let (x, y, z) = grid.index_offset(index).expect(OUT_OF_BOUNDS);
-    println!("({x}, {y}, {z})");
-    for y in grid.offset.1..grid.offset.1 + grid.size.1 {
-        for z in grid.offset.2..grid.offset.2 + grid.size.2 {
-            for x in grid.offset.0..grid.offset.0 + grid.size.0 {
-                let index = grid.offset_index(x, y, z).expect(OUT_OF_BOUNDS);
-                let (rx, ry, rz) = grid.index_offset(index).expect(OUT_OF_BOUNDS);
-                assert_eq!((rx, ry, rz), (x, y, z));
-            }
-        }
-    }
-}

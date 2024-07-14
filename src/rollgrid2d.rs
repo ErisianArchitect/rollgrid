@@ -680,6 +680,7 @@ pub struct Bounds2D {
 }
 
 impl Bounds2D {
+    #[inline(always)]
     pub fn new<C: Into<(i32, i32)>>(min: C, max: C) -> Self {
         Self {
             min: min.into(),
@@ -687,6 +688,7 @@ impl Bounds2D {
         }
     }
 
+    #[inline(always)]
     pub fn from_bounds<C: Into<(i32, i32)>>(a: C, b: C) -> Self {
         let a: (i32, i32) = a.into();
         let b: (i32, i32) = b.into();
@@ -700,36 +702,44 @@ impl Bounds2D {
         }
     }
 
+    #[inline(always)]
     pub fn width(&self) -> u32 {
         (self.max.0 as i64 - self.min.0 as i64) as u32
     }
 
+    #[inline(always)]
     pub fn height(&self) -> u32 {
         (self.max.1 as i64 - self.min.1 as i64) as u32
     }
 
+    #[inline(always)]
     pub fn area(&self) -> i64 {
         self.width() as i64 * self.height() as i64
     }
 
+    #[inline(always)]
     pub fn left(&self) -> i32 {
         self.min.0
     }
 
+    #[inline(always)]
     pub fn top(&self) -> i32 {
         self.min.1
     }
 
+    #[inline(always)]
     pub fn right(&self) -> i32 {
         self.max.0
     }
 
+    #[inline(always)]
     pub fn bottom(&self) -> i32 {
         self.max.1
     }
 
     // intersects would need to copy self and other anyway, so
     // just accept copied values rather than references.
+    #[inline(always)]
     pub fn intersects(self, other: Bounds2D) -> bool {
         let ((ax_min, ay_min), (ax_max, ay_max)) = (self.min, self.max);
         let ((bx_min, by_min), (bx_max, by_max)) = (other.min, other.max);
@@ -739,6 +749,7 @@ impl Bounds2D {
         && by_min < ay_max
     }
 
+    #[inline(always)]
     pub fn contains<P: Into<(i32, i32)>>(self, point: P) -> bool {
         let point: (i32, i32) = point.into();
         point.0 >= self.min.0
@@ -748,6 +759,7 @@ impl Bounds2D {
     }
 
     /// Iterate the coordinates in the [Bounds2D].
+    #[inline(always)]
     pub fn iter(self) -> Bounds2DIter {
         Bounds2DIter {
             bounds: self,
@@ -764,6 +776,7 @@ pub struct Bounds2DIter {
 impl Iterator for Bounds2DIter {
     type Item = (i32, i32);
 
+    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         if self.current.1 == self.bounds.max.1 {
             return (0, Some(0));
@@ -779,6 +792,7 @@ impl Iterator for Bounds2DIter {
         (size - index, Some(size - index))
     }
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.current.1 == self.bounds.max.1 {
             return None;
@@ -800,10 +814,12 @@ pub struct RollGrid2DIterator<'a, T> {
 impl<'a, T> Iterator for RollGrid2DIterator<'a, T> {
     type Item = ((i32, i32), Option<&'a T>);
 
+    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.bounds_iter.size_hint()
     }
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
@@ -824,10 +840,12 @@ pub struct RollGrid2DMutIterator<'a, T> {
 impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
     type Item = ((i32, i32), Option<&'a mut T>);
 
+    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.bounds_iter.size_hint()
     }
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
