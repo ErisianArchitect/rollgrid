@@ -944,6 +944,18 @@ impl<T> RollGrid3D<T> {
         }
     }
 
+    /// This method panics if `coord` is out of bounds.
+    pub fn get_or_insert_with<C: Into<Coord>, F: FnOnce() -> T>(&mut self, coord: C, f: F) -> &mut T {
+        let index = self.offset_index(coord.into()).expect("Out of bounds");
+        self.cells[index].get_or_insert_with(f)
+    }
+
+    /// This method panics if `coord` is out of bounds.
+    pub fn get_or_insert<C: Into<Coord>>(&mut self, coord: C, value: T) -> &mut T {
+        let index = self.offset_index(coord.into()).expect("Out of bounds");
+        self.cells[index].get_or_insert(value)
+    }
+
     pub fn get_mut<C: Into<Coord>>(&mut self, coord: C) -> Option<&mut T> {
         let index = self.offset_index(coord.into())?;
         if let Some(cell) = &mut self.cells[index] {
