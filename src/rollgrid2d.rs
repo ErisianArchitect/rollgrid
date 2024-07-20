@@ -591,10 +591,15 @@ impl<T> RollGrid2D<T> {
     }
 
     pub fn set<C: Into<Coord>>(&mut self, coord: C, value: T) -> Option<T> {
-        let cell = self.get_mut(coord)?;
-        let mut old = value;
-        std::mem::swap(&mut old, cell);
-        Some(old)
+        let index = self.offset_index(coord.into())?;
+        let mut old = Some(value);
+        std::mem::swap(&mut old, &mut self.cells[index]);
+        old
+    }
+
+    pub fn take<C: Into<Coord>>(&mut self, coord: C) -> Option<T> {
+        let index = self.offset_index(coord.into())?;
+        self.cells[index].take()
     }
 
     // Pleasantries
