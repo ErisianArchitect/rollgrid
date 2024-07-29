@@ -27,6 +27,35 @@ DEFC
 1230
 ```
 
-Sorry for the poor explanation, I'll work on the readme eventually.
+Now, that's not the benefit of this library. When repositioning the grid, it doesn't move any elements at all. Instead, it keeps track of movement offsets and allows the reposition operation to be really fast because it's not actually moving anything around in memory. It calculates the offset and wrap offset (the offset where (0, 0) begins, everything before that is wrapped to the end). Then the algorithm calculates which cells should change and calls the supplied callback for each of those cells.
+
+Here's an example in practice
+
+```rust
+chunks.reposition((chunk_x, chunk_z), |old_pos, (x, z), chunk| {
+    let mut chunk = chunk.expect("Chunk was None");
+    self.unload_chunk(&mut chunk);
+    chunk.block_offset = Coord::new(x * 16, WORLD_BOTTOM, z * 16);
+    if let Some(region) = regions.get_mut((x >> 5, z >> 5)) {
+        let result = region.read((x & 31, z & 31), |reader| {
+            chunk.read_from(reader, self)
+        });
+        match result {
+            Err(Error::ChunkNotFound) => (/* Do nothing, that just means it's an empty chunk */),
+            Err(err) => {
+                panic!("Error: {err}");
+            }
+            _ => (),
+        }
+        chunk.edit_time = region.get_timestamp((x & 31, z & 31));
+    }
+    chunk.block_offset.x = x * 16;
+    chunk.block_offset.z = z * 16;
+    Some(chunk)
+});
+```
+(todo: Add a try_reposition function)
+
+This `reposition` method works for the 2d and 3d variants of the rollgrid.
 
 You can modify this code to fit your purpose.
