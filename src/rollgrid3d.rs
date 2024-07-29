@@ -156,10 +156,13 @@ impl<T> RollGrid3D<T> {
     ///         CellManage::Load(pos) => {
     ///             println!("Load: ({},{},{})", pos.0, pos.1, pos.2);
     ///             // The loaded value
+    ///             // Typically you wouldn't return the position,
+    ///             // you would want to load a new cell here.
     ///             Some(pos)
     ///         }
     ///         CellManage::Unload(pos, old) => {
     ///             println!("Unload: ({},{},{})", pos.0, pos.1, pos.2);
+    ///             // You can apply your own unload logic here, or do nothing. It's up to you.
     ///             // Return None for Unload.
     ///             None
     ///         }
