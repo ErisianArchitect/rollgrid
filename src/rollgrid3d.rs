@@ -841,6 +841,7 @@ impl<T> RollGrid3D<T> {
                 };
                 self.wrap_offset = (new_wrap_x, new_wrap_y, new_wrap_z);
                 self.grid_offset = (new_x, new_y, new_z);
+                // Now that we have the regions, we can iterate over them to reload cells.
                 // iterate regions and reload cells
                 half_region.iter().for_each(|pos| {
                     let old_pos = fix.wrap(pos);
@@ -861,7 +862,6 @@ impl<T> RollGrid3D<T> {
                         self.cells[index] = reload(C::from(old_pos), C::from(pos), self.cells[index].take());
                     });
                 }
-                // Now that we have the regions, we can iterate over them to reload cells.
             } else { // translation out of bounds, reload everything
                 self.grid_offset = (new_x, new_y, new_z);
                 for (yi, y) in (new_y..new_y + height).enumerate() {
