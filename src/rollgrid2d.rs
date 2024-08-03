@@ -877,3 +877,40 @@ impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn print_grid(grid: &RollGrid2D<((i32, i32))>) {
+        println!("[");
+        for y in grid.top()..grid.bottom() {
+            print!("    [");
+            for x in grid.left()..grid.right() {
+                if let Some((cx, cy)) = grid.get_copy((x, y)) {
+                    if x > grid.left() {
+                        print!(", ");
+                    }
+                    print!("({cx:2}, {cy:2})");
+                }
+            }
+            println!("]");
+        }
+        println!("]");
+    }
+    
+    #[test]
+    fn visual_example() {
+        let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
+            Some(pos)
+        });
+        println!("Initial grid:");
+        print_grid(&grid);
+        grid.reposition((1, 2), |old, new, old_value| {
+            Some(old)
+        });
+        println!("Grid repositioned to (1, 2):");
+        print_grid(&grid);
+    }
+
+}
