@@ -1172,18 +1172,26 @@ mod tests {
     
     #[test]
     fn visual_example() {
-    let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
-        Some(pos)
-    });
-    println!("Initial grid:");
-    print_grid(&grid);
-    grid.reposition((1, 2), |old, new, old_value| {
-        Some(new)
-    });
-    println!("Grid repositioned to (1, 2):");
-    print_grid(&grid);
-    println!("Cell at (4, 5): {:?}", grid.get_copy((4, 5)).unwrap());
-    println!("Cell at (0, 0): {:?}", grid.get_copy((0, 0)));
+        let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
+            Some(pos)
+        });
+        println!("Initial grid:");
+        print_grid(&grid);
+        let mut iterations = 0;
+        let mut changes = vec![];
+        grid.reposition((1, 2), |old, new, old_value| {
+            iterations += 1;
+            changes.push((old, new));
+            Some(new)
+        });
+        println!("Changes:");
+        for (old, new) in changes {
+            println!("{old:?} moved to {new:?}");
+        }
+        println!("Grid repositioned to (1, 2) with {iterations} iterations:");
+        print_grid(&grid);
+        println!("Cell at (4, 5): {:?}", grid.get_copy((4, 5)).unwrap());
+        println!("Cell at (0, 0): {:?}", grid.get_copy((0, 0)));
     }
 
     #[test]
