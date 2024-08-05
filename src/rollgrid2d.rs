@@ -1172,16 +1172,18 @@ mod tests {
     
     #[test]
     fn visual_example() {
-        let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
-            Some(pos)
-        });
-        println!("Initial grid:");
-        print_grid(&grid);
-        grid.reposition((1, 2), |old, new, old_value| {
-            Some(old)
-        });
-        println!("Grid repositioned to (1, 2):");
-        print_grid(&grid);
+    let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
+        Some(pos)
+    });
+    println!("Initial grid:");
+    print_grid(&grid);
+    grid.reposition((1, 2), |old, new, old_value| {
+        Some(new)
+    });
+    println!("Grid repositioned to (1, 2):");
+    print_grid(&grid);
+    println!("Cell at (4, 5): {:?}", grid.get_copy((4, 5)).unwrap());
+    println!("Cell at (0, 0): {:?}", grid.get_copy((0, 0)));
     }
 
     #[test]
