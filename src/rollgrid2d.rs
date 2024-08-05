@@ -10,6 +10,7 @@ struct TempGrid2D<T> {
 }
 
 impl<T> TempGrid2D<T> {
+    /// Create a new grid with all cells initialized to `None`.
     pub fn new(size: (usize, usize), offset: (i32, i32)) -> Self {
         Self {
             cells: (0..size.0*size.1).map(|_| None).collect(),
@@ -18,6 +19,7 @@ impl<T> TempGrid2D<T> {
         }
     }
 
+    /// Create a new grid with an initializer callback.
     pub fn new_with_init<F: FnMut(Coord) -> Option<T>>(size: (usize, usize), offset: (i32, i32), init: F) -> Self {
         let bounds = Bounds2D::new(
             offset,
@@ -974,6 +976,15 @@ impl<T: Copy> RollGrid2D<T> {
         let coord: Coord = coord.into();
         let index = self.offset_index(coord)?;
         self.cells[index]
+    }
+}
+
+impl<T: Clone> RollGrid2D<T> {
+    /// Get a clone of the grid value.
+    pub fn get_clone<C: Into<Coord>>(&self, coord: C) -> Option<T> {
+        let coord: Coord = coord.into();
+        let index = self.offset_index(coord)?;
+        self.cells[index].clone()
     }
 }
 
