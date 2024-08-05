@@ -18,6 +18,36 @@ impl<T> TempGrid2D<T> {
         }
     }
 
+    pub fn new_with_init<F: FnMut(Coord) -> Option<T>>(size: (usize, usize), offset: (i32, i32), init: F) -> Self {
+        let bounds = Bounds2D::new(
+            offset,
+            (
+                offset.0 + size.0 as i32,
+                offset.1 + size.1 as i32,
+            )
+        );
+        Self {
+            cells: bounds.iter().map(init).collect(),
+            size,
+            offset
+        }
+    }
+
+    pub fn try_new_with_init<E, F: FnMut(Coord) -> Result<Option<T>, E>>(size: (usize, usize), offset: (i32, i32), init: F) -> Result<Self, E> {
+        let bounds = Bounds2D::new(
+            offset,
+            (
+                offset.0 + size.0 as i32,
+                offset.1 + size.1 as i32,
+            )
+        );
+        Ok(Self {
+            cells: bounds.iter().map(init).collect::<Result<Box<_>, E>>()?,
+            size,
+            offset
+        })
+    }
+
     fn offset_index(&self, (x, y): (i32, i32)) -> Option<usize> {
         let (mx, my) = self.offset;
         let width = self.size.0 as i32;
@@ -148,6 +178,33 @@ impl<T> RollGrid2D<T> {
         }
     }
 
+    /// Create a new [RollGrid2D] using an initialize function to initialize elements.
+    pub fn try_new_with_init<C: From<(i32, i32)>, E, F: FnMut(C) -> Result<Option<T>, E>>(
+        width: usize,
+        height: usize,
+        grid_offset: (i32, i32),
+        init: F
+    ) -> Result<Self, E> {
+        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
+        if area == 0 { panic!("{}", AREA_IS_ZERO); }
+        #[cfg(target_pointer_width = "64")]
+        if area > i32::MAX as usize { panic!("{}", SIZE_TOO_LARGE); }
+        if grid_offset.0.checked_add(width as i32).is_none()
+        || grid_offset.1.checked_add(height as i32).is_none() {
+            panic!("{}", OFFSET_TOO_CLOSE_TO_MAX);
+        }
+        Ok(Self {
+            cells: itertools::iproduct!(0..height as i32, 0..width as i32)
+                .map(|(y, x)| (x + grid_offset.0, y + grid_offset.1))
+                .map(C::from)
+                .map(init)
+                .collect::<Result<Box<_>, E>>()?,
+            size: (width, height),
+            wrap_offset: (0, 0),
+            grid_offset: grid_offset,
+        })
+    }
+
     /// Inflate the size by `inflate`.
     pub fn inflate_size<C, F>(&mut self, inflate: usize, manage: F)
     where
@@ -158,6 +215,18 @@ impl<T> RollGrid2D<T> {
             let new_width = self.size.0 + inflate * 2;
             let new_height = self.size.1 + inflate * 2;
             self.resize_and_reposition(new_width, new_height, C::from(new_offset), manage);
+    }
+
+    /// Inflate the size by `inflate`.
+    pub fn try_inflate_size<C, E, F>(&mut self, inflate: usize, manage: F) -> Result<(), E>
+    where
+        C: From<Coord> + Into<Coord>,
+        F: FnMut(CellManage<C, T>) -> Result<Option<T>, E> {
+            let inf = inflate as i32;
+            let new_offset = (self.grid_offset.0 - inf, self.grid_offset.1 - inf);
+            let new_width = self.size.0 + inflate * 2;
+            let new_height = self.size.1 + inflate * 2;
+            self.try_resize_and_reposition(new_width, new_height, C::from(new_offset), manage)
     }
 
     /// Deflate the size by `defalte`.
@@ -175,12 +244,35 @@ impl<T> RollGrid2D<T> {
             self.resize_and_reposition(new_width, new_height, new_position, manage);
     }
 
+    /// Deflate the size by `defalte`.
+    pub fn try_deflate_size<C, E, F>(&mut self, deflate: usize, manage: F) -> Result<(), E>
+    where
+        C: From<Coord> + Into<Coord>,
+        F: FnMut(CellManage<C, T>) -> Result<Option<T>, E> {
+            let def = deflate as i32;
+            let new_position = C::from((self.grid_offset.0 + def, self.grid_offset.1 + def));
+            let new_width = self.size.0 - deflate * 2;
+            let new_height = self.size.1 - deflate * 2;
+            if new_width * new_height == 0 {
+                panic!("{AREA_IS_ZERO}");
+            }
+            self.try_resize_and_reposition(new_width, new_height, new_position, manage)
+    }
+
     /// Resize the grid, keeping it in the same position.
     pub fn resize<C, F>(&mut self, new_width: usize, new_height: usize, manage: F)
     where
         C: From<Coord> + Into<Coord>,
         F: FnMut(CellManage<C, T>) -> Option<T> {
             self.resize_and_reposition::<C, F>(new_width, new_height, C::from(self.grid_offset), manage);
+    }
+
+    /// Resize the grid, keeping it in the same position.
+    pub fn try_resize<C, E, F>(&mut self, new_width: usize, new_height: usize, manage: F) -> Result<(), E>
+    where
+        C: From<Coord> + Into<Coord>,
+        F: FnMut(CellManage<C, T>) -> Result<Option<T>, E> {
+            self.try_resize_and_reposition::<C, E, F>(new_width, new_height, C::from(self.grid_offset), manage)
     }
 
     // Resize
@@ -203,8 +295,8 @@ impl<T> RollGrid2D<T> {
     /// ```
     pub fn resize_and_reposition<C, F>(
         &mut self,
-        new_width: usize,
-        new_height: usize,
+        width: usize,
+        height: usize,
         new_position: C,
         manage: F
     )
@@ -214,148 +306,75 @@ impl<T> RollGrid2D<T> {
     {
         #![allow(unused)]
         let mut manage = manage;
-        if new_width == self.size.0
-        && new_height == self.size.1 {
-            self.reposition(new_position, |old_pos, new_pos, old_value| {
+        if width == self.size.0
+        && height == self.size.1 {
+            return self.reposition(new_position, |old_pos, new_pos, old_value| {
                 manage(CellManage::Unload(old_pos, old_value));
                 manage(CellManage::Load(new_pos))
             });
-            return;
         }
         let new_position: Coord = new_position.into();
-        let area = new_width.checked_mul(new_height).expect(SIZE_TOO_LARGE);
+        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
         if area == 0 { panic!("{AREA_IS_ZERO}"); }
         #[cfg(target_pointer_width = "64")]
         if area > i32::MAX as usize { panic!("{SIZE_TOO_LARGE}"); }
         let (new_x, new_y): Coord = new_position.into();
         if new_position == self.grid_offset
-        && (new_width, new_height) == self.size {
+        && (width, height) == self.size {
             return;
         }
-        let nw = new_width as i32;
-        let nh = new_height as i32;
+        let nw = width as i32;
+        let nh = height as i32;
         // Determine what needs to be unloaded
         let old_bounds: Bounds2D = self.bounds();
         let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
         if old_bounds.intersects(new_bounds) {
-            let unload_left = if old_bounds.left() < new_bounds.left() {
-                let left = old_bounds.left();
-                let top = new_bounds.top().max(old_bounds.top());
-                let right = new_bounds.left();
-                let bottom = old_bounds.bottom();
-                Some(Bounds2D::new((left, top), (right, bottom)))
-            } else {
-                None
-            };
-            let unload_top = if old_bounds.top() < new_bounds.top() {
-                let left = old_bounds.left();
-                let top = old_bounds.top();
-                let right = new_bounds.right().min(old_bounds.right());
-                let bottom = new_bounds.top();
-                Some(Bounds2D::new((left, top), (right, bottom)))
-            } else {
-                None
-            };
-            let unload_right = if old_bounds.right() > new_bounds.right() {
-                let left = new_bounds.right();
-                let top = old_bounds.top();
-                let right = old_bounds.right();
-                let bottom = new_bounds.bottom().min(new_bounds.bottom());
-                Some(Bounds2D::new((left, top), (right, bottom)))
-            } else {
-                None
-            };
-            let unload_bottom = if old_bounds.bottom() > new_bounds.bottom() {
-                let left = new_bounds.left().max(old_bounds.left());
-                let top = new_bounds.bottom();
-                let right = old_bounds.right();
-                let bottom = old_bounds.bottom();
-                Some(Bounds2D::new((left, top), (right, bottom)))
-            } else {
-                None
-            };
-            let load_left = if new_bounds.left() < old_bounds.left() {
-                let left = new_bounds.left();
-                let top = old_bounds.top().max(new_bounds.top());
-                let right = old_bounds.left();
-                let bottom = new_bounds.bottom();
-                Some(Bounds2D::new((left, top), (right, bottom)))
-            } else {
-                None
-            };
-            let load_top = if new_bounds.top() < old_bounds.top() {
-                let left = new_bounds.left();
-                let top = new_bounds.top();
-                let right = old_bounds.right().min(new_bounds.right());
-                let bottom = old_bounds.top();
-                Some(Bounds2D::new((left, top), (right, bottom)))
-            } else {
-                None
-            };
-            let load_right = if new_bounds.right() > old_bounds.right() {
-                let left = old_bounds.right();
-                let top = new_bounds.top();
-                let right = new_bounds.right();
-                let bottom = old_bounds.bottom().min(new_bounds.bottom());
-                Some(Bounds2D::new((left, top), (right, bottom)))
-            } else {
-                None
-            };
-            let load_bottom = if new_bounds.bottom() > old_bounds.bottom() {
-                let left = old_bounds.left().max(new_bounds.left());
-                let top = old_bounds.bottom();
-                let right = new_bounds.right();
-                let bottom = new_bounds.bottom();
-                Some(Bounds2D::new((left, top), (right, bottom)))
-            } else {
-                None
-            };
-            // This is the region that is kept. It is not unloaded or loaded. It is just copied.
-            let keep = {
-                let left = new_bounds.left().max(old_bounds.left());
-                let top = new_bounds.top().max(old_bounds.top());
-                let right = old_bounds.right().min(new_bounds.right());
-                let bottom = old_bounds.bottom().min(new_bounds.bottom());
-                Bounds2D::new((left, top), (right, bottom))
-            };
-            let mut temp_grid = TempGrid2D::<T>::new((new_width, new_height), new_position);
-            keep.iter().for_each(|pos| {
-                let self_index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                let other_index = temp_grid.offset_index(pos).expect(OUT_OF_BOUNDS);
-                let cell = self.cells[self_index].take();
-                temp_grid.cells[other_index] = cell;
-            });
-            macro_rules! unload_region {
-                ($region:expr) => {
-                    if let Some(region) = $region {
-                        region.iter().for_each(|pos| {
+            macro_rules! unload_bounds {
+                ($cond: expr => xmin = $xmin:expr; ymin = $ymin:expr; xmax = $xmax:expr; ymax = $ymax:expr;) => {
+                    if $cond {
+                        Bounds2D::new(
+                            ($xmin, $ymin),
+                            ($xmax, $ymax)
+                        ).iter().for_each(|pos| {
                             let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                            let cell = self.cells[index].take();
-                            manage(CellManage::Unload(C::from(pos), cell));
+                            manage(CellManage::Unload(C::from(pos), self.cells[index].take()));
                         });
                     }
                 };
             }
-            macro_rules! load_region {
-                ($region:expr) => {
-                    if let Some(region) = $region {
-                        region.iter().for_each(|pos| {
-                            let index = temp_grid.offset_index(pos).expect(OUT_OF_BOUNDS);
-                            let new_value = manage(CellManage::Load(C::from(pos)));
-                            temp_grid.cells[index] = new_value;
-                        });
-                    }
-                };
-            }
-            unload_region!(unload_left);
-            unload_region!(unload_top);
-            unload_region!(unload_right);
-            unload_region!(unload_bottom);
-            load_region!(load_left);
-            load_region!(load_top);
-            load_region!(load_right);
-            load_region!(load_bottom);
-            self.size = (new_width, new_height);
+            unload_bounds!(old_bounds.x_min() < new_bounds.x_min() => 
+                xmin = old_bounds.x_min();
+                ymin = new_bounds.y_min().max(old_bounds.y_min());
+                xmax = new_bounds.x_min();
+                ymax = old_bounds.y_max();
+            );
+            unload_bounds!(old_bounds.y_min() < new_bounds.y_min() => 
+                xmin = old_bounds.x_min();
+                ymin = old_bounds.y_min();
+                xmax = new_bounds.x_max().min(old_bounds.x_max());
+                ymax = new_bounds.y_min();
+            );
+            unload_bounds!(old_bounds.x_max() > new_bounds.x_max() => 
+                xmin = new_bounds.x_max();
+                ymin = old_bounds.y_min();
+                xmax = old_bounds.x_max();
+                ymax = new_bounds.y_max().min(old_bounds.y_max());
+            );
+            unload_bounds!(old_bounds.y_max() > new_bounds.y_max() => 
+                xmin = new_bounds.x_min().max(old_bounds.x_min());
+                ymin = new_bounds.y_max();
+                xmax = old_bounds.x_max();
+                ymax = old_bounds.y_max();
+            );
+            let temp_grid = TempGrid2D::new_with_init((width, height), new_position, |pos| {
+                if old_bounds.contains(pos) {
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    self.cells[index].take()
+                } else {
+                    manage(CellManage::Load(C::from(pos)))
+                }
+            });
+            self.size = (width, height);
             self.grid_offset = new_position;
             self.cells = temp_grid.take_cells();
         } else { // !old_bounds.intersects(new_bounds)
@@ -364,16 +383,133 @@ impl<T> RollGrid2D<T> {
                 let value = self.cells[index].take();
                 manage(CellManage::Unload(C::from(pos), value));
             });
-            let mut temp_grid = TempGrid2D::<T>::new((new_width, new_height), new_position);
-            new_bounds.iter().for_each(|pos| {
-                let index = temp_grid.offset_index(pos).expect(OUT_OF_BOUNDS);
-                let new_value = manage(CellManage::Load(C::from(pos)));
-                temp_grid.cells[index] = new_value;
+            let temp_grid = TempGrid2D::new_with_init((width, height), new_position, |pos| {
+                manage(CellManage::Load(C::from(pos)))
             });
-            self.size = (new_width, new_height);
+            self.size = (width, height);
             self.grid_offset = new_position;
             self.cells = temp_grid.take_cells();
         }
+    }
+
+    // Resize
+    /// Resize and reposition the grid.
+    /// ```no_run
+    /// grid.resize_and_reposition(3, 3, (4, 4), |action| {
+    ///     match action {
+    ///         CellManage::Load(pos) => {
+    ///             println!("Load: ({},{})", pos.0, pos.1);
+    ///             // The loaded value
+    ///             Some(pos)
+    ///         }
+    ///         CellManage::Unload(pos, old) => {
+    ///             println!("Unload: ({},{})", pos.0, pos.1);
+    ///             // Return None for Unload.
+    ///             None
+    ///         }
+    ///     }
+    /// });
+    /// ```
+    pub fn try_resize_and_reposition<C, E, F>(
+        &mut self,
+        width: usize,
+        height: usize,
+        new_position: C,
+        manage: F
+    ) -> Result<(), E>
+    where
+        C: Into<Coord> + From<Coord>,
+        F: FnMut(CellManage<C, T>) -> Result<Option<T>, E>
+    {
+        #![allow(unused)]
+        let mut manage = manage;
+        if width == self.size.0
+        && height == self.size.1 {
+            return self.try_reposition(new_position, |old_pos, new_pos, old_value| {
+                manage(CellManage::Unload(old_pos, old_value));
+                manage(CellManage::Load(new_pos))
+            });
+        }
+        let new_position: Coord = new_position.into();
+        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
+        if area == 0 { panic!("{AREA_IS_ZERO}"); }
+        #[cfg(target_pointer_width = "64")]
+        if area > i32::MAX as usize { panic!("{SIZE_TOO_LARGE}"); }
+        let (new_x, new_y): Coord = new_position.into();
+        if new_position == self.grid_offset
+        && (width, height) == self.size {
+            return Ok(());
+        }
+        let nw = width as i32;
+        let nh = height as i32;
+        // Determine what needs to be unloaded
+        let old_bounds: Bounds2D = self.bounds();
+        let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
+        if old_bounds.intersects(new_bounds) {
+            macro_rules! unload_bounds {
+                ($cond: expr => xmin = $xmin:expr; ymin = $ymin:expr; xmax = $xmax:expr; ymax = $ymax:expr;) => {
+                    if $cond {
+                        Bounds2D::new(
+                            ($xmin, $ymin),
+                            ($xmax, $ymax)
+                        ).iter().try_for_each(|pos| {
+                            let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                            manage(CellManage::Unload(C::from(pos), self.cells[index].take()))?;
+                            Ok(())
+                        })?;
+                    }
+                };
+            }
+            unload_bounds!(old_bounds.x_min() < new_bounds.x_min() => 
+                xmin = old_bounds.x_min();
+                ymin = new_bounds.y_min().max(old_bounds.y_min());
+                xmax = new_bounds.x_min();
+                ymax = old_bounds.y_max();
+            );
+            unload_bounds!(old_bounds.y_min() < new_bounds.y_min() => 
+                xmin = old_bounds.x_min();
+                ymin = old_bounds.y_min();
+                xmax = new_bounds.x_max().min(old_bounds.x_max());
+                ymax = new_bounds.y_min();
+            );
+            unload_bounds!(old_bounds.x_max() > new_bounds.x_max() => 
+                xmin = new_bounds.x_max();
+                ymin = old_bounds.y_min();
+                xmax = old_bounds.x_max();
+                ymax = new_bounds.y_max().min(old_bounds.y_max());
+            );
+            unload_bounds!(old_bounds.y_max() > new_bounds.y_max() => 
+                xmin = new_bounds.x_min().max(old_bounds.x_min());
+                ymin = new_bounds.y_max();
+                xmax = old_bounds.x_max();
+                ymax = old_bounds.y_max();
+            );
+            let temp_grid = TempGrid2D::try_new_with_init((width, height), new_position, |pos| {
+                if old_bounds.contains(pos) {
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    Ok(self.cells[index].take())
+                } else {
+                    manage(CellManage::Load(C::from(pos)))
+                }
+            })?;
+            self.size = (width, height);
+            self.grid_offset = new_position;
+            self.cells = temp_grid.take_cells();
+        } else { // !old_bounds.intersects(new_bounds)
+            old_bounds.iter().try_for_each(|pos| {
+                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let value = self.cells[index].take();
+                manage(CellManage::Unload(C::from(pos), value))?;
+                Ok(())
+            })?;
+            let temp_grid = TempGrid2D::try_new_with_init((width, height), new_position, |pos| {
+                manage(CellManage::Load(C::from(pos)))
+            })?;
+            self.size = (width, height);
+            self.grid_offset = new_position;
+            self.cells = temp_grid.take_cells();
+        }
+        Ok(())
     }
 
     // Translation/Repositioning
@@ -391,6 +527,21 @@ impl<T> RollGrid2D<T> {
             let (curx, cury) = self.grid_offset;
             let (ox, oy): (i32, i32) = offset.into();
             self.reposition(C::from((curx + ox, cury + oy)), reload);
+        }
+
+    /// Translate the grid by offset amount with a reload function.
+    /// Signature of the reload function is as follows:
+    /// ```rust,no_run
+    /// fn reload(old_position: C, new_position: C, old_value: T) -> Option<T>
+    /// ```
+    /// Where the return value of `reload` is the new value for that slot.
+    pub fn try_translate<C, E, F>(&mut self, offset: C, reload: F) -> Result<(), E>
+    where
+        C: Into<(i32, i32)> + From<(i32, i32)>,
+        F: FnMut(C, C, Option<T>) -> Result<Option<T>, E> {
+            let (curx, cury) = self.grid_offset;
+            let (ox, oy): (i32, i32) = offset.into();
+            self.try_reposition(C::from((curx + ox, cury + oy)), reload)
         }
     
     /// Reposition the offset of the grid and reload the slots that are changed.
@@ -525,6 +676,140 @@ impl<T> RollGrid2D<T> {
                 }
             }
         }
+    
+    /// Reposition the offset of the grid and reload the slots that are changed.
+    /// Signature of the reload function is as follows:
+    /// ```rust,no_run
+    /// fn reload(old_position: C, new_position: C, old_value: T) -> Option<T>
+    /// ```
+    /// Where the return value of `reload` is the new value for that slot.
+    pub fn try_reposition<C, E, F>(&mut self, position: C, reload: F) -> Result<(), E>
+    where
+        C: Into<(i32, i32)> + From<(i32, i32)>,
+        F: FnMut(C, C, Option<T>) -> Result<Option<T>, E> {
+            let (old_x, old_y) = self.grid_offset;
+            let (new_x, new_y): (i32, i32) = position.into();
+            let offset = (
+                new_x - old_x,
+                new_y - old_y
+            );
+            if offset == (0, 0) {
+                return Ok(());
+            }
+            let mut reload = reload;
+            let width = self.size.0 as i32;
+            let height = self.size.1 as i32;
+            let (offset_x, offset_y) = offset;
+            self.grid_offset = (new_x, new_y);
+            // Offset is within bounds, so that means that the grid will be rolled.
+            // This allows for bounded reloading of the grid elements.
+            // If rolling causes a section to remain on the grid, that section will not be reloaded.
+            // Only the elements that are considered new will be reloaded.
+            if offset_x.abs() < width && offset_y.abs() < height {
+                let (roll_x, roll_y) = (
+                    self.wrap_offset.0 as i32,
+                    self.wrap_offset.1 as i32
+                );
+                let (wrapped_offset_x, wrapped_offset_y) = (
+                    offset_x.rem_euclid(width),
+                    offset_y.rem_euclid(height)
+                );
+                // Update the roll so that we reduce reloading.
+                // Without using the roll functionality, this function would demand to reload
+                // every single cell, even if it only needed to reload 8 out of 64 cells.
+                let new_rolled_x = (roll_x + wrapped_offset_x).rem_euclid(width);
+                let new_rolled_y = (roll_y + wrapped_offset_y).rem_euclid(height);
+                self.wrap_offset = (new_rolled_x, new_rolled_y);
+                let right = new_x + width;
+                let bottom = new_y + height;
+                // Calculate ranges
+                // Combining new_x_range and new_y_range gets the corner.
+                // The partition on either the left or right side
+                let new_x_range = if offset_x >= 0 {
+                    (right - offset_x)..right
+                } else {
+                    new_x..new_x-offset_x
+                };
+                let new_x_range_y_range = if offset_y >= 0 {
+                    new_y..(bottom - offset_y)
+                } else {
+                    new_y-offset_y..bottom
+                };
+                // The partition on either the top or the bottom.
+                let new_y_range = if offset_y >= 0 {
+                    (bottom - offset_y)..bottom
+                } else {
+                    new_y..new_y-offset_y
+                };
+                let new_y_range_x_range = if offset_x >= 0 {
+                    new_x..(right - offset_x)
+                } else {
+                    new_x-offset_x..right
+                };
+                // The left/right partition
+                for y in new_x_range_y_range.clone() {
+                    for (xi, x) in new_x_range.clone().enumerate() {
+                        let prior_x = if offset_x >= 0 {
+                            old_x + xi as i32
+                        } else {
+                            old_x + width + offset_x + xi as i32
+                        };
+                        let prior_y = y;
+                        let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                        let old_value = self.cells[index].take();
+                        let new_value = reload(C::from((prior_x, prior_y)), C::from((x, y)), old_value)?;
+                        self.cells[index] = new_value;
+                    }
+                }
+                // The top/bottom partition
+                for (iy, y) in new_y_range.clone().enumerate() {
+                    for x in new_y_range_x_range.clone() {
+                        let prior_x = x;
+                        let prior_y = if offset_y >= 0 {
+                            old_y + iy as i32
+                        } else {
+                            old_y + height + offset_y + iy as i32
+                        };
+                        let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                        let old_value = self.cells[index].take();
+                        let new_value = reload(C::from((prior_x, prior_y)), C::from((x, y)), old_value)?;
+                        self.cells[index] = new_value;
+                    }
+                }
+                // The corner partition
+                for (iy, y) in new_y_range.enumerate() {
+                    for (ix, x) in new_x_range.clone().enumerate() {
+                        let prior_x = if offset_x >= 0 {
+                            old_x + ix as i32
+                        } else {
+                            old_x + width + offset_x + ix as i32
+                        };
+                        let prior_y = if offset_y >= 0 {
+                            old_y + iy as i32
+                        } else {
+                            old_y + height + offset_y + iy as i32
+                        };
+                        let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                        let old_value = self.cells[index].take();
+                        let new_value = reload(C::from((prior_x, prior_y)), C::from((x, y)), old_value)?;
+                        self.cells[index] = new_value;
+                    }
+                }
+            } else {
+                // Reload everything
+                for (yi, y) in (new_y..new_y + height).enumerate() {
+                    for (xi, x) in (new_x..new_x + width).enumerate() {
+                        let prior_x = old_x + xi as i32;
+                        let prior_y = old_y + yi as i32;
+                        let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                        let old_value = self.cells[index].take();
+                        let new_value = reload(C::from((prior_x, prior_y)), C::from((x, y)), old_value)?;
+                        self.cells[index] = new_value;
+                    }
+                }
+            }
+            Ok(())
+        }
 
     pub fn relative_offset<C: Into<(i32, i32)> + From<(i32, i32)>>(&self, coord: C) -> C {
         let (x, y): (i32, i32) = coord.into();
@@ -635,26 +920,26 @@ impl<T> RollGrid2D<T> {
         self.grid_offset
     }
 
-    pub fn left(&self) -> i32 {
+    pub fn x_min(&self) -> i32 {
         self.grid_offset.0
     }
 
-    pub fn right(&self) -> i32 {
+    pub fn x_max(&self) -> i32 {
         self.grid_offset.0 + self.size.0 as i32
     }
 
-    pub fn top(&self) -> i32 {
+    pub fn y_min(&self) -> i32 {
         self.grid_offset.1
     }
 
-    pub fn bottom(&self) -> i32 {
+    pub fn y_max(&self) -> i32 {
         self.grid_offset.1 + self.size.1 as i32
     }
 
     pub fn bounds(&self) -> Bounds2D {
         Bounds2D {
-            min: (self.left(), self.top()),
-            max: (self.right(), self.bottom())
+            min: (self.x_min(), self.y_min()),
+            max: (self.x_max(), self.y_max())
         }
     }
 
@@ -697,7 +982,6 @@ pub struct Bounds2D {
 }
 
 impl Bounds2D {
-    #[inline(always)]
     pub fn new<C: Into<(i32, i32)>>(min: C, max: C) -> Self {
         Self {
             min: min.into(),
@@ -705,7 +989,6 @@ impl Bounds2D {
         }
     }
 
-    #[inline(always)]
     pub fn from_bounds<C: Into<(i32, i32)>>(a: C, b: C) -> Self {
         let a: (i32, i32) = a.into();
         let b: (i32, i32) = b.into();
@@ -719,44 +1002,36 @@ impl Bounds2D {
         }
     }
 
-    #[inline(always)]
     pub fn width(&self) -> u32 {
         (self.max.0 as i64 - self.min.0 as i64) as u32
     }
 
-    #[inline(always)]
     pub fn height(&self) -> u32 {
         (self.max.1 as i64 - self.min.1 as i64) as u32
     }
 
-    #[inline(always)]
     pub fn area(&self) -> i64 {
         self.width() as i64 * self.height() as i64
     }
 
-    #[inline(always)]
-    pub fn left(&self) -> i32 {
+    pub fn x_min(&self) -> i32 {
         self.min.0
     }
 
-    #[inline(always)]
-    pub fn top(&self) -> i32 {
+    pub fn y_min(&self) -> i32 {
         self.min.1
     }
 
-    #[inline(always)]
-    pub fn right(&self) -> i32 {
+    pub fn x_max(&self) -> i32 {
         self.max.0
     }
 
-    #[inline(always)]
-    pub fn bottom(&self) -> i32 {
+    pub fn y_max(&self) -> i32 {
         self.max.1
     }
 
     // intersects would need to copy self and other anyway, so
     // just accept copied values rather than references.
-    #[inline(always)]
     pub fn intersects(self, other: Bounds2D) -> bool {
         let ((ax_min, ay_min), (ax_max, ay_max)) = (self.min, self.max);
         let ((bx_min, by_min), (bx_max, by_max)) = (other.min, other.max);
@@ -766,7 +1041,6 @@ impl Bounds2D {
         && by_min < ay_max
     }
 
-    #[inline(always)]
     pub fn contains<P: Into<(i32, i32)>>(self, point: P) -> bool {
         let point: (i32, i32) = point.into();
         point.0 >= self.min.0
@@ -776,7 +1050,6 @@ impl Bounds2D {
     }
 
     /// Iterate the coordinates in the [Bounds2D].
-    #[inline(always)]
     pub fn iter(self) -> Bounds2DIter {
         Bounds2DIter {
             bounds: self,
@@ -793,7 +1066,6 @@ pub struct Bounds2DIter {
 impl Iterator for Bounds2DIter {
     type Item = (i32, i32);
 
-    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         if self.current.1 == self.bounds.max.1 {
             return (0, Some(0));
@@ -809,7 +1081,6 @@ impl Iterator for Bounds2DIter {
         (size - index, Some(size - index))
     }
 
-    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.current.1 == self.bounds.max.1 {
             return None;
@@ -831,12 +1102,10 @@ pub struct RollGrid2DIterator<'a, T> {
 impl<'a, T> Iterator for RollGrid2DIterator<'a, T> {
     type Item = ((i32, i32), Option<&'a T>);
 
-    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.bounds_iter.size_hint()
     }
 
-    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
@@ -857,12 +1126,10 @@ pub struct RollGrid2DMutIterator<'a, T> {
 impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
     type Item = ((i32, i32), Option<&'a mut T>);
 
-    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.bounds_iter.size_hint()
     }
 
-    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
@@ -884,11 +1151,11 @@ mod tests {
 
     fn print_grid(grid: &RollGrid2D<((i32, i32))>) {
         println!("[");
-        for y in grid.top()..grid.bottom() {
+        for y in grid.y_min()..grid.y_max() {
             print!("    [");
-            for x in grid.left()..grid.right() {
+            for x in grid.x_min()..grid.x_max() {
                 if let Some((cx, cy)) = grid.get_copy((x, y)) {
-                    if x > grid.left() {
+                    if x > grid.x_min() {
                         print!(", ");
                     }
                     print!("({cx:2}, {cy:2})");
@@ -911,6 +1178,62 @@ mod tests {
         });
         println!("Grid repositioned to (1, 2):");
         print_grid(&grid);
+    }
+
+    #[test]
+    fn resize_and_reposition_test() {
+        struct DropCoord {
+            coord: (i32, i32),
+            unloaded: bool,
+        }
+        impl From<(i32, i32)> for DropCoord {
+            fn from(value: (i32, i32)) -> Self {
+                Self {
+                    coord: value,
+                    unloaded: false,
+                }
+            }
+        }
+        impl Drop for DropCoord {
+            fn drop(&mut self) {
+                // assert!(self.unloaded);
+            }
+        }
+        fn verify_grid(grid: &RollGrid2D<DropCoord>) {
+            let offset = grid.grid_offset;
+            for y in grid.y_min()..grid.y_max() {
+                for x in grid.x_min()..grid.x_max() {
+                    let pos = (x, y);
+                    let cell = grid.get(pos).expect("Cell was None");
+                    assert_eq!(pos, cell.coord);
+                }
+            }
+        }
+        itertools::iproduct!(
+            1..7, 1..7,
+            -1..6, -1..6
+        ).for_each(|(width, height, x, y)| {
+            let mut grid = RollGrid2D::new_with_init(4, 4, (0,0), |pos:(i32, i32)| {
+                Some(DropCoord::from(pos))
+            });
+            grid.resize_and_reposition(width, height, (x, y), |action| {
+                match action {
+                    CellManage::Load(pos) => Some(DropCoord::from(pos)),
+                    CellManage::Unload(pos, old_value) => {
+                        let mut old = old_value.expect("Old Value was None");
+                        old.unloaded = true;
+                        assert_eq!(pos, old.coord);
+                        None
+                    }
+                }
+            });
+            grid.iter_mut().for_each(|(pos, cell)| {
+                if let Some(cell) = cell {
+                    cell.unloaded = true;
+                }
+            });
+            verify_grid(&grid);
+        });
     }
 
 }

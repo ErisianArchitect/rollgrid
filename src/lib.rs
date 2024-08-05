@@ -35,8 +35,8 @@ mod tests {
             hex.next()
         });
         fn print_grid(grid: &RollGrid2D<char>) {
-            for y in grid.top()..grid.bottom() {
-                for x in grid.left()..grid.right() {
+            for y in grid.y_min()..grid.y_max() {
+                for x in grid.x_min()..grid.x_max() {
                     if let Some(c) = grid.get((x, y)) {
                         print!("{}", *c);
                     }
@@ -92,8 +92,8 @@ mod tests {
         });
         fn print_grid(grid: &RollGrid2D<(i32, i32)>) {
             println!("***");
-            for y in grid.top()..grid.bottom() {
-                for x in grid.left()..grid.right() {
+            for y in grid.y_min()..grid.y_max() {
+                for x in grid.x_min()..grid.x_max() {
                     if let Some(&(cx, cy)) = grid.get((x, y)) {
                         print!("({cx:3},{cy:3})");
                     }
