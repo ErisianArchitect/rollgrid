@@ -121,8 +121,7 @@ You can modify this code to fit your purpose.
 # Short Documentation
 These functions/methods are found on both RollGrid2D and RollGrid3D.
 
-If `T` is `Default`:
-### `new_default`
+### `new_default` (if `T: Default`)
 Creates a new RollGridXD with the specified size and offset.  
 This function will panic if the volume of the size is `0` or if it's greater than `i32::MAX`.
 
