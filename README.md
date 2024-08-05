@@ -117,3 +117,133 @@ New (as of August 5th, 2024):
 This `reposition` method works for the 2d and 3d variants of the rollgrid.
 
 You can modify this code to fit your purpose.
+
+# Short Documentation
+These functions/methods are found on both RollGrid2D and RollGrid3D.
+
+If `T` is `Default`:
+### `new_default`
+Creates a new RollGridXD with the specified size and offset.  
+This function will panic if the volume of the size is `0` or if it's greater than `i32::MAX`.
+
+### `new`
+Creates a new RollGridXD with specified size and offset, but initializes all cells with `None`.  
+This function will panic if the volume of the size is `0` or if it's greater than `i32::MAX`.
+
+### `try_new_with_init`
+The fallible version of `new`.  
+This function will panic if the volume of the size is `0` or if it's greater than `i32::MAX`.
+
+### `get`
+Returns the reference to the cell data wrapped in `Option::Some` if the cell data exists and the coordinate is in bounds. Otherwise returns `None`.
+
+### `get_copy` (if `T: Copy`)
+Rather than getting a reference to the cell's value, get's a copy of it.
+
+### `get_clone` (if `T: Clone`)
+Rather than getting a reference to the cell's value, get's a clone of it.
+
+### `get_mut`
+The mutable version of `get`.
+
+### `get_or_insert`
+Either gets the cell or inserts a value into it, returns a mutable reference to the cell.
+
+### `get_or_insert_with`
+Similar to `get_or_insert`, but instead you supply a callback. This is handy if it would be an expensive operation to use `get_or_insert`.
+
+### `get_opt`
+Get a reference to the cell's `Option` (all cells are stored in an `Option<T>`)
+
+### `take`
+Take ownership of a cell. This is similar to `Option::take`.
+
+### `set`
+Set the value in the cell and return the old value (as an `Option`).
+
+### `set_opt`
+Set the cell's internal `Option` value.
+
+### `reposition`
+Reposition the grid. This operation will allow you to load in new cells in the area that you move the grid to. The grid simply applies an offset to the grid (without moving anything in memory) and then calculates the cells that need to be updated, then it calls a callback that you supply to it that takes the arguments of (old position, new position, old value), and the return value is the new value.
+
+### `try_reposition`
+The fallible version of `reposition`.
+
+### `translate`
+Similar to `reposition`, but instead takes a relative offset as its argument and moves the grid by that amount.
+
+### `try_translate`
+The fallible version of `translate`.
+
+### `resize_and_reposition`
+Resize and reposition the grid.
+
+### `try_resize_and_reposition`
+The fallible version of `resize_and_reposition`.
+
+### `resize`
+Resize the grid while keeping the offset the same.
+
+### `try_resize`
+The fallible version of `resize`.
+
+### `inflate_size`
+If you know what an `inflate` operation is on a rectangle type, then you know what this does. It essentially increases the bounds of the grid by the specified amount. So if you have a 2x2 grid and you inflate the size by (1, 1), the resulting grid will have a size of 4x4 and the offset will be (1, 1) less than the previous offset.
+
+### `try_inflate_size`
+The fallible version of `inflate_size`.
+
+### `deflate_size`
+Similar to the `inflate_size` method, but instead of inflating the size it deflates it.
+
+### `try_deflate_size`
+The fallible version of `deflate_size`.
+
+### `relative_offset`
+Tells you where a coordinate is in relation to the grid offset. So for example, if your grid offset were (1, 2), and you asked it what the relative offset of (3, 4) was, the answer would be (2, 2).
+
+### `offset`
+The offset of the grid. This is the location of the first cell in the grid.
+
+### `size`
+Returns `(usize, usize, usize)` that tells you the dimensions of the grid.
+
+### `width`
+Tells you the size along the `X` axis.
+
+### `height`
+Tells you the size along the `Y` axis.
+
+### `depth`
+Tells you the size along the Z axis.
+
+### `x_min`
+Tells you the minimum bound on the `X` axis.
+
+### `y_min`
+Tells you the minimum bound on the `Y` axis.
+
+### `z_min` (`RollGrid3D`)
+Tells you the minimum bound on the `Z` axis.
+
+### `x_max`
+Tells you the maximum bound on the `X` axis.
+
+### `y_max`
+Tells you the maximum bound on the `Y` axis.
+
+### `z_max` (`RollGrid3D`)
+Tells you the maximum bound on the `Z` axis.
+
+### `bounds`
+Returns a bounds object (either `Bounds2D` or `Bounds3D`).
+
+### `len`
+Returns the number of cells present in the grid.
+
+### `iter`
+Iterate the cells in the grid. This gives you tuples with `(position, &Option<T>)`.
+
+### `iter_mut`
+The mutable iterator. This unfortunately uses `unsafe` code. I think it's possible to do it without `unsafe`, but I haven't gotten around to that yet.
