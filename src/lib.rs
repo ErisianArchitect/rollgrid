@@ -5,11 +5,6 @@ const SIZE_TOO_LARGE: &'static str = "Size is too large";
 const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bound";
 const OUT_OF_BOUNDS: &'static str = "Out of bounds";
 
-// #[inline(always)]
-// fn iproduct_arg_rev<T>(input: (T, T)) -> (T, T) {
-//     (input.1, input.0)
-// }
-
 /// Used in the `manage` callback for loading and unloading cells during resize/reposition operations.
 pub enum CellManage<C, T> {
     /// For when a cell is loaded.

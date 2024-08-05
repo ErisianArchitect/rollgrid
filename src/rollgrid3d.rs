@@ -76,14 +76,22 @@ impl<T> RollGrid3D<T> {
             panic!("{OFFSET_TOO_CLOSE_TO_MAX}");
         }
         Ok(Self {
-            cells: itertools::iproduct!(0..height as i32, 0..depth as i32, 0..width as i32)
-                .map(|(y, z, x)| C::from((
+            cells: Bounds3D::new((0, 0, 0), (width as i32, height as i32, depth as i32)).iter()
+                .map(|(x, y, z)| C::from((
                     x + grid_offset.0,
                     y + grid_offset.1,
-                    z + grid_offset.2
+                    z + grid_offset.2,
                 )))
                 .map(init)
                 .collect::<Result<Box<_>, E>>()?,
+            // cells: itertools::iproduct!(0..height as i32, 0..depth as i32, 0..width as i32)
+            //     .map(|(y, z, x)| C::from((
+            //         x + grid_offset.0,
+            //         y + grid_offset.1,
+            //         z + grid_offset.2
+            //     )))
+            //     .map(init)
+            //     .collect::<Result<Box<_>, E>>()?,
             size: (width, height, depth),
             wrap_offset: (0, 0, 0),
             grid_offset
@@ -111,11 +119,11 @@ impl<T> RollGrid3D<T> {
             panic!("{OFFSET_TOO_CLOSE_TO_MAX}");
         }
         Self {
-            cells: itertools::iproduct!(0..height as i32, 0..depth as i32, 0..width as i32)
-                .map(|(y, z, x)| C::from((
+            cells: Bounds3D::new((0, 0, 0), (width as i32, height as i32, depth as i32)).iter()
+                .map(|(x, y, z)| C::from((
                     x + grid_offset.0,
                     y + grid_offset.1,
-                    z + grid_offset.2
+                    z + grid_offset.2,
                 )))
                 .map(init)
                 .collect(),
@@ -1972,7 +1980,6 @@ pub struct Bounds3D {
 }
 
 impl Bounds3D {
-    #[inline(always)]
     pub fn new<C: Into<(i32, i32, i32)>>(min: C, max: C) -> Self {
         Self {
             min: min.into(),
@@ -1980,7 +1987,6 @@ impl Bounds3D {
         }
     }
 
-    #[inline(always)]
     pub fn from_bounds<C: Into<(i32, i32, i32)>>(a: C, b: C) -> Self {
         let a: (i32, i32, i32) = a.into();
         let b: (i32, i32, i32) = b.into();
@@ -1997,61 +2003,50 @@ impl Bounds3D {
     }
 
     /// The size along the X axis.
-    #[inline(always)]
     pub fn width(&self) -> u32 {
         (self.max.0 as i64 - self.min.0 as i64) as u32
     }
 
     /// The size along the Y axis.
-    #[inline(always)]
     pub fn height(&self) -> u32 {
         (self.max.1 as i64 - self.min.1 as i64) as u32
     }
 
     /// The size along the Z axis.
-    #[inline(always)]
     pub fn depth(&self) -> u32 {
         (self.max.2 as i64 - self.min.2 as i64) as u32
     }
 
-    #[inline(always)]
     pub fn volume(&self) -> i128 {
         self.width() as i128 * self.height() as i128 * self.depth() as i128
     }
 
-    #[inline(always)]
     pub fn x_min(&self) -> i32 {
         self.min.0
     }
 
-    #[inline(always)]
     pub fn y_min(&self) -> i32 {
         self.min.1
     }
-    
-    #[inline(always)]
+
     pub fn z_min(&self) -> i32 {
         self.min.2
     }
 
-    #[inline(always)]
     pub fn x_max(&self) -> i32 {
         self.max.0
     }
 
-    #[inline(always)]
     pub fn y_max(&self) -> i32 {
         self.max.1
     }
 
-    #[inline(always)]
     pub fn z_max(&self) -> i32 {
         self.max.2
     }
 
     // intersects would need to copy self and other anyway, so
     // just accept copied values rather than references.
-    #[inline(always)]
     pub fn intersects(self, other: Bounds3D) -> bool {
         let (ax_min, ay_min, az_min) = self.min;
         let (ax_max, ay_max, az_max) = self.max;
@@ -2065,7 +2060,6 @@ impl Bounds3D {
         && bz_min < az_max
     }
 
-    #[inline(always)]
     pub fn contains<P: Into<(i32, i32, i32)>>(self, point: P) -> bool {
         let point: (i32, i32, i32) = point.into();
         point.0 >= self.min.0
@@ -2076,7 +2070,6 @@ impl Bounds3D {
         && point.2 < self.max.2
     }
 
-    #[inline(always)]
     pub fn iter(self) -> Bounds3DIter {
         Bounds3DIter { bounds: self, current: self.min }
     }
@@ -2090,7 +2083,6 @@ pub struct Bounds3DIter {
 impl Iterator for Bounds3DIter {
     type Item = (i32, i32, i32);
 
-    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         if self.current.2 == self.bounds.max.2 {
             return (0, Some(0));
@@ -2108,7 +2100,6 @@ impl Iterator for Bounds3DIter {
         (volume - index, Some(volume - index))
     }
 
-    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.current.1 == self.bounds.max.1 {
             return None;
@@ -2137,12 +2128,10 @@ pub struct RollGrid3DIterator<'a, T> {
 impl<'a, T> Iterator for RollGrid3DIterator<'a, T> {
     type Item = ((i32, i32, i32), Option<&'a T>);
 
-    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.bounds_iter.size_hint()
     }
 
-    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
@@ -2163,12 +2152,10 @@ pub struct RollGrid3DMutIterator<'a, T> {
 impl<'a, T> Iterator for RollGrid3DMutIterator<'a, T> {
     type Item = ((i32, i32, i32), Option<&'a mut T>);
 
-    #[inline(always)]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.bounds_iter.size_hint()
     }
 
-    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
@@ -2291,31 +2278,30 @@ mod tests {
                 }
             }
         }
-        itertools::iproduct!(
-            1..7, 1..7, 1..7,
-            -1..6, -1..6, -1..6
-        ).for_each(|(width, height, depth, x, y, z)| {
-            let mut grid = RollGrid3D::new_with_init(4, 4, 4, (0,0,0), |pos:(i32, i32, i32)| {
-                Some(DropCoord::from(pos))
-            });
-            grid.resize_and_reposition(width, height, depth, (x, y, z), |action| {
-                match action {
-                    CellManage::Load(pos) => Some(DropCoord::from(pos)),
-                    CellManage::Unload(pos, old_value) => {
-                        let mut old = old_value.expect("Old Value was None");
-                        old.unloaded = true;
-                        assert_eq!(pos, old.coord);
-                        None
+        for height in 1..7 { for depth in 1..7 { for width in 1..7 {
+            for y in -1..6 { for z in -1..6 { for x in -1..6 {
+                let mut grid = RollGrid3D::new_with_init(4, 4, 4, (0,0,0), |pos:(i32, i32, i32)| {
+                    Some(DropCoord::from(pos))
+                });
+                grid.resize_and_reposition(width, height, depth, (x, y, z), |action| {
+                    match action {
+                        CellManage::Load(pos) => Some(DropCoord::from(pos)),
+                        CellManage::Unload(pos, old_value) => {
+                            let mut old = old_value.expect("Old Value was None");
+                            old.unloaded = true;
+                            assert_eq!(pos, old.coord);
+                            None
+                        }
                     }
-                }
-            });
-            grid.iter_mut().for_each(|(pos, cell)| {
-                if let Some(cell) = cell {
-                    cell.unloaded = true;
-                }
-            });
-            verify_grid(&grid);
-        });
+                });
+                grid.iter_mut().for_each(|(pos, cell)| {
+                    if let Some(cell) = cell {
+                        cell.unloaded = true;
+                    }
+                });
+                verify_grid(&grid);
+            }}}
+        }}}
     }
 
     

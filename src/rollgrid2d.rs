@@ -167,9 +167,11 @@ impl<T> RollGrid2D<T> {
             panic!("{}", OFFSET_TOO_CLOSE_TO_MAX);
         }
         Self {
-            cells: itertools::iproduct!(0..height as i32, 0..width as i32)
-                .map(|(y, x)| (x + grid_offset.0, y + grid_offset.1))
-                .map(C::from)
+            cells: Bounds2D::new((0, 0), (width as i32, height as i32)).iter()
+                .map(|(x, y)| C::from((
+                    x + grid_offset.0,
+                    y + grid_offset.1
+                )))
                 .map(init)
                 .collect(),
             size: (width, height),
@@ -194,9 +196,11 @@ impl<T> RollGrid2D<T> {
             panic!("{}", OFFSET_TOO_CLOSE_TO_MAX);
         }
         Ok(Self {
-            cells: itertools::iproduct!(0..height as i32, 0..width as i32)
-                .map(|(y, x)| (x + grid_offset.0, y + grid_offset.1))
-                .map(C::from)
+            cells: Bounds2D::new((0, 0), (width as i32, height as i32)).iter()
+                .map(|(x, y)| C::from((
+                    x + grid_offset.0,
+                    y + grid_offset.1
+                )))
                 .map(init)
                 .collect::<Result<Box<_>, E>>()?,
             size: (width, height),
@@ -1209,31 +1213,30 @@ mod tests {
                 }
             }
         }
-        itertools::iproduct!(
-            1..7, 1..7,
-            -1..6, -1..6
-        ).for_each(|(width, height, x, y)| {
-            let mut grid = RollGrid2D::new_with_init(4, 4, (0,0), |pos:(i32, i32)| {
-                Some(DropCoord::from(pos))
-            });
-            grid.resize_and_reposition(width, height, (x, y), |action| {
-                match action {
-                    CellManage::Load(pos) => Some(DropCoord::from(pos)),
-                    CellManage::Unload(pos, old_value) => {
-                        let mut old = old_value.expect("Old Value was None");
-                        old.unloaded = true;
-                        assert_eq!(pos, old.coord);
-                        None
+        for height in 1..7 { for width in 1..7 {
+            for y in -1..6 { for x in -1..6 {
+                let mut grid = RollGrid2D::new_with_init(4, 4, (0,0), |pos:(i32, i32)| {
+                    Some(DropCoord::from(pos))
+                });
+                grid.resize_and_reposition(width, height, (x, y), |action| {
+                    match action {
+                        CellManage::Load(pos) => Some(DropCoord::from(pos)),
+                        CellManage::Unload(pos, old_value) => {
+                            let mut old = old_value.expect("Old Value was None");
+                            old.unloaded = true;
+                            assert_eq!(pos, old.coord);
+                            None
+                        }
                     }
-                }
-            });
-            grid.iter_mut().for_each(|(pos, cell)| {
-                if let Some(cell) = cell {
-                    cell.unloaded = true;
-                }
-            });
-            verify_grid(&grid);
-        });
+                });
+                grid.iter_mut().for_each(|(pos, cell)| {
+                    if let Some(cell) = cell {
+                        cell.unloaded = true;
+                    }
+                });
+                verify_grid(&grid);
+            }}
+        }}
     }
 
 }
