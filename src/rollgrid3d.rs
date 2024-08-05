@@ -28,6 +28,7 @@ impl<T: Default> RollGrid3D<T> {
 }
 
 impl<T> RollGrid3D<T> {
+    /// Create a new grid with all cells initialized to `None`.
     pub fn new<C: Into<Coord>>(
         width: usize,
         height: usize,
@@ -55,6 +56,7 @@ impl<T> RollGrid3D<T> {
         }
     }
 
+    /// Try to create a new grid with a fallible init function.
     pub fn try_new_with_init<C: From<Coord>, E, F: FnMut(C) -> Result<Option<T>, E>>(
         width: usize,
         height: usize,
@@ -98,6 +100,7 @@ impl<T> RollGrid3D<T> {
         })
     }
 
+    /// Create a new grid with an init function.
     pub fn new_with_init<C: From<Coord>, F: FnMut(C) -> Option<T>>(
         width: usize,
         height: usize,
@@ -254,7 +257,7 @@ impl<T> RollGrid3D<T> {
     /// Resize and reposition the grid.
     /// ```no_run
     /// grid.try_resize_and_reposition(3, 3, 3, (4, 4, 4), |action| {
-    ///     match action {
+    ///     Ok(match action {
     ///         CellManage::Load(pos) => {
     ///             println!("Load: ({},{},{})", pos.0, pos.1, pos.2);
     ///             // The loaded value
@@ -268,7 +271,7 @@ impl<T> RollGrid3D<T> {
     ///             // Return None for Unload.
     ///             None
     ///         }
-    ///     }
+    ///     })
     /// });
     /// ```
     pub fn try_resize_and_reposition<C, E, F>(
@@ -563,6 +566,7 @@ impl<T> RollGrid3D<T> {
             }
         }
     
+    /// Try to move the grid by relative offset using a fallible reload function.
     pub fn try_translate<C, E, F>(&mut self, offset: C, reload: F) -> Result<(), E>
         where
             C: Into<Coord> + From<Coord>,
@@ -576,6 +580,7 @@ impl<T> RollGrid3D<T> {
                 self.try_reposition(new_pos, reload)
             }
     
+    /// Move the grid by relative offset using a reload function.
     pub fn translate<C, F>(&mut self, offset: C, reload: F)
     where
         C: Into<Coord> + From<Coord>,
@@ -589,6 +594,7 @@ impl<T> RollGrid3D<T> {
             self.reposition(new_pos, reload);
         }
 
+    /// Try to move the grid to a new position using a fallible reload function.
     pub fn try_reposition<C, E, F>(&mut self, position: C, reload: F) -> Result<(), E>
         where
             C: Into<Coord> + From<Coord>,
@@ -1158,6 +1164,7 @@ impl<T> RollGrid3D<T> {
                 Ok(())
             }
 
+    /// Move the grid to a new position using a reload function.
     pub fn reposition<C, F>(&mut self, position: C, reload: F)
     where
         C: Into<Coord> + From<Coord>,
@@ -1722,7 +1729,8 @@ impl<T> RollGrid3D<T> {
                 }
             }
         }
-
+    
+    /// Get the offset relative to the grid's offset.
     pub fn relative_offset<C: Into<Coord> + From<Coord> + Copy>(&self, coord: C) -> C {
         let (x, y, z): (i32, i32, i32) = coord.into();
         C::from((
@@ -1762,16 +1770,19 @@ impl<T> RollGrid3D<T> {
         Some(wy as usize * plane + wz as usize * self.size.0 + wx as usize)
     }
 
+    /// Get a reference to the underlying `Option` value of a cell.
     pub fn get_opt<C: Into<Coord>>(&self, coord: C) -> Option<&Option<T>> {
         let index = self.offset_index(coord.into())?;
         Some(&self.cells[index])
     }
 
+    /// Get a mutable reference to the underlying `Option` value of a cell.
     pub fn get_opt_mut<C: Into<Coord>>(&mut self, coord: C) -> Option<&mut Option<T>> {
         let index = self.offset_index(coord.into())?;
         Some(&mut self.cells[index])
     }
 
+    /// Set the underlying `Option` value of a cell.
     pub fn set_opt<C: Into<Coord>>(&mut self, coord: C, value: Option<T>) -> Option<Option<T>> {
         let cell = self.get_opt_mut(coord.into())?;
         let mut old = value;
@@ -1779,6 +1790,7 @@ impl<T> RollGrid3D<T> {
         Some(old)
     }
 
+    /// Get a reference to the cell's value if it exists and the coord is in bounds, otherwise return `None`.
     pub fn get<C: Into<Coord>>(&self, coord: C) -> Option<&T> {
         let index = self.offset_index(coord.into())?;
         if let Some(cell) = &self.cells[index] {
@@ -1800,6 +1812,7 @@ impl<T> RollGrid3D<T> {
         self.cells[index].get_or_insert(value)
     }
 
+    /// Get a mutable reference to the cell's value if it exists and the coord is in bounds, otherwise return `None`.
     pub fn get_mut<C: Into<Coord>>(&mut self, coord: C) -> Option<&mut T> {
         let index = self.offset_index(coord.into())?;
         if let Some(cell) = &mut self.cells[index] {
@@ -1809,6 +1822,7 @@ impl<T> RollGrid3D<T> {
         }
     }
 
+    /// Set the cell's value, returning the old value in the process.
     pub fn set<C: Into<Coord>>(&mut self, coord: C, value: T) -> Option<T> {
         let index = self.offset_index(coord.into())?;
         let mut old = Some(value);
@@ -1816,11 +1830,13 @@ impl<T> RollGrid3D<T> {
         old
     }
 
+    /// Take ownership of the cell's value. This is like `Option::take`.
     pub fn take<C: Into<Coord>>(&mut self, coord: C) -> Option<T> {
         let index = self.offset_index(coord.into())?;
         self.cells[index].take()
     }
     
+    /// Get the dimensions of the grid.
     pub fn size(&self) -> (usize, usize, usize) {
         self.size
     }
@@ -1840,34 +1856,42 @@ impl<T> RollGrid3D<T> {
         self.size.2
     }
 
+    /// Get the offset of the grid.
     pub fn offset(&self) -> (i32, i32, i32) {
         self.grid_offset
     }
 
+    /// Get the minimum bound on the `X` axis.
     pub fn x_min(&self) -> i32 {
         self.grid_offset.0
     }
 
+    /// Get the minimum bound on the `Y` axis.
     pub fn y_min(&self) -> i32 {
         self.grid_offset.1
     }
 
+    /// Get the minimum bound on the `Z` axis.
     pub fn z_min(&self) -> i32 {
         self.grid_offset.2
     }
 
+    /// Get the maximum bound on the `X` axis.
     pub fn x_max(&self) -> i32 {
         self.grid_offset.0 + self.size.0 as i32
     }
 
+    /// Get the maximum bound on the `Y` axis.
     pub fn y_max(&self) -> i32 {
         self.grid_offset.1 + self.size.1 as i32
     }
 
+    /// Get the maximum bound on the `Z` axis.
     pub fn z_max(&self) -> i32 {
         self.grid_offset.2 + self.size.2 as i32
     }
 
+    /// Get the bounds of the grid.
     pub fn bounds(&self) -> Bounds3D {
         Bounds3D {
             min: (self.x_min(), self.y_min(), self.z_min()),
@@ -1880,6 +1904,7 @@ impl<T> RollGrid3D<T> {
         self.size.0 * self.size.1 * self.size.2
     }
 
+    /// Get an iterator over the cells in the grid.
     pub fn iter<'a>(&'a self) -> RollGrid3DIterator<'a, T> {
         RollGrid3DIterator {
             bounds_iter: self.bounds().iter(),
@@ -1887,6 +1912,7 @@ impl<T> RollGrid3D<T> {
         }
     }
 
+    /// Get a mutable iterator over the cells in the grid.
     pub fn iter_mut<'a>(&'a mut self) -> RollGrid3DMutIterator<'a, T> {
         RollGrid3DMutIterator {
             bounds_iter: self.bounds().iter(),
@@ -1897,10 +1923,20 @@ impl<T> RollGrid3D<T> {
 }
 
 impl<T: Copy> RollGrid3D<T> {
+    /// Get a copy of the grid value.
     pub fn get_copy<C: Into<Coord>>(&self, coord: C) -> Option<T> {
         let coord: Coord = coord.into();
         let index = self.offset_index(coord)?;
         self.cells[index]
+    }
+}
+
+impl<T: Clone> RollGrid3D<T> {
+    /// Get a clone of the grid value.
+    pub fn get_clone<C: Into<Coord>>(&self, coord: C) -> Option<T> {
+        let coord: Coord = coord.into();
+        let index = self.offset_index(coord)?;
+        self.cells[index].clone()
     }
 }
 
@@ -1973,6 +2009,7 @@ impl<T> TempGrid3D<T> {
     }
 }
 
+/// A 3D bounding box.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bounds3D {
     pub min: (i32, i32, i32),
@@ -1980,6 +2017,7 @@ pub struct Bounds3D {
 }
 
 impl Bounds3D {
+    /// Create a new [Bounds3D] with the specified minimum and maximum bounds.
     pub fn new<C: Into<(i32, i32, i32)>>(min: C, max: C) -> Self {
         Self {
             min: min.into(),
@@ -1987,6 +2025,7 @@ impl Bounds3D {
         }
     }
 
+    /// Create a new [Bounds3D] from two unordered points.
     pub fn from_bounds<C: Into<(i32, i32, i32)>>(a: C, b: C) -> Self {
         let a: (i32, i32, i32) = a.into();
         let b: (i32, i32, i32) = b.into();
@@ -2017,30 +2056,37 @@ impl Bounds3D {
         (self.max.2 as i64 - self.min.2 as i64) as u32
     }
 
+    /// The volume is `width * height * depth`.
     pub fn volume(&self) -> i128 {
         self.width() as i128 * self.height() as i128 * self.depth() as i128
     }
 
+    /// The minumum bound along the `X` axis.
     pub fn x_min(&self) -> i32 {
         self.min.0
     }
 
+    /// The minimum bound along the `Y` axis.
     pub fn y_min(&self) -> i32 {
         self.min.1
     }
 
+    /// The minimum bound along the `Z` axis.
     pub fn z_min(&self) -> i32 {
         self.min.2
     }
 
+    /// The maximum bound along the `X` axis.
     pub fn x_max(&self) -> i32 {
         self.max.0
     }
 
+    /// The maxmimum bound along the `Y` axis.
     pub fn y_max(&self) -> i32 {
         self.max.1
     }
 
+    /// The maximum bound along the `Z` axis.
     pub fn z_max(&self) -> i32 {
         self.max.2
     }
@@ -2060,6 +2106,7 @@ impl Bounds3D {
         && bz_min < az_max
     }
 
+    /// Determine if the point is within the [Bounds3D].
     pub fn contains<P: Into<(i32, i32, i32)>>(self, point: P) -> bool {
         let point: (i32, i32, i32) = point.into();
         point.0 >= self.min.0
@@ -2070,6 +2117,7 @@ impl Bounds3D {
         && point.2 < self.max.2
     }
 
+    /// Iterate over the points in the [Bounds3D].
     pub fn iter(self) -> Bounds3DIter {
         Bounds3DIter { bounds: self, current: self.min }
     }
