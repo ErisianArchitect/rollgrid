@@ -164,7 +164,7 @@ Set the value in the cell and return the old value (as an `Option`).
 Set the cell's internal `Option` value.
 
 ### `reposition`
-Reposition the grid. This operation will allow you to load in new cells in the area that you move the grid to. The grid simply applies an offset to the grid (without moving anything in memory) and then calculates the cells that need to be updated, then it calls a callback that you supply to it that takes the arguments of (old position, new position, old value), and the return value is the new value.
+Reposition the grid. This operation will allow you to load in new cells in the area that you move the grid to. The grid simply applies an offset to the grid (without moving anything in memory) and then calculates the cells that need to be updated, then it calls a callback that you supply to it that takes the arguments of (old position, new position, old value), and the return value of the callback is the new value.
 
 ### `try_reposition`
 The fallible version of `reposition`.
