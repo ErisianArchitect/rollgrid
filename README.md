@@ -37,10 +37,18 @@ let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
 });
 println!("Initial grid:");
 print_grid(&grid);
+let mut iterations = 0;
+let mut changes = vec![];
 grid.reposition((1, 2), |old, new, old_value| {
+    iterations += 1;
+    changes.push((old, new));
     Some(new)
 });
-println!("Grid repositioned to (1, 2):");
+println!("Changes:");
+for (old, new) in changes {
+    println!("{old:?} moved to {new:?}");
+}
+println!("Grid repositioned to (1, 2) with {iterations} iterations:");
 print_grid(&grid);
 println!("Cell at (4, 5): {:?}", grid.get_copy((4, 5)).unwrap());
 println!("Cell at (0, 0): {:?}", grid.get_copy((0, 0)));
@@ -54,7 +62,18 @@ Initial grid:
     [( 0,  2), ( 1,  2), ( 2,  2), ( 3,  2)]
     [( 0,  3), ( 1,  3), ( 2,  3), ( 3,  3)]
 ]
-Grid repositioned to (1, 2):
+Changes:
+(0, 2) moved to (4, 2)
+(0, 3) moved to (4, 3)
+(1, 0) moved to (1, 4)
+(2, 0) moved to (2, 4)
+(3, 0) moved to (3, 4)
+(1, 1) moved to (1, 5)
+(2, 1) moved to (2, 5)
+(3, 1) moved to (3, 5)
+(0, 0) moved to (4, 4)
+(0, 1) moved to (4, 5)
+Grid repositioned to (1, 2) with 10 iterations:
 [
     [( 1,  2), ( 2,  2), ( 3,  2), ( 4,  2)]
     [( 1,  3), ( 2,  3), ( 3,  3), ( 4,  3)]
