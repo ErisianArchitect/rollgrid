@@ -1,5 +1,5 @@
-Implementation of a rolling grid. A type that stores values in a 2D grid and can translate the grid to a new location. This is ideal for pseudo-infinite worlds where you want a buffer to store a region of chunks that can be moved around. Moving the region (and setting new values) is O(n) where n is the number of cells that would change position during the move operation. The move operation will call a callback with the old position, the new position, and the old value and the callback is expected to return the new value. This functionality allows you to move the grid and save any cells being unloaded and load the new cell at the same time.
-The move operation can be thought of as a 2D ring buffer.
+Implementation of a rolling grid. A type that stores values in a 2D (or 3D) grid and can translate the grid to a new location. This is ideal for pseudo-infinite worlds where you want a buffer to store a region of chunks that can be moved around. Moving the region (and setting new values) is O(n) where n is the number of cells that would change position during the move operation. The move operation will call a callback with the old position, the new position, and the old value and the callback is expected to return the new value. This functionality allows you to move the grid and save any cells being unloaded and load the new cell at the same time.
+The move operation can be thought of as a 2D (or 3D) ring buffer.
 If it were 1D, a move operation might look like this:
 ```
 Offset: 1
@@ -19,7 +19,7 @@ Let's say you had this grid:
 89AB
 CDEF
 ```
-If you were to translate it by the offset `(1, 1)`, the result would be this grid:
+If you were to translate it by the offset `(1, 1)`, the result would be this grid (without modifying the values during repositioning):
 ```
 5674
 9AB8
@@ -29,7 +29,43 @@ DEFC
 
 Now, that's not the benefit of this library. When repositioning the grid, it doesn't move any elements at all. Instead, it keeps track of movement offsets and allows the reposition operation to be really fast because it's not actually moving anything around in memory. It calculates the offset and wrap offset (the offset where (0, 0) begins, everything before that is wrapped to the end). Then the algorithm calculates which cells should change and calls the supplied callback for each of those cells.
 
-Here's an example in practice
+Here are a couple examples in practice
+
+```rust
+let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
+    Some(pos)
+});
+println!("Initial grid:");
+print_grid(&grid);
+grid.reposition((1, 2), |old, new, old_value| {
+    Some(new)
+});
+println!("Grid repositioned to (1, 2):");
+print_grid(&grid);
+println!("Cell at (4, 5): {:?}", grid.get_copy((4, 5)).unwrap());
+println!("Cell at (0, 0): {:?}", grid.get_copy((0, 0)));
+```
+Output:
+```
+Initial grid:
+[
+    [( 0,  0), ( 1,  0), ( 2,  0), ( 3,  0)]
+    [( 0,  1), ( 1,  1), ( 2,  1), ( 3,  1)]
+    [( 0,  2), ( 1,  2), ( 2,  2), ( 3,  2)]
+    [( 0,  3), ( 1,  3), ( 2,  3), ( 3,  3)]
+]
+Grid repositioned to (1, 2):
+[
+    [( 1,  2), ( 2,  2), ( 3,  2), ( 4,  2)]
+    [( 1,  3), ( 2,  3), ( 3,  3), ( 4,  3)]
+    [( 1,  4), ( 2,  4), ( 3,  4), ( 4,  4)]
+    [( 1,  5), ( 2,  5), ( 3,  5), ( 4,  5)]
+]
+Cell at (4, 5): (4, 5)
+Cell at (0, 0): None
+```
+
+One more example, a little more advanced:
 
 ```rust
 chunks.reposition((chunk_x, chunk_z), |old_pos, (x, z), chunk| {
