@@ -27,6 +27,7 @@ impl<T> TempGrid2D<T> {
         }
     }
 
+    /// Try to create a new grid with a fallible init function.
     pub fn try_new_with_init<E, F: FnMut(Coord) -> Result<Option<T>, E>>(size: (usize, usize), offset: (i32, i32), init: F) -> Result<Self, E> {
         let bounds = Bounds2D::new(
             offset,
@@ -47,6 +48,11 @@ impl<T> TempGrid2D<T> {
     }
 }
 
+/// A 2D implementation of a rolling grid. It's a data structure similar
+/// to a circular buffer in the sense that cells can wrap around.
+/// It uses the modulus operator combined with an internal wrap offset to
+/// create the illusion that cells are being moved while the cells remain
+/// in the same position in the underlying array.
 pub struct RollGrid2D<T> {
     cells: Box<[Option<T>]>,
     size: (usize, usize),
@@ -55,6 +61,7 @@ pub struct RollGrid2D<T> {
 }
 
 impl<T: Default> RollGrid2D<T> {
+    /// Create a new [RollGrid2D] with all the elements set to the default for `T`.
     pub fn new_default(width: usize, height: usize, grid_offset: (i32, i32)) -> Self {
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
         Self {
@@ -116,7 +123,7 @@ impl<T> RollGrid2D<T> {
         }
     }
 
-    /// Create a new [RollGrid2D] using an initialize function to initialize elements.
+    /// Try to create a new [RollGrid2D] using a fallible initialize function to initialize elements.
     pub fn try_new_with_init<C: From<(i32, i32)>, E, F: FnMut(C) -> Result<Option<T>, E>>(
         width: usize,
         height: usize,
@@ -157,7 +164,7 @@ impl<T> RollGrid2D<T> {
             self.resize_and_reposition(new_width, new_height, C::from(new_offset), manage);
     }
 
-    /// Inflate the size by `inflate`.
+    /// Try to inflate the size by `inflate` using a fallible function.
     pub fn try_inflate_size<C, E, F>(&mut self, inflate: usize, manage: F) -> Result<(), E>
     where
         C: From<Coord> + Into<Coord>,
@@ -184,7 +191,7 @@ impl<T> RollGrid2D<T> {
             self.resize_and_reposition(new_width, new_height, new_position, manage);
     }
 
-    /// Deflate the size by `defalte`.
+    /// Try to deflate the size by `deflate` using a fallible function.
     pub fn try_deflate_size<C, E, F>(&mut self, deflate: usize, manage: F) -> Result<(), E>
     where
         C: From<Coord> + Into<Coord>,
@@ -207,7 +214,7 @@ impl<T> RollGrid2D<T> {
             self.resize_and_reposition::<C, F>(new_width, new_height, C::from(self.grid_offset), manage);
     }
 
-    /// Resize the grid, keeping it in the same position.
+    /// Try to resize the grid using a fallible function, keeping it in the same position.
     pub fn try_resize<C, E, F>(&mut self, new_width: usize, new_height: usize, manage: F) -> Result<(), E>
     where
         C: From<Coord> + Into<Coord>,
@@ -333,7 +340,7 @@ impl<T> RollGrid2D<T> {
     }
 
     // Resize
-    /// Resize and reposition the grid.
+    /// Try to resize and reposition the grid using a fallible function.
     /// ```no_run
     /// grid.resize_and_reposition(3, 3, (4, 4), |action| {
     ///     match action {
@@ -469,7 +476,7 @@ impl<T> RollGrid2D<T> {
             self.reposition(C::from((curx + ox, cury + oy)), reload);
         }
 
-    /// Translate the grid by offset amount with a reload function.
+    /// Try to translate the grid by offset amount with a fallible reload function.
     /// Signature of the reload function is as follows:
     /// ```rust,no_run
     /// fn reload(old_position: C, new_position: C, old_value: T) -> Option<T>
@@ -617,10 +624,10 @@ impl<T> RollGrid2D<T> {
             }
         }
     
-    /// Reposition the offset of the grid and reload the slots that are changed.
+    /// Try to reposition the offset of the grid and reload the slots that are changed.
     /// Signature of the reload function is as follows:
     /// ```rust,no_run
-    /// fn reload(old_position: C, new_position: C, old_value: T) -> Option<T>
+    /// fn reload(old_position: C, new_position: C, old_value: T) -> Result<(), Option<T>>
     /// ```
     /// Where the return value of `reload` is the new value for that slot.
     pub fn try_reposition<C, E, F>(&mut self, position: C, reload: F) -> Result<(), E>
@@ -750,7 +757,8 @@ impl<T> RollGrid2D<T> {
             }
             Ok(())
         }
-
+    
+    /// Get the offset relative to the grid offset.
     pub fn relative_offset<C: Into<(i32, i32)> + From<(i32, i32)>>(&self, coord: C) -> C {
         let (x, y): (i32, i32) = coord.into();
         C::from((
@@ -926,15 +934,19 @@ impl<T: Clone> RollGrid2D<T> {
     }
 }
 
+/// A 2D bounding box. Essentially a rectangle.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bounds2D {
-    /// Inclusive minimum.
+    /// Inclusive minimum bound.
     pub min: (i32, i32),
-    /// Exclusive maximum.
+    /// Exclusive maximum bound.
     pub max: (i32, i32),
 }
 
 impl Bounds2D {
+    /// Create a new [Bounds2D] from an inclusive min and exclusive max.
+    /// If you don't know the min/max bounds, you can use `from_bounds`
+    /// to create a [Bounds2D] from arbitrary coordinates.
     pub fn new<C: Into<(i32, i32)>>(min: C, max: C) -> Self {
         Self {
             min: min.into(),
@@ -942,6 +954,7 @@ impl Bounds2D {
         }
     }
 
+    /// Create a new [Bounds2D] by resolving the inclusive min and exclusive max from two coordinates.
     pub fn from_bounds<C: Into<(i32, i32)>>(a: C, b: C) -> Self {
         let a: (i32, i32) = a.into();
         let b: (i32, i32) = b.into();
@@ -955,36 +968,44 @@ impl Bounds2D {
         }
     }
 
+    /// The size along the X axis.
     pub fn width(&self) -> u32 {
         (self.max.0 as i64 - self.min.0 as i64) as u32
     }
 
+    /// The size along the Y axis.
     pub fn height(&self) -> u32 {
         (self.max.1 as i64 - self.min.1 as i64) as u32
     }
 
+    /// `width` * `height`.
     pub fn area(&self) -> i64 {
         self.width() as i64 * self.height() as i64
     }
 
+    /// The minimum bound on the X axis.
     pub fn x_min(&self) -> i32 {
         self.min.0
     }
 
+    /// The minimum bound on the Y axis.
     pub fn y_min(&self) -> i32 {
         self.min.1
     }
 
+    /// The maximum bound on the X axis (exclusive).
     pub fn x_max(&self) -> i32 {
         self.max.0
     }
 
+    /// The maximum bound on the Y axis (exclusive).
     pub fn y_max(&self) -> i32 {
         self.max.1
     }
 
     // intersects would need to copy self and other anyway, so
     // just accept copied values rather than references.
+    /// Tests for intersection with another [Bounds2D].
     pub fn intersects(self, other: Bounds2D) -> bool {
         let ((ax_min, ay_min), (ax_max, ay_max)) = (self.min, self.max);
         let ((bx_min, by_min), (bx_max, by_max)) = (other.min, other.max);
@@ -994,6 +1015,7 @@ impl Bounds2D {
         && by_min < ay_max
     }
 
+    /// Determine if a point is within the [Bounds2D].
     pub fn contains<P: Into<(i32, i32)>>(self, point: P) -> bool {
         let point: (i32, i32) = point.into();
         point.0 >= self.min.0
@@ -1011,6 +1033,7 @@ impl Bounds2D {
     }
 }
 
+/// Iterator for all points within a [Bounds2D].
 pub struct Bounds2DIter {
     bounds: Bounds2D,
     current: (i32, i32),
@@ -1047,6 +1070,7 @@ impl Iterator for Bounds2DIter {
     }
 }
 
+/// Iterator over all cells in a [RollGrid2D].
 pub struct RollGrid2DIterator<'a, T> {
     grid: &'a RollGrid2D<T>,
     bounds_iter: Bounds2DIter,
@@ -1071,6 +1095,8 @@ impl<'a, T> Iterator for RollGrid2DIterator<'a, T> {
     }
 }
 
+/// Mutable iterator over all elements in the [RollGrid2D].
+/// (This uses **unsafe** code!)
 pub struct RollGrid2DMutIterator<'a, T> {
     grid: &'a mut RollGrid2D<T>,
     bounds_iter: Bounds2DIter,
@@ -1083,6 +1109,7 @@ impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
         self.bounds_iter.size_hint()
     }
 
+    /// This method uses `unsafe`.
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;

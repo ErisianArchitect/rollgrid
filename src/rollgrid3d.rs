@@ -5,6 +5,11 @@ const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
 
 type Coord = (i32, i32, i32);
 
+/// A 3D implementation of a rolling grid. It's a data structure similar
+/// to a circular buffer in the sense that cells can wrap around.
+/// It uses the modulus operator combined with an internal wrap offset to
+/// create the illusion that cells are being moved while the cells remain
+/// in the same position in the underlying array.
 pub struct RollGrid3D<T> {
     cells: Box<[Option<T>]>,
     size: (usize, usize, usize),
@@ -13,6 +18,7 @@ pub struct RollGrid3D<T> {
 }
 
 impl<T: Default> RollGrid3D<T> {
+    /// Create a new [RollGrid3D] with all the elements set to the default for `T`.
     pub fn new_default<C: Into<Coord>>(width: usize, height: usize, depth: usize, grid_offset: C) -> Self {
         let grid_offset: Coord = grid_offset.into();
         let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
@@ -137,7 +143,7 @@ impl<T> RollGrid3D<T> {
         }
     }
 
-    /// Inflate the size by `inflate`, keeping the bounds centered.
+    /// Try to inflate the size by `inflate` using a fallible function, keeping the bounds centered.
     /// If the size is `(2, 2, 2)` with an offset of `(1, 1, 1)`, and you want to inflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(4, 4, 4)` and an offset of `(0, 0, 0)`.
     pub fn try_inflate_size<C, E, F>(&mut self, inflate: (usize, usize, usize), manage: F) -> Result<(), E>
@@ -185,7 +191,7 @@ impl<T> RollGrid3D<T> {
             self.resize_and_reposition(width, height, depth, position, manage);
         }
     
-    /// Deflate the size by `deflate`, keeping the bounds centered.
+    /// Try to deflate the size by `deflate` using a fallible function, keeping the bounds centered.
     /// If the size is `(4, 4, 4)` with an offset of `(0, 0, 0)`, and you want to deflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(2, 2, 2)` and an offset of `(1, 1, 1)`.
     pub fn try_deflate_size<C, E, F>(&mut self, deflate: (usize, usize, usize), manage: F) -> Result<(), E>
@@ -239,7 +245,7 @@ impl<T> RollGrid3D<T> {
             self.resize_and_reposition(width, height, depth, position, manage);
         }
     
-    /// Resize the grid, keeping the offset in the same place.
+    /// Try to resize the grid with a fallible function, keeping the offset in the same place.
     pub fn try_resize<C, E, F>(&mut self, width: usize, height: usize, depth: usize, manage: F) -> Result<(), E>
         where
             C: From<Coord> + Into<Coord>,
@@ -255,7 +261,7 @@ impl<T> RollGrid3D<T> {
             self.resize_and_reposition(width, height, depth, C::from(self.grid_offset), manage);
         }
 
-    /// Resize and reposition the grid.
+    /// Try to resize and reposition the grid using a fallible function.
     /// ```no_run
     /// grid.try_resize_and_reposition(3, 3, 3, (4, 4, 4), |action| {
     ///     Ok(match action {
@@ -594,6 +600,10 @@ impl<T> RollGrid3D<T> {
         }
 
     /// Try to move the grid to a new position using a fallible reload function.
+    /// Signature of the reload function is as follows:
+    /// ```rust,no_run
+    /// fn reload(old_position: C, new_position: C, old_value: T) -> Result<(), Option<T>>
+    /// ```
     pub fn try_reposition<C, E, F>(&mut self, position: C, reload: F) -> Result<(), E>
         where
             C: Into<Coord> + From<Coord>,
@@ -1974,6 +1984,7 @@ impl<T> TempGrid3D<T> {
         }
     }
 
+    /// Try to create a new [RollGrid3D] using a fallible initialize function to initialize elements.
     pub fn try_new_with_init<E, F: FnMut(Coord) -> Result<Option<T>, E>>(size: (usize, usize, usize), offset: (i32, i32, i32), init: F) -> Result<Self, E> {
         let bounds = Bounds3D::new(
             offset,
@@ -1994,7 +2005,9 @@ impl<T> TempGrid3D<T> {
 /// A 3D bounding box.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bounds3D {
+    /// Inclusive minimum bound.
     pub min: (i32, i32, i32),
+    /// Exclusive maximum bound.
     pub max: (i32, i32, i32)
 }
 
@@ -2058,23 +2071,24 @@ impl Bounds3D {
         self.min.2
     }
 
-    /// The maximum bound along the `X` axis.
+    /// The maximum bound along the `X` axis (exclusive).
     pub fn x_max(&self) -> i32 {
         self.max.0
     }
 
-    /// The maxmimum bound along the `Y` axis.
+    /// The maxmimum bound along the `Y` axis (exclusive).
     pub fn y_max(&self) -> i32 {
         self.max.1
     }
 
-    /// The maximum bound along the `Z` axis.
+    /// The maximum bound along the `Z` axis (exclusive).
     pub fn z_max(&self) -> i32 {
         self.max.2
     }
 
     // intersects would need to copy self and other anyway, so
     // just accept copied values rather than references.
+    /// Tests for intersection with another [Bounds3D].
     pub fn intersects(self, other: Bounds3D) -> bool {
         let (ax_min, ay_min, az_min) = self.min;
         let (ax_max, ay_max, az_max) = self.max;
@@ -2088,7 +2102,7 @@ impl Bounds3D {
         && bz_min < az_max
     }
 
-    /// Determine if the point is within the [Bounds3D].
+    /// Determine if a point is within the [Bounds3D].
     pub fn contains<P: Into<(i32, i32, i32)>>(self, point: P) -> bool {
         let point: (i32, i32, i32) = point.into();
         point.0 >= self.min.0
@@ -2105,6 +2119,7 @@ impl Bounds3D {
     }
 }
 
+/// Iterator for all points within a [Bounds3D].
 pub struct Bounds3DIter {
     bounds: Bounds3D,
     current: (i32, i32, i32),
@@ -2148,6 +2163,7 @@ impl Iterator for Bounds3DIter {
     }
 }
 
+/// Iterator over all cells in a [RollGrid3D].
 pub struct RollGrid3DIterator<'a, T> {
     grid: &'a RollGrid3D<T>,
     bounds_iter: Bounds3DIter,
@@ -2172,6 +2188,8 @@ impl<'a, T> Iterator for RollGrid3DIterator<'a, T> {
     }
 }
 
+/// Mutable iterator over all elements in the [RollGrid3D].
+/// (This uses **unsafe** code!)
 pub struct RollGrid3DMutIterator<'a, T> {
     grid: &'a mut RollGrid3D<T>,
     bounds_iter: Bounds3DIter,
@@ -2184,6 +2202,7 @@ impl<'a, T> Iterator for RollGrid3DMutIterator<'a, T> {
         self.bounds_iter.size_hint()
     }
 
+    /// This method uses `unsafe`.
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
