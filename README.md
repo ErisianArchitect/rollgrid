@@ -111,12 +111,10 @@ chunks.reposition((chunk_x, chunk_z), |old_pos, (x, z), chunk| {
 ```
 
 This `reposition` method works for the 2d and 3d variants of the rollgrid.
+You can modify this code to fit your purpose.
 
 New (as of August 5th, 2024):
     All the methods that take callbacks now have fallible versions, so now there's `try_new_with_init`, `try_resize`, `try_inflate_size`, `try_deflate_size`, `try_resize_and_reposition`, `try_translate`, and `try_reposition`.
-
-
-You can modify this code to fit your purpose.
 
 # Short Documentation
 These functions/methods are found on both RollGrid2D and RollGrid3D.
