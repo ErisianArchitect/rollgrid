@@ -1,24 +1,16 @@
-#![allow(unused)]
+
+
 use super::*;
 const AREA_IS_ZERO: &'static str = "Width/Height cannot be 0";
 type Coord = (i32, i32);
 
 struct TempGrid2D<T> {
-    pub cells: Box<[Option<T>]>,
-    pub size: (usize, usize),
-    pub offset: (i32, i32),
+    cells: Box<[Option<T>]>,
+    // size: (usize, usize),
+    // offset: (i32, i32),
 }
 
 impl<T> TempGrid2D<T> {
-    /// Create a new grid with all cells initialized to `None`.
-    pub fn new(size: (usize, usize), offset: (i32, i32)) -> Self {
-        Self {
-            cells: (0..size.0*size.1).map(|_| None).collect(),
-            size,
-            offset
-        }
-    }
-
     /// Create a new grid with an initializer callback.
     pub fn new_with_init<F: FnMut(Coord) -> Option<T>>(size: (usize, usize), offset: (i32, i32), init: F) -> Self {
         let bounds = Bounds2D::new(
@@ -30,8 +22,8 @@ impl<T> TempGrid2D<T> {
         );
         Self {
             cells: bounds.iter().map(init).collect(),
-            size,
-            offset
+            // size,
+            // offset
         }
     }
 
@@ -45,67 +37,9 @@ impl<T> TempGrid2D<T> {
         );
         Ok(Self {
             cells: bounds.iter().map(init).collect::<Result<Box<_>, E>>()?,
-            size,
-            offset
+            // size,
+            // offset
         })
-    }
-
-    fn offset_index(&self, (x, y): (i32, i32)) -> Option<usize> {
-        let (mx, my) = self.offset;
-        let width = self.size.0 as i32;
-        let height = self.size.1 as i32;
-        if x < mx
-        || y < my
-        || x >= mx + width
-        || y >= my + height {
-            return None;
-        }
-        // Adjust x and y
-        let nx = x - mx;
-        let ny = y - my;
-        Some((ny as usize * self.size.0) + nx as usize)
-    }
-
-    pub fn get(&self, coord: (i32, i32)) -> Option<&T> {
-        let index = self.offset_index(coord)?;
-        if let Some(cell) = &self.cells[index] {
-            Some(cell)
-        } else {
-            None
-        }
-    }
-
-    pub fn get_mut(&mut self, coord: (i32, i32)) -> Option<&mut T> {
-        let index = self.offset_index(coord)?;
-        if let Some(cell) = &mut self.cells[index] {
-            Some(cell)
-        } else {
-            None
-        }
-    }
-
-    pub fn set(&mut self, coord: (i32, i32), value: T) -> Option<T> {
-        let cell = self.get_mut(coord)?;
-        let mut old = value;
-        std::mem::swap(&mut old, cell);
-        Some(old)
-    }
-    
-    pub fn get_opt(&self, pos: (i32, i32)) -> Option<&Option<T>> {
-        let index = self.offset_index(pos)?;
-        Some(&self.cells[index])
-    }
-
-    pub fn get_opt_mut(&mut self, pos: (i32, i32)) -> Option<&mut Option<T>> {
-        let index = self.offset_index(pos)?;
-        Some(&mut self.cells[index])
-    }
-
-    pub fn set_opt(&mut self, pos: (i32, i32), value: Option<T>) -> Option<Option<T>> {
-        let cell = self.get_opt_mut(pos)?;
-        let mut old = value;
-        std::mem::swap(&mut old, cell);
-        Some(old)
     }
 
     pub fn take_cells(self) -> Box<[Option<T>]> {
@@ -968,6 +902,10 @@ impl<T> RollGrid2D<T> {
         }
     }
 
+    // TODO
+    // pub fn drain(&mut self, x_range: Range<i32>, y_range: Range<i32>) -> () {
+    // }
+
 }
 
 
@@ -1164,7 +1102,7 @@ impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
 mod tests {
     use super::*;
 
-    fn print_grid(grid: &RollGrid2D<((i32, i32))>) {
+    fn print_grid(grid: &RollGrid2D<(i32, i32)>) {
         println!("[");
         for y in grid.y_min()..grid.y_max() {
             print!("    [");
@@ -1190,7 +1128,7 @@ mod tests {
         print_grid(&grid);
         let mut iterations = 0;
         let mut changes = vec![];
-        grid.reposition((1, 2), |old, new, old_value| {
+        grid.reposition((1, 2), |old, new, _| {
             iterations += 1;
             changes.push((old, new));
             Some(new)
@@ -1225,7 +1163,6 @@ mod tests {
             }
         }
         fn verify_grid(grid: &RollGrid2D<DropCoord>) {
-            let offset = grid.grid_offset;
             for y in grid.y_min()..grid.y_max() {
                 for x in grid.x_min()..grid.x_max() {
                     let pos = (x, y);
@@ -1250,7 +1187,7 @@ mod tests {
                         }
                     }
                 });
-                grid.iter_mut().for_each(|(pos, cell)| {
+                grid.iter_mut().for_each(|(_, cell)| {
                     if let Some(cell) = cell {
                         cell.unloaded = true;
                     }

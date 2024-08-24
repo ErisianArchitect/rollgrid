@@ -1,4 +1,5 @@
-#![allow(unused)]
+
+
 use crate::{CellManage, OFFSET_TOO_CLOSE_TO_MAX, OUT_OF_BOUNDS, SIZE_TOO_LARGE};
 const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
 
@@ -285,7 +286,6 @@ impl<T> RollGrid3D<T> {
         where
             C: Into<Coord> + From<Coord>,
             F: FnMut(CellManage<C, T>) -> Result<Option<T>, E> {
-                #![allow(unused)]
                 let mut manage = manage;
                 if width == self.size.0
                 && height == self.size.1
@@ -382,7 +382,7 @@ impl<T> RollGrid3D<T> {
                         ymax = new_bounds.y_max().min(old_bounds.y_max());
                         zmax = new_bounds.z_max().min(old_bounds.z_max());
                     );
-                    let mut temp_grid = TempGrid3D::try_new_with_init((width, height, depth), new_position, |pos| {
+                    let temp_grid = TempGrid3D::try_new_with_init((width, height, depth), new_position, |pos| {
                         if old_bounds.contains(pos) {
                             let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
                             Ok(self.cells[index].take())
@@ -400,7 +400,7 @@ impl<T> RollGrid3D<T> {
                         manage(CellManage::Unload(C::from(pos), self.cells[index].take()))?;
                         Ok(())
                     })?;
-                    let mut temp_grid = TempGrid3D::try_new_with_init((width, height, depth), new_position, |pos| {
+                    let temp_grid = TempGrid3D::try_new_with_init((width, height, depth), new_position, |pos| {
                         manage(CellManage::Load(C::from(pos)))
                     })?;
                     self.size = temp_grid.size;
@@ -442,7 +442,6 @@ impl<T> RollGrid3D<T> {
     where
         C: Into<Coord> + From<Coord>,
         F: FnMut(CellManage<C, T>) -> Option<T> {
-            #![allow(unused)]
             let mut manage = manage;
             if width == self.size.0
             && height == self.size.1
@@ -539,7 +538,7 @@ impl<T> RollGrid3D<T> {
                     ymax = new_bounds.y_max().min(old_bounds.y_max());
                     zmax = new_bounds.z_max().min(old_bounds.z_max());
                 );
-                let mut temp_grid = TempGrid3D::new_with_init((width, height, depth), new_position, |pos| {
+                let temp_grid = TempGrid3D::new_with_init((width, height, depth), new_position, |pos| {
                     if old_bounds.contains(pos) {
                         let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
                         self.cells[index].take()
@@ -556,7 +555,7 @@ impl<T> RollGrid3D<T> {
                     let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
                     manage(CellManage::Unload(C::from(pos), self.cells[index].take()));
                 });
-                let mut temp_grid = TempGrid3D::new_with_init((width, height, depth), new_position, |pos| {
+                let temp_grid = TempGrid3D::new_with_init((width, height, depth), new_position, |pos| {
                     manage(CellManage::Load(C::from(pos)))
                 });
                 self.size = temp_grid.size;
@@ -1766,7 +1765,7 @@ impl<T> RollGrid3D<T> {
         let wx = (nx + wx).rem_euclid(width);
         let wy = (ny + wy).rem_euclid(height);
         let wz = (nz + wz).rem_euclid(depth);
-        let plane = (self.size.0 * self.size.2);
+        let plane = self.size.0 * self.size.2;
         Some(wy as usize * plane + wz as usize * self.size.0 + wx as usize)
     }
 
@@ -1920,6 +1919,10 @@ impl<T> RollGrid3D<T> {
         }
     }
 
+    // TODO
+    // pub fn drain(&mut self, x_range: Range<i32>, y_range: Range<i32>, z_range: Range<i32>) -> () {
+    // }
+
 }
 
 impl<T: Copy> RollGrid3D<T> {
@@ -1941,9 +1944,9 @@ impl<T: Clone> RollGrid3D<T> {
 }
 
 struct TempGrid3D<T> {
-    pub cells: Box<[Option<T>]>,
-    pub size: (usize, usize, usize),
-    pub offset: (i32, i32, i32),
+    cells: Box<[Option<T>]>,
+    size: (usize, usize, usize),
+    offset: (i32, i32, i32),
 }
 
 impl<T> TempGrid3D<T> {
@@ -1985,27 +1988,6 @@ impl<T> TempGrid3D<T> {
             size,
             offset
         })
-    }
-
-    fn offset_index(&self, (x, y, z): (i32, i32, i32)) -> Option<usize> {
-        let (mx, my, mz) = self.offset;
-        let width = self.size.0 as i32;
-        let height = self.size.1 as i32;
-        let depth = self.size.2 as i32;
-        if x < mx
-        || y < my
-        || z < mz
-        || x >= mx + width
-        || y >= my + height
-        || z >= mz + depth {
-            return None;
-        }
-        // Adjust x and y
-        let nx = x - mx;
-        let ny = y - my;
-        let nz = z - mz;
-        let plane = self.size.0 * self.size.2;
-        Some(ny as usize * plane + nz as usize * self.size.0 + nx as usize)
     }
 }
 
@@ -2141,10 +2123,9 @@ impl Iterator for Bounds3DIter {
             (self.current.2 - self.bounds.min.2) as usize
         );
         let width = self.bounds.width() as usize;
-        let height = self.bounds.height() as usize;
         let depth = self.bounds.depth() as usize;
         let volume = self.bounds.volume() as usize;
-        let index = (y * width * depth + z * width + x);
+        let index = y * width * depth + z * width + x;
         (volume - index, Some(volume - index))
     }
 
@@ -2154,7 +2135,6 @@ impl Iterator for Bounds3DIter {
         }
         let result = self.current;
         // inc x, then z, then y
-        // self.current = (result.0 + 1, result.1, result.2);
         self.current = if result.0 + 1 == self.bounds.max.0 {
             if result.2 + 1 == self.bounds.max.2 {
                 (self.bounds.min.0, result.1 + 1, self.bounds.min.2)
@@ -2225,13 +2205,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn wrap_test() {
-        let v = i64::MAX;
-        let uv = v as u64;
-        println!("{}\n{}", i32::MAX as u32, i32::MIN as u32);
-    }
-
-    #[test]
     fn iter_test() {
         let mut grid = RollGrid3D::new_with_init(2, 2, 2, (0, 0, 0), |pos: (i32, i32, i32)| {
             Some(pos)
@@ -2242,9 +2215,8 @@ mod tests {
             } else {
                 panic!()
             }
-            let (x, y, z) = pos;
         });
-        grid.iter_mut().for_each(|(pos, cell)| {
+        grid.iter_mut().for_each(|(_, cell)| {
             if let Some(cell) = cell {
                 cell.0 += 1;
                 cell.1 += 1;
@@ -2266,7 +2238,6 @@ mod tests {
     #[test]
     fn reposition_test() {
         fn verify_grid(grid: &RollGrid3D<(i32, i32, i32)>) {
-            let offset = grid.grid_offset;
             for y in grid.y_min()..grid.y_max() {
                 for z in grid.z_min()..grid.z_max() {
                     for x in grid.x_min()..grid.x_max() {
@@ -2315,7 +2286,6 @@ mod tests {
             }
         }
         fn verify_grid(grid: &RollGrid3D<DropCoord>) {
-            let offset = grid.grid_offset;
             for y in grid.y_min()..grid.y_max() {
                 for z in grid.z_min()..grid.z_max() {
                     for x in grid.x_min()..grid.x_max() {
@@ -2342,7 +2312,7 @@ mod tests {
                         }
                     }
                 });
-                grid.iter_mut().for_each(|(pos, cell)| {
+                grid.iter_mut().for_each(|(_, cell)| {
                     if let Some(cell) = cell {
                         cell.unloaded = true;
                     }
@@ -2439,19 +2409,3 @@ mod tests {
         println!("{}", max_bounds.volume());
     }
 }
-
-// fn print_grid(grid: &RollGrid3D<(i32, i32, i32)>) {
-//     println!("***");
-//     for y in grid.y_min()..grid.y_max() {
-//         println!("### Y = {y:<3} ###");
-//         for z in grid.z_min()..grid.z_max() {
-//             for x in grid.x_min()..grid.x_max() {
-//                 let Some(&(cx, cy, cz)) = grid.get((x, y, z)) else {
-//                     continue;
-//                 };
-//                 print!("({cx:2},{cy:2},{cz:2})");
-//             }
-//             println!();
-//         }
-//     }
-// }
