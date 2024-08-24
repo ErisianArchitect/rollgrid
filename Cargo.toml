@@ -1,4 +1,9 @@
 [package]
 name = "rollgrid"
-version = "0.1.0"
+version = "0.2.0"
+authors = ["ErisianArchitect <https://github.com/ErisianArchitect>"]
 edition = "2021"
+description = "A library for pseudo-infinite open worlds."
+repository = "https://github.com/ErisianArchitect/rollgrid"
+documentation = "https://docs.rs/rollgrid"
+license = "MIT"
