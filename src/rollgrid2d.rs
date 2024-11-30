@@ -1,13 +1,12 @@
 
-
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
 use super::*;
 const AREA_IS_ZERO: &'static str = "Width/Height cannot be 0";
 type Coord = (i32, i32);
 
 struct TempGrid2D<T> {
     cells: Box<[Option<T>]>,
-    // size: (usize, usize),
-    // offset: (i32, i32),
 }
 
 impl<T> TempGrid2D<T> {
@@ -22,8 +21,6 @@ impl<T> TempGrid2D<T> {
         );
         Self {
             cells: bounds.iter().map(init).collect(),
-            // size,
-            // offset
         }
     }
 
@@ -38,8 +35,6 @@ impl<T> TempGrid2D<T> {
         );
         Ok(Self {
             cells: bounds.iter().map(init).collect::<Result<Box<_>, E>>()?,
-            // size,
-            // offset
         })
     }
 
@@ -934,6 +929,7 @@ impl<T: Clone> RollGrid2D<T> {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 /// A 2D bounding box. Essentially a rectangle.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bounds2D {

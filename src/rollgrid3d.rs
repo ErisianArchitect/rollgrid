@@ -1,5 +1,6 @@
 
-
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
 use crate::{CellManage, OFFSET_TOO_CLOSE_TO_MAX, OUT_OF_BOUNDS, SIZE_TOO_LARGE};
 const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
 
@@ -2002,6 +2003,7 @@ impl<T> TempGrid3D<T> {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 /// A 3D bounding box.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bounds3D {
