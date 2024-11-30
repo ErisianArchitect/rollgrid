@@ -1,6 +1,6 @@
 [package]
 name = "rollgrid"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["ErisianArchitect <https://github.com/ErisianArchitect>"]
 edition = "2021"
 description = "A library for pseudo-infinite open worlds."
@@ -9,7 +9,7 @@ documentation = "https://docs.rs/rollgrid"
 license = "MIT"
 
 [dependencies]
-serde = { version = "1.0.215", optional = true }
+serde = { version = "1.0.215", optional = true, features = ["derive"]}
 
 [features]
 serde = ["dep:serde"]

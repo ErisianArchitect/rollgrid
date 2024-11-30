@@ -1,6 +1,3 @@
-
-#[cfg(feature = "serde")]
-use serde::{Serialize, Deserialize};
 use super::*;
 const AREA_IS_ZERO: &'static str = "Width/Height cannot be 0";
 type Coord = (i32, i32);
@@ -929,7 +926,7 @@ impl<T: Clone> RollGrid2D<T> {
     }
 }
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A 2D bounding box. Essentially a rectangle.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bounds2D {
