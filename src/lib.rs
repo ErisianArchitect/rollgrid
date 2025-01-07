@@ -12,23 +12,24 @@ pub enum CellManage<C, T> {
     Load(C),
     /// For when a cell is unloaded.
     /// The callback should return `None`.
-    Unload(C, Option<T>)
+    Unload(C, T),
 }
 
 #[cfg(test)]
 mod tests {
     #![allow(unused)]
-    use rollgrid2d::{RollGrid2D, Bounds2D};
+    use rollgrid2d::{Bounds2D, RollGrid2D};
 
     use super::*;
 
     #[test]
     pub fn roll_test() {
-        const HEX_CHARS: [char; 16] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+        const HEX_CHARS: [char; 16] = [
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+        ];
         let mut hex = HEX_CHARS.into_iter();
-        let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
-            hex.next()
-        });
+        let mut grid =
+            RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| hex.next().unwrap());
         fn print_grid(grid: &RollGrid2D<char>) {
             for y in grid.y_min()..grid.y_max() {
                 for x in grid.x_min()..grid.x_max() {
@@ -40,9 +41,7 @@ mod tests {
             }
         }
         print_grid(&grid);
-        grid.translate((1, 1), |old_pos, new_pos, old_value| {
-            old_value
-        });
+        grid.translate((1, 1), |old_pos, new_pos, old_value| old_value);
         print_grid(&grid);
     }
 
@@ -54,18 +53,12 @@ mod tests {
         // });
         macro_rules! intersect {
             (($a_min:expr, $a_max:expr) -=> ($b_min:expr, $b_max:expr)) => {
-                assert!(
-                    Bounds2D::from_bounds($a_min, $a_max).intersects(
-                        Bounds2D::from_bounds($b_min, $b_max)
-                    )
-                );
+                assert!(Bounds2D::from_bounds($a_min, $a_max)
+                    .intersects(Bounds2D::from_bounds($b_min, $b_max)));
             };
             (($a_min:expr, $a_max:expr) -!> ($b_min:expr, $b_max:expr)) => {
-                assert!(
-                    !Bounds2D::from_bounds($a_min, $a_max).intersects(
-                        Bounds2D::from_bounds($b_min, $b_max)
-                    )
-                );
+                assert!(!Bounds2D::from_bounds($a_min, $a_max)
+                    .intersects(Bounds2D::from_bounds($b_min, $b_max)));
             };
         }
         intersect!(((0, 0), (3, 3)) -!> ((3, 0), (6, 3)));
@@ -77,14 +70,11 @@ mod tests {
         intersect!(((1, 0), (2, 1)) -!> ((0, 0), (1, 1)));
         intersect!(((0, 0), (1, 1)) -!> ((0, 1), (1, 2)));
         intersect!(((0, 1), (1, 2)) -!> ((0, 0), (1, 1)));
-        
     }
 
     #[test]
     pub fn rollgrid2d_test() {
-        let mut grid = RollGrid2D::new_with_init(2, 2, (0, 0), |coord: (i32, i32)| {
-            Some(coord)
-        });
+        let mut grid = RollGrid2D::new_with_init(2, 2, (0, 0), |coord: (i32, i32)| coord);
         fn print_grid(grid: &RollGrid2D<(i32, i32)>) {
             println!("***");
             for y in grid.y_min()..grid.y_max() {
@@ -97,21 +87,17 @@ mod tests {
             }
         }
         print_grid(&grid);
-        grid.translate((1, 1), |old, new, old_value| {
-            Some(old)
-        });
+        grid.translate((1, 1), |old, new, old_value| old);
         print_grid(&grid);
         return;
-        grid.inflate_size::<(i32, i32), _>(1, |action| {
-            match action {
-                CellManage::Load(pos) => {
-                    println!("Load: ({},{})", pos.0, pos.1);
-                    Some(pos)
-                }
-                CellManage::Unload(pos, old) => {
-                    println!("Unload: ({},{})", pos.0, pos.1);
-                    None
-                }
+        grid.inflate_size::<(i32, i32), _>(1, |action| match action {
+            CellManage::Load(pos) => {
+                println!("Load: ({},{})", pos.0, pos.1);
+                Some(pos)
+            }
+            CellManage::Unload(pos, old) => {
+                println!("Unload: ({},{})", pos.0, pos.1);
+                None
             }
         });
         // grid.resize_and_reposition(3, 3, (4, 4), |action| {
