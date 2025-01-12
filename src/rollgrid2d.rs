@@ -6,6 +6,8 @@ struct TempGrid2D<T> {
     cells: Box<[Option<T>]>,
 }
 
+// Manual allocation
+
 impl<T> TempGrid2D<T> {
     /// Create a new grid with an initializer callback.
     pub fn new_with_init<F: FnMut(Coord) -> Option<T>>(size: (usize, usize), offset: (i32, i32), init: F) -> Self {
