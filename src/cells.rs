@@ -1,7 +1,7 @@
-// TODO: Remove this when you're not working on Cells.
+// TODO: Remove this when you're not working on FixedArray.
 #![allow(unused)]
 
-use std::ptr::NonNull;
+use std::{mem::ManuallyDrop, ptr::NonNull};
 use super::*;
 use rollgrid2d::Bounds2D;
 use rollgrid3d::Bounds3D;
@@ -11,13 +11,13 @@ use rollgrid3d::Bounds3D;
 /// implementations. This struct allows for taking values from the buffer without
 /// dropping the old value, as well as the ability to drop values in place. This
 /// gives the user the ability to manually manage dropping of individual regions.
-/// The user manages the dimensionality and bounds of the [Cells].
-pub struct Cells<T> {
+/// The user manages the dimensionality and bounds of the [FixedArray].
+pub struct FixedArray<T> {
     ptr: Option<NonNull<T>>,
     capacity: usize,
 }
 
-impl<T> Cells<T> {
+impl<T> FixedArray<T> {
     #[inline(always)]
     fn prealloc_2d(size: (usize, usize), offset: (i32, i32)) -> (NonNull<T>, Bounds2D, usize) {
         let (width, height) = size;
@@ -63,7 +63,7 @@ impl<T> Cells<T> {
         }
     }
 
-    /// Allocate a new [Cells] array from a 2D size and offset with an
+    /// Allocate a new [FixedArray] from a 2D size and offset with an
     /// initialization function.
     /// 
     /// Initialization happens in the order `x -> y`, that your results will be ordered
@@ -92,7 +92,7 @@ impl<T> Cells<T> {
         }
     }
 
-    /// Attempt to allocate a new [Cells] array from a 2D size and offset
+    /// Attempt to allocate a new [FixedArray] from a 2D size and offset
     /// with an initialization function.
     /// 
     /// Initialization happens in the order `x -> y`, that your results will be ordered
@@ -123,7 +123,7 @@ impl<T> Cells<T> {
         })
     }
 
-    /// Allocate a new [Cells] array from a 3D size and offset with an
+    /// Allocate a new [FixedArray] from a 3D size and offset with an
     /// initialization function.
     /// 
     /// Initialization happens in the order `x -> z -> y`, that your results
@@ -156,7 +156,7 @@ impl<T> Cells<T> {
         }
     }
 
-    /// Attempt to allocate a new [Cells] array from a 3D size and offset
+    /// Attempt to allocate a new [FixedArray] from a 3D size and offset
     /// with an initialization function.
     /// 
     /// Initialization happens in the order `x -> z -> y`, that your results
@@ -190,7 +190,7 @@ impl<T> Cells<T> {
         })
     }
 
-    /// Deallocates the internal buffer in this [Cells].
+    /// Deallocates the internal buffer in this [FixedArray].
     pub fn dealloc(&mut self) {
         self.internal_dealloc(true);
         self.capacity = 0;
@@ -229,7 +229,7 @@ impl<T> Cells<T> {
     /// Only use this method if you know what you are doing.
     /// It uses [std::ptr::write] to write into the slot at `index` without dropping
     /// the inner value.
-    /// It is advised to use [Cells::read()] or [Cells::drop_in_place()] before
+    /// It is advised to use [FixedArray::read()] or [FixedArray::drop_in_place()] before
     /// calling this method.
     #[inline]
     pub(crate) unsafe fn write(&mut self, index: usize, value: T) {
@@ -257,22 +257,23 @@ impl<T> Cells<T> {
         std::ptr::drop_in_place(&mut self[index]);
     }
 
-    /// Returns the [std::alloc::Layout] associated with this [Cells].
+    /// Returns the [std::alloc::Layout] associated with this [FixedArray].
     fn layout(&self) -> std::alloc::Layout {
         Self::make_layout(self.capacity).unwrap()
     }
 
-    /// Makes an [std::alloc::Layout] for [Cells<T>] with `capacity`.
+    /// Makes an [std::alloc::Layout] for [FixedArray<T>] with `capacity`.
     fn make_layout(capacity: usize) -> Result<std::alloc::Layout, std::alloc::LayoutError> {
         std::alloc::Layout::array::<T>(capacity)
     }
 
-    // /// Gets the length of array.
-    // #[inline]
-    // pub fn len(&self) -> usize {
-    //     self.capacity
-    // }
+    /// Gets the length of the array.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.capacity
+    }
 
+    /// Returns the array as a slice.
     #[inline]
     pub fn as_slice(&self) -> &[T] {
         let Some(ptr) = self.ptr else {
@@ -283,6 +284,7 @@ impl<T> Cells<T> {
         }
     }
 
+    /// Returns the array as a mutable slice.
     #[inline]
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         let Some(mut ptr) = self.ptr else {
@@ -293,17 +295,7 @@ impl<T> Cells<T> {
         }
     }
 
-    pub fn into_vec(self) -> Vec<T> {
-        let Some(ptr) = self.ptr else {
-            panic!("Not allocated.");
-        };
-        unsafe {
-            let result = Vec::from_raw_parts(ptr.as_ptr(), self.capacity, self.capacity);
-            std::mem::forget(self);
-            result
-        }
-    }
-
+    /// Converts the array into a boxed slice.
     pub fn into_boxed_slice(self) -> Box<[T]> {
         let Some(ptr) = self.ptr else {
             panic!("Not allocated.");
@@ -315,29 +307,123 @@ impl<T> Cells<T> {
             result
         }
     }
+
+    /// Converts the array into a `Vec<T>`.
+    pub fn into_vec(self) -> Vec<T> {
+        let Some(ptr) = self.ptr else {
+            panic!("Not allocated.");
+        };
+        unsafe {
+            let result = Vec::from_raw_parts(ptr.as_ptr(), self.capacity, self.capacity);
+            std::mem::forget(self);
+            result
+        }
+    }
+
+    pub fn iter(&self) -> FixedArrayRefIterator<'_, T> {
+        FixedArrayRefIterator {
+            array: self,
+            index: 0
+        }
+    }
 }
 
-impl<T> std::ops::Deref for Cells<T> {
+pub struct FixedArrayRefIterator<'a, T> {
+    array: &'a FixedArray<T>,
+    index: usize,
+}
+
+impl<'a, T> Iterator for FixedArrayRefIterator<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == self.array.capacity {
+            return None;
+        }
+        let result = Some(&self.array[self.index]);
+        self.index += 1;
+        result
+    }
+}
+
+impl<T> IntoIterator for FixedArray<T> {
+    type IntoIter = FixedArrayIterator<T>;
+    type Item = T;
+
+    fn into_iter(self) -> Self::IntoIter {
+        FixedArrayIterator {
+            array: ManuallyDrop::new(self),
+            index: 0,
+        }
+    }
+}
+
+pub struct FixedArrayIterator<T> {
+    array: ManuallyDrop<FixedArray<T>>,
+    index: usize,
+}
+
+impl<T> Iterator for FixedArrayIterator<T> {
+    type Item = T;
+    
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == self.array.capacity {
+            return None;
+        }
+        unsafe {
+            let result = Some(self.array.read(self.index));
+            self.index += 1;
+            result
+        }
+    }
+}
+
+impl<T> Drop for FixedArrayIterator<T> {
+    fn drop(&mut self) {
+        if std::mem::needs_drop::<T>() {
+            let capacity = self.array.capacity;
+            let array = &mut self.array;
+            (self.index..capacity).for_each(move |index| {
+                unsafe { array.drop_in_place(index); }
+            });
+        }
+        self.array.internal_dealloc(false);
+    }
+}
+
+impl<T> From<FixedArray<T>> for Vec<T> {
+    fn from(value: FixedArray<T>) -> Self {
+        value.into_vec()
+    }
+}
+
+impl<T> From<FixedArray<T>> for Box<[T]> {
+    fn from(value: FixedArray<T>) -> Self {
+        value.into_boxed_slice()
+    }
+}
+
+impl<T> std::ops::Deref for FixedArray<T> {
     type Target = [T];
     fn deref(&self) -> &Self::Target {
         self.as_slice()
     }
 }
 
-impl<T> std::ops::DerefMut for Cells<T> {
+impl<T> std::ops::DerefMut for FixedArray<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_slice()
     }
 }
 
-impl<T: Default> Cells<T> {
+impl<T: Default> FixedArray<T> {
     /// Takes the value at `index` while replacing the old value with [Default::default()].
     pub fn take(&mut self, index: usize) -> T {
         self.replace(index, Default::default())
     }
 }
 
-impl<T> std::ops::Index<usize> for Cells<T> {
+impl<T> std::ops::Index<usize> for FixedArray<T> {
     type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
         if let Some(ptr) = self.ptr {
@@ -351,7 +437,7 @@ impl<T> std::ops::Index<usize> for Cells<T> {
     }
 }
 
-impl<T> std::ops::IndexMut<usize> for Cells<T> {
+impl<T> std::ops::IndexMut<usize> for FixedArray<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         if let Some(ptr) = self.ptr {
             assert!(index < self.capacity, "Index out of bounds.");
@@ -364,7 +450,7 @@ impl<T> std::ops::IndexMut<usize> for Cells<T> {
     }
 }
 
-impl<T> Drop for Cells<T> {
+impl<T> Drop for FixedArray<T> {
     fn drop(&mut self) {
         self.internal_dealloc(true);
     }
@@ -383,12 +469,11 @@ mod testing_sandbox {
                 println!("Drop: {:?}", self.0);
             }
         }
-        let mut grid = Cells::new_2d((2, 2), (3, 4), Dropper);
+        let mut grid = FixedArray::new_2d((2, 2), (3, 4), Dropper);
         println!("Len: {}", grid.len());
-        for cell in grid.as_mut_slice() {
-            *cell = Dropper((69, 420));
-        }
-        println!("Dropping.");
-        drop(grid);
+        let mut grid_iter = grid.into_iter();
+        println!("{:?}", grid_iter.next().unwrap());
+        println!("Dropping iterator.");
+        drop(grid_iter);
     }
 }
