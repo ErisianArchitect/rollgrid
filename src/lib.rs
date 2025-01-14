@@ -1,9 +1,13 @@
+pub(crate) mod cells;
 pub mod rollgrid2d;
 pub mod rollgrid3d;
 
 const SIZE_TOO_LARGE: &'static str = "Size is too large";
 const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bound";
 const OUT_OF_BOUNDS: &'static str = "Out of bounds";
+
+const AREA_IS_ZERO_2D: &'static str = "Width/Height cannot be 0";
+const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
 
 /// Used in the `manage` callback for loading and unloading cells during resize/reposition operations.
 pub enum CellManage<C, T> {
