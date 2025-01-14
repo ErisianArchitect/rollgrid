@@ -1,5 +1,4 @@
-use crate::{CellManage, OFFSET_TOO_CLOSE_TO_MAX, OUT_OF_BOUNDS, SIZE_TOO_LARGE};
-const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
+use crate::{CellManage, OFFSET_TOO_CLOSE_TO_MAX, OUT_OF_BOUNDS, SIZE_TOO_LARGE, VOLUME_IS_ZERO};
 
 type Coord = (i32, i32, i32);
 
@@ -306,7 +305,6 @@ impl<T> RollGrid3D<T> {
                 }
                 let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
                 if volume == 0 { panic!("{VOLUME_IS_ZERO}"); };
-                #[cfg(target_pointer_width = "64")]
                 if volume > i32::MAX as usize { panic!("{SIZE_TOO_LARGE}"); }
                 let (new_x, new_y, new_z) = new_position;
                 let new_width = width as i32;
@@ -463,7 +461,6 @@ impl<T> RollGrid3D<T> {
             }
             let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
             if volume == 0 { panic!("{VOLUME_IS_ZERO}"); };
-            #[cfg(target_pointer_width = "64")]
             if volume > i32::MAX as usize { panic!("{SIZE_TOO_LARGE}"); }
             let (new_x, new_y, new_z) = new_position;
             let new_width = width as i32;
