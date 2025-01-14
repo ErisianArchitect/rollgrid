@@ -1,5 +1,4 @@
 use super::*;
-const AREA_IS_ZERO: &'static str = "Width/Height cannot be 0";
 type Coord = (i32, i32);
 
 struct TempGrid2D<T> {
@@ -73,8 +72,7 @@ impl<T> RollGrid2D<T> {
     /// Create a new [RollGrid2D] with all the elements set to None.
     pub fn new(width: usize, height: usize, grid_offset: (i32, i32)) -> Self {
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
-        if area == 0 { panic!("{}", AREA_IS_ZERO); }
-        #[cfg(target_pointer_width = "64")]
+        if area == 0 { panic!("{}", AREA_IS_ZERO_2D); }
         if area > i32::MAX as usize { panic!("{}", SIZE_TOO_LARGE); }
         if grid_offset.0.checked_add(width as i32).is_none()
         || grid_offset.1.checked_add(height as i32).is_none() {
@@ -96,8 +94,7 @@ impl<T> RollGrid2D<T> {
         init: F
     ) -> Self {
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
-        if area == 0 { panic!("{}", AREA_IS_ZERO); }
-        #[cfg(target_pointer_width = "64")]
+        if area == 0 { panic!("{}", AREA_IS_ZERO_2D); }
         if area > i32::MAX as usize { panic!("{}", SIZE_TOO_LARGE); }
         if grid_offset.0.checked_add(width as i32).is_none()
         || grid_offset.1.checked_add(height as i32).is_none() {
@@ -125,8 +122,7 @@ impl<T> RollGrid2D<T> {
         init: F
     ) -> Result<Self, E> {
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
-        if area == 0 { panic!("{}", AREA_IS_ZERO); }
-        #[cfg(target_pointer_width = "64")]
+        if area == 0 { panic!("{}", AREA_IS_ZERO_2D); }
         if area > i32::MAX as usize { panic!("{}", SIZE_TOO_LARGE); }
         if grid_offset.0.checked_add(width as i32).is_none()
         || grid_offset.1.checked_add(height as i32).is_none() {
@@ -151,6 +147,7 @@ impl<T> RollGrid2D<T> {
     where
         C: From<Coord> + Into<Coord>,
         F: FnMut(CellManage<C, T>) -> Option<T> {
+            
             let inf = inflate as i32;
             let new_offset = (self.grid_offset.0 - inf, self.grid_offset.1 - inf);
             let new_width = self.size.0 + inflate * 2;
@@ -180,7 +177,7 @@ impl<T> RollGrid2D<T> {
             let new_width = self.size.0 - deflate * 2;
             let new_height = self.size.1 - deflate * 2;
             if new_width * new_height == 0 {
-                panic!("{AREA_IS_ZERO}");
+                panic!("{AREA_IS_ZERO_2D}");
             }
             self.resize_and_reposition(new_width, new_height, new_position, manage);
     }
@@ -195,7 +192,7 @@ impl<T> RollGrid2D<T> {
             let new_width = self.size.0 - deflate * 2;
             let new_height = self.size.1 - deflate * 2;
             if new_width * new_height == 0 {
-                panic!("{AREA_IS_ZERO}");
+                panic!("{AREA_IS_ZERO_2D}");
             }
             self.try_resize_and_reposition(new_width, new_height, new_position, manage)
     }
@@ -256,8 +253,7 @@ impl<T> RollGrid2D<T> {
         }
         let new_position: Coord = new_position.into();
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
-        if area == 0 { panic!("{AREA_IS_ZERO}"); }
-        #[cfg(target_pointer_width = "64")]
+        if area == 0 { panic!("{AREA_IS_ZERO_2D}"); }
         if area > i32::MAX as usize { panic!("{SIZE_TOO_LARGE}"); }
         let (new_x, new_y): Coord = new_position.into();
         if new_position == self.grid_offset
@@ -373,8 +369,7 @@ impl<T> RollGrid2D<T> {
         }
         let new_position: Coord = new_position.into();
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
-        if area == 0 { panic!("{AREA_IS_ZERO}"); }
-        #[cfg(target_pointer_width = "64")]
+        if area == 0 { panic!("{AREA_IS_ZERO_2D}"); }
         if area > i32::MAX as usize { panic!("{SIZE_TOO_LARGE}"); }
         let (new_x, new_y): Coord = new_position.into();
         if new_position == self.grid_offset
