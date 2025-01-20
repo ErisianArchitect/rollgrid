@@ -1,11 +1,10 @@
 use super::*;
 type Coord = (i32, i32);
 
+// TODO: 1.0.0: Remove TempGrid after replacing its functionality with FixedArray.
 struct TempGrid2D<T> {
     cells: Box<[Option<T>]>,
 }
-
-// Manual allocation
 
 impl<T> TempGrid2D<T> {
     /// Create a new grid with an initializer callback.
@@ -41,6 +40,7 @@ impl<T> TempGrid2D<T> {
     }
 }
 
+// TODO: 1.0.0: Swap Box<[Option<T>]> with FixedArray<T>.
 /// A 2D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
 /// It uses the modulus operator combined with an internal wrap offset to
@@ -53,6 +53,7 @@ pub struct RollGrid2D<T> {
     grid_offset: (i32, i32),
 }
 
+// TODO: 1.0.0: Update code to set cells.
 impl<T: Default> RollGrid2D<T> {
     /// Create a new [RollGrid2D] with all the elements set to the default for `T`.
     pub fn new_default(width: usize, height: usize, grid_offset: (i32, i32)) -> Self {
@@ -68,6 +69,7 @@ impl<T: Default> RollGrid2D<T> {
 
 impl<T> RollGrid2D<T> {
 
+    // TODO: 1.0.0: Remove this.
     // Constructors
     /// Create a new [RollGrid2D] with all the elements set to None.
     pub fn new(width: usize, height: usize, grid_offset: (i32, i32)) -> Self {
@@ -86,6 +88,7 @@ impl<T> RollGrid2D<T> {
         }
     }
 
+    // TODO: 1.0.0: Update cells creation with FixedArray.
     /// Create a new [RollGrid2D] using an initialize function to initialize elements.
     pub fn new_with_init<C: From<(i32, i32)>, F: FnMut(C) -> Option<T>>(
         width: usize,
@@ -114,6 +117,7 @@ impl<T> RollGrid2D<T> {
         }
     }
 
+    // TODO: 1.0.0: Update cells creation with FixedArray
     /// Try to create a new [RollGrid2D] using a fallible initialize function to initialize elements.
     pub fn try_new_with_init<C: From<(i32, i32)>, E, F: FnMut(C) -> Result<Option<T>, E>>(
         width: usize,
@@ -213,6 +217,7 @@ impl<T> RollGrid2D<T> {
             self.try_resize_and_reposition::<C, E, F>(new_width, new_height, C::from(self.grid_offset), manage)
     }
 
+    // TODO: 1.0.0: Update to use FixedArray instead of TempGrid, as well as the updated version of CellManage.
     // Resize
     /// Resize and reposition the grid.
     /// ```no_run
@@ -328,7 +333,7 @@ impl<T> RollGrid2D<T> {
             self.cells = temp_grid.take_cells();
         }
     }
-
+    // TODO: 1.0.0: Update this to use FixedArray as well as update the usage of CellManage.
     // Resize
     /// Try to resize and reposition the grid using a fallible function.
     /// ```no_run
@@ -448,8 +453,8 @@ impl<T> RollGrid2D<T> {
         Ok(())
     }
 
+    // TODO: 1.0.0: Update the function to take a mutable reference instead of a raw value.
     // Translation/Repositioning
-
     /// Translate the grid by offset amount with a reload function.
     /// Signature of the reload function is as follows:
     /// ```rust,no_run
@@ -465,6 +470,7 @@ impl<T> RollGrid2D<T> {
             self.reposition(C::from((curx + ox, cury + oy)), reload);
         }
 
+    // TODO: 1.0.0: Update the function to take a mutable reference instead of a raw value.
     /// Try to translate the grid by offset amount with a fallible reload function.
     /// Signature of the reload function is as follows:
     /// ```rust,no_run
@@ -480,6 +486,7 @@ impl<T> RollGrid2D<T> {
             self.try_reposition(C::from((curx + ox, cury + oy)), reload)
         }
     
+    // TODO: 1.0.0: update reload function to use mutable reference instead of raw value.
     /// Reposition the offset of the grid and reload the slots that are changed.
     /// Signature of the reload function is as follows:
     /// ```rust,no_run
@@ -613,6 +620,7 @@ impl<T> RollGrid2D<T> {
             }
         }
     
+    // TODO: 1.0.0: Update reload function to use mutable reference instead of raw value.
     /// Try to reposition the offset of the grid and reload the slots that are changed.
     /// Signature of the reload function is as follows:
     /// ```rust,no_run
@@ -691,6 +699,8 @@ impl<T> RollGrid2D<T> {
                             old_x + width + offset_x + xi as i32
                         };
                         let prior_y = y;
+                        // TODO: Since this is a fallible function, this can be mapped into an error.
+                        //       There are probably other places to check in the source file as well that have a similar issue.
                         let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
                         let old_value = self.cells[index].take();
                         let new_value = reload(C::from((prior_x, prior_y)), C::from((x, y)), old_value)?;
@@ -777,6 +787,7 @@ impl<T> RollGrid2D<T> {
         Some((wy as usize * self.size.0) + wx as usize)
     }
 
+    // TODO: 1.0.0: Remove these opt methods.
     pub fn get_opt<C: Into<Coord>>(&self, coord: C) -> Option<&Option<T>> {
         let index = self.offset_index(coord.into())?;
         Some(&self.cells[index])
@@ -794,15 +805,27 @@ impl<T> RollGrid2D<T> {
         Some(old)
     }
 
+    // TODO: 1.0.0: Update the get and get_mut to not use as_ref and as_mut.
     pub fn get<C: Into<Coord>>(&self, coord: C) -> Option<&T> {
         let index = self.offset_index(coord.into())?;
-        if let Some(cell) = &self.cells[index] {
-            Some(cell)
-        } else {
-            None
-        }
+        self.cells[index].as_ref()
     }
 
+    pub fn get_mut<C: Into<Coord>>(&mut self, coord: C) -> Option<&mut T> {
+        let index = self.offset_index(coord.into())?;
+        self.cells[index].as_mut()
+    }
+
+    
+    // TODO: 1.0.0: self.cells[index] is not Option<T>
+    pub fn set<C: Into<Coord>>(&mut self, coord: C, value: T) -> Option<T> {
+        let index = self.offset_index(coord.into())?;
+        let mut old = Some(value);
+        std::mem::swap(&mut old, &mut self.cells[index]);
+        old
+    }
+
+    // TODO: 1.0.0: Remove get_or_insert_with and get_or_insert
     /// This method panics if `coord` is out of bounds.
     pub fn get_or_insert_with<C: Into<Coord>, F: FnOnce() -> T>(&mut self, coord: C, f: F) -> &mut T {
         let index = self.offset_index(coord.into()).expect("Out of bounds");
@@ -815,22 +838,7 @@ impl<T> RollGrid2D<T> {
         self.cells[index].get_or_insert(value)
     }
 
-    pub fn get_mut<C: Into<Coord>>(&mut self, coord: C) -> Option<&mut T> {
-        let index = self.offset_index(coord.into())?;
-        if let Some(cell) = &mut self.cells[index] {
-            Some(cell)
-        } else {
-            None
-        }
-    }
-
-    pub fn set<C: Into<Coord>>(&mut self, coord: C, value: T) -> Option<T> {
-        let index = self.offset_index(coord.into())?;
-        let mut old = Some(value);
-        std::mem::swap(&mut old, &mut self.cells[index]);
-        old
-    }
-
+    // TODO: 1.0.0: Only implement this method for RollGrid where the type is Option<T>.
     pub fn take<C: Into<Coord>>(&mut self, coord: C) -> Option<T> {
         let index = self.offset_index(coord.into())?;
         self.cells[index].take()
@@ -898,10 +906,6 @@ impl<T> RollGrid2D<T> {
             grid: self,
         }
     }
-
-    // TODO
-    // pub fn drain(&mut self, x_range: Range<i32>, y_range: Range<i32>) -> () {
-    // }
 
 }
 
@@ -1086,12 +1090,12 @@ impl<'a, T> Iterator for RollGrid2DIterator<'a, T> {
 }
 
 /// Mutable iterator over all elements in the [RollGrid2D].
-/// (This uses **unsafe** code!)
 pub struct RollGrid2DMutIterator<'a, T> {
     grid: &'a mut RollGrid2D<T>,
     bounds_iter: Bounds2DIter,
 }
 
+// TODO: 1.0.0: 
 impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
     type Item = ((i32, i32), Option<&'a mut T>);
 
@@ -1106,11 +1110,9 @@ impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
         unsafe {
             let cells_ptr = self.grid.cells.as_mut_ptr();
             let cell_ptr = cells_ptr.add(index);
-            if let Some(cell) = &mut *cell_ptr {
-                Some((next, Some(cell)))
-            } else {
-                Some((next, None))
-            }
+            cell_ptr.as_mut()
+                .map(|cell| (next, cell.as_mut()))
+                .or_else(|| Some((next, None)))
         }
     }
 }
