@@ -1080,12 +1080,9 @@ impl<'a, T> Iterator for RollGrid2DIterator<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
-        if let Some(cell) = &self.grid.cells[index] {
-            // I know this looks wonky, but I promise this is correct.
-            Some((next, Some(cell)))
-        } else {
-            Some((next, None))
-        }
+        self.grid.cells[index].as_ref()
+            .map(|cell| (next, Some(cell)))
+            .or_else(|| Some((next, None)))
     }
 }
 
