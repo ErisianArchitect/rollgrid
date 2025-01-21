@@ -112,3 +112,25 @@ chunks.reposition((chunk_x, chunk_z), |old_pos, (x, z), chunk| {
 
 This `reposition` method works for the 2d and 3d variants of the rollgrid.
 You can modify this code to fit your purpose.
+
+# New In Version 1.0.0!
+
+- Swapped the underlying cell representation from `Option<T>` to `T`.
+- Switched the internal data structure for storage of grid cells from `Box<[T]>` to a new internal type `FixedArray<T>`.  
+  This was necessary in order to swap the underlying cell representation from `Option<T>` to `T` because I needed a fine-tuned
+  way to manage the dropping of individual elements.
+- Callbacks that modify cells in place now receive a mutable reference rather than a raw value.
+
+# Changelog
+
+### 1.0.0
+
+- Changed the internal representation of the cells in `RollGrid2D` and `RollGrid3D` from `Box<[Option<T>]>` to `rollgrid::cells::FixedArray<T>`. `FixedArray` is an internal type that was created to fulfill the needs of this crate.
+- Removed generic coordinate parameters. Coordinate arguments must be explicitly `(i32, i32)` for `RollGrid2D` and `(i32, i32, i32)` for `RollGrid3D`.
+- For `reposition` functions, the `reload` callback now takes `&mut T` rather than `Option<T>` and returns `()` instead of `Option<T>`.
+- For resize functions, the `manage` parameter is now a generic of the trait `CellManage<C, T>`, which separates the functionality of `load`, `reload`, and `unload`. There is also `TryCellManage<C, T, E>` for the fallible resize functions.
+- Removed `get_opt`, `get_opt_mut`, and `set_opt`.
+- Removed `get_or_insert` and `get_or_insert_with`.
+- Removed `take`.
+- Changed the `Item` for `RollGridXDIterator` and `RollGridXDMutIterator`. Now returns `&T`/`&mut T` rather than `Option<&T>`/`Option<&mut T>`.
+- Replaced the `new` constructor for `RollGrid2D` and `RollGrid3D` with the `new_with_init` constructor. `new_with_init` is now called `new` and the original `new` no longer exists. Likewise changed the name of `try_new_with_init` to `try_new`.
