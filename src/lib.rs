@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 pub(crate) mod cells;
 pub mod rollgrid2d;
 pub mod rollgrid3d;
@@ -9,14 +11,67 @@ const OUT_OF_BOUNDS: &'static str = "Out of bounds";
 const AREA_IS_ZERO_2D: &'static str = "Width/Height cannot be 0";
 const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
 
+// TODO: manual_allocation: Update the Unload functionality.
 /// Used in the `manage` callback for loading and unloading cells during resize/reposition operations.
-pub enum CellManage<C, T> {
-    /// For when a cell is loaded.
-    /// The callback should return the new value for the loaded cell.
-    Load(C),
-    /// For when a cell is unloaded.
-    /// The callback should return `None`.
-    Unload(C, Option<T>)
+// pub enum CellManage<'a, T> {
+//     /// For when a cell is loaded.
+//     /// The callback should return the new value for the loaded cell.
+//     /// `Load(position, cell)`
+//     Load((i32, i32), &'a mut T),
+//     /// For when a cell is unloaded.
+//     /// The callback should return `None`.
+//     Unload((i32, i32), T),
+//     /// For when a cell is reloaded (changes position).
+//     /// `Reload(old_position, new_position, cell)`
+//     Reload((i32, i32), (i32, i32), &'a mut T),
+// }
+
+pub trait CellManage<C, T> {
+    fn load(&mut self, position: C) -> T;
+    fn unload(&mut self, position: C, old_value: T);
+    fn reload(&mut self, old_position: C, new_position: C, value: &mut T);
+}
+
+pub trait TryCellManage<C, T, E> {
+    fn try_load(&mut self, position: C) -> Result<T, E>;
+    fn try_unload(&mut self, position: C, old_value: T) -> Result<(), E>;
+    fn try_reload(&mut self, old_position: C, new_position: C, value: &mut T) -> Result<(), E>;
+}
+
+pub struct CellManager<C, T, FL, FU, FR, Marker=()> {
+    load: FL,
+    unload: FU,
+    reload: FR,
+    phantom: std::marker::PhantomData<(C, T, Marker)>,
+}
+
+impl<C, T, FL, FU, FR> CellManage<C, T> for CellManager<C, T, FL, FU, FR>
+where
+T: Sized,
+FL: FnMut(C) -> T,
+FU: FnMut(C, T),
+FR: FnMut(C, C, &mut T) {
+    fn load(&mut self, position: C) -> T {
+        (self.load)(position)
+    }
+
+    fn unload(&mut self, position: C, value: T) {
+        (self.unload)(position, value);
+    }
+
+    fn reload(&mut self, old_position: C, new_position: C, value: &mut T) {
+        (self.reload)(old_position, new_position, value);
+    }
+}
+
+pub fn cell_manager<C, T, FL, FU, FR>(load: FL, unload: FU, reload: FR) -> CellManager<C, T, FL, FU, FR>
+where CellManager<C, T, FL, FU, FR>: CellManage<C, T> {
+    CellManager { load, unload, reload, phantom: PhantomData }
+}
+
+pub fn try_cell_manager<C, T, E, FL, FU, FR>(load: FL, unload: FU, reload: FR) -> CellManager<C, T, FL, FU, FR, (E,)>
+where CellManager<C, T, FL, FU, FR, (E,)>: TryCellManage<C, T, E> {
+    CellManager { load, unload, reload, phantom: PhantomData }
 }
 
 #[cfg(test)]
@@ -30,7 +85,7 @@ mod tests {
     pub fn roll_test() {
         const HEX_CHARS: [char; 16] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
         let mut hex = HEX_CHARS.into_iter();
-        let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
+        let mut grid = RollGrid2D::new(4, 4, (0, 0), |pos: (i32, i32)| {
             hex.next()
         });
         fn print_grid(grid: &RollGrid2D<char>) {
@@ -86,7 +141,7 @@ mod tests {
 
     #[test]
     pub fn rollgrid2d_test() {
-        let mut grid = RollGrid2D::new_with_init(2, 2, (0, 0), |coord: (i32, i32)| {
+        let mut grid = RollGrid2D::new(2, 2, (0, 0), |coord: (i32, i32)| {
             Some(coord)
         });
         fn print_grid(grid: &RollGrid2D<(i32, i32)>) {
