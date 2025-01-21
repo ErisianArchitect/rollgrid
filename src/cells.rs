@@ -295,6 +295,18 @@ impl<T> FixedArray<T> {
         }
     }
 
+    /// Returns the internal pointer. This may return `null` if the buffer has already been deallocated.
+    #[inline]
+    pub unsafe fn as_ptr(&self) -> *const T {
+        self.ptr.map_or_else(|| std::ptr::null(), |ptr| ptr.as_ptr())
+    }
+
+    /// Returns the internal mutable pointer. This may return `null` if the buffer has already been deallocated.
+    #[inline]
+    pub unsafe fn as_mut_ptr(&mut self) -> *mut T {
+        self.ptr.map_or_else(|| std::ptr::null_mut(), NonNull::as_ptr)
+    }
+
     /// Converts the array into a boxed slice.
     pub fn into_boxed_slice(self) -> Box<[T]> {
         let Some(ptr) = self.ptr else {
@@ -453,27 +465,5 @@ impl<T> std::ops::IndexMut<usize> for FixedArray<T> {
 impl<T> Drop for FixedArray<T> {
     fn drop(&mut self) {
         self.internal_dealloc(true);
-    }
-}
-
-#[cfg(test)]
-mod testing_sandbox {
-    // TODO: Remove this sandbox when it is no longer in use.
-    use super::*;
-    #[test]
-    fn sandbox() {
-        #[derive(Debug)]
-        struct Dropper<T: std::fmt::Debug>(T);
-        impl<T: std::fmt::Debug> Drop for Dropper<T> {
-            fn drop(&mut self) {
-                println!("Drop: {:?}", self.0);
-            }
-        }
-        let mut grid = FixedArray::new_2d((2, 2), (3, 4), Dropper);
-        println!("Len: {}", grid.len());
-        let mut grid_iter = grid.into_iter();
-        println!("{:?}", grid_iter.next().unwrap());
-        println!("Dropping iterator.");
-        drop(grid_iter);
     }
 }
