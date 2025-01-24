@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 pub(crate) mod cells;
 pub mod rollgrid2d;
-pub mod rollgrid3d;
+// pub mod rollgrid3d;
 
 const SIZE_TOO_LARGE: &'static str = "Size is too large";
 const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bound";
@@ -86,7 +86,7 @@ mod tests {
         const HEX_CHARS: [char; 16] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
         let mut hex = HEX_CHARS.into_iter();
         let mut grid = RollGrid2D::new(4, 4, (0, 0), |pos: (i32, i32)| {
-            hex.next()
+            hex.next().unwrap()
         });
         fn print_grid(grid: &RollGrid2D<char>) {
             for y in grid.y_min()..grid.y_max() {
@@ -99,9 +99,7 @@ mod tests {
             }
         }
         print_grid(&grid);
-        grid.translate((1, 1), |old_pos, new_pos, old_value| {
-            old_value
-        });
+        grid.translate((1, 1), |old_pos, new_pos, old_value| {});
         print_grid(&grid);
     }
 
@@ -142,7 +140,7 @@ mod tests {
     #[test]
     pub fn rollgrid2d_test() {
         let mut grid = RollGrid2D::new(2, 2, (0, 0), |coord: (i32, i32)| {
-            Some(coord)
+            coord
         });
         fn print_grid(grid: &RollGrid2D<(i32, i32)>) {
             println!("***");
@@ -157,41 +155,22 @@ mod tests {
         }
         print_grid(&grid);
         grid.translate((1, 1), |old, new, old_value| {
-            Some(old)
+            *old_value = old;
         });
         print_grid(&grid);
         return;
-        grid.inflate_size::<(i32, i32), _>(1, |action| {
-            match action {
-                CellManage::Load(pos) => {
-                    println!("Load: ({},{})", pos.0, pos.1);
-                    Some(pos)
-                }
-                CellManage::Unload(pos, old) => {
-                    println!("Unload: ({},{})", pos.0, pos.1);
-                    None
-                }
+        grid.inflate_size(1, cell_manager(
+            |pos: (i32, i32)| {
+                println!("Load: ({}, {})", pos.0, pos.1);
+                pos
+            },
+            |pos, value| {
+                
+            },
+            |old_pos, new_pos, value| {
+
             }
-        });
-        // grid.resize_and_reposition(3, 3, (4, 4), |action| {
-        //     match action {
-        //         CellManage::Load(pos) => {
-        //             println!("Load: ({},{})", pos.0, pos.1);
-        //             Some(pos)
-        //         }
-        //         CellManage::Unload(pos, old) => {
-        //             println!("Unload: ({},{})", pos.0, pos.1);
-        //             None
-        //         }
-        //     }
-        // });
-        // print_grid(&grid);
-        // grid.translate((-1, -1), |old_pos, new_pos, old_value| {
-        //     let (old_x, old_y) = old_pos;
-        //     let (new_x, new_y) = new_pos;
-        //     println!("({old_x},{old_y}) -> ({new_x},{new_y})");
-        //     Some(new_pos)
-        // });
+        ));
         println!("***");
         print_grid(&grid);
         if let Some(&(x, y)) = grid.get((-5, -16)) {
