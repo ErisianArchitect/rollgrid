@@ -4,7 +4,7 @@
 use std::{mem::ManuallyDrop, ptr::NonNull};
 use super::*;
 use rollgrid2d::Bounds2D;
-use rollgrid3d::Bounds3D;
+// use rollgrid3d::Bounds3D;
 
 /// An array of type `T`.
 /// This is an abstraction over the memory meant to be used in rolling grid
@@ -38,30 +38,30 @@ impl<T> FixedArray<T> {
         }
     }
 
-    #[inline(always)]
-    fn prealloc_3d(size: (usize, usize, usize), offset: (i32, i32, i32)) -> (NonNull<T>, Bounds3D, usize) {
-        let (width, height, depth) = size;
-        let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
-        if volume == 0 {
-            panic!("{VOLUME_IS_ZERO}");
-        }
-        if volume > i32::MAX as usize {
-            panic!("{SIZE_TOO_LARGE}");
-        }
-        if offset.0.checked_add(width as i32).is_none()
-        || offset.1.checked_add(height as i32).is_none()
-        || offset.2.checked_add(depth as i32).is_none() {
-            panic!("{OFFSET_TOO_CLOSE_TO_MAX}");
-        }
-        unsafe {
-            let layout = Self::make_layout(volume).expect("Failed to create layout.");
-            (
-                NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
-                rollgrid3d::Bounds3D::new(offset, (offset.0 + width as i32, offset.1 + height as i32, offset.2 + depth as i32)),
-                volume,
-            )
-        }
-    }
+    // #[inline(always)]
+    // fn prealloc_3d(size: (usize, usize, usize), offset: (i32, i32, i32)) -> (NonNull<T>, Bounds3D, usize) {
+    //     let (width, height, depth) = size;
+    //     let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
+    //     if volume == 0 {
+    //         panic!("{VOLUME_IS_ZERO}");
+    //     }
+    //     if volume > i32::MAX as usize {
+    //         panic!("{SIZE_TOO_LARGE}");
+    //     }
+    //     if offset.0.checked_add(width as i32).is_none()
+    //     || offset.1.checked_add(height as i32).is_none()
+    //     || offset.2.checked_add(depth as i32).is_none() {
+    //         panic!("{OFFSET_TOO_CLOSE_TO_MAX}");
+    //     }
+    //     unsafe {
+    //         let layout = Self::make_layout(volume).expect("Failed to create layout.");
+    //         (
+    //             NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
+    //             rollgrid3d::Bounds3D::new(offset, (offset.0 + width as i32, offset.1 + height as i32, offset.2 + depth as i32)),
+    //             volume,
+    //         )
+    //     }
+    // }
 
     /// Allocate a new [FixedArray] from a 2D size and offset with an
     /// initialization function.
@@ -123,72 +123,72 @@ impl<T> FixedArray<T> {
         })
     }
 
-    /// Allocate a new [FixedArray] from a 3D size and offset with an
-    /// initialization function.
-    /// 
-    /// Initialization happens in the order `x -> z -> y`, that your results
-    /// will be ordered like so:
-    /// * `(0, 0, 0)`
-    /// * `(1, 0, 0)`
-    /// * `(0, 0, 1)`
-    /// * `(1, 0, 1)`
-    /// * `(0, 1, 0)`
-    /// * `(1, 1, 0)`
-    /// * `(0, 1, 1)`
-    /// * `(1, 1, 1)`
-    pub fn new_3d<F: FnMut((i32, i32, i32)) -> T>(
-        size: (usize, usize, usize),
-        offset: (i32, i32, i32),
-        mut init: F,
-    ) -> Self {
-        let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
-        bounds.iter()
-            .enumerate()
-            .for_each(|(i, pos)| {
-                unsafe {
-                    let item = ptr.add(i);
-                    std::ptr::write(item.as_ptr(), init(pos));
-                }
-            });
-        Self {
-            ptr: Some(ptr),
-            capacity,
-        }
-    }
+    // /// Allocate a new [FixedArray] from a 3D size and offset with an
+    // /// initialization function.
+    // /// 
+    // /// Initialization happens in the order `x -> z -> y`, that your results
+    // /// will be ordered like so:
+    // /// * `(0, 0, 0)`
+    // /// * `(1, 0, 0)`
+    // /// * `(0, 0, 1)`
+    // /// * `(1, 0, 1)`
+    // /// * `(0, 1, 0)`
+    // /// * `(1, 1, 0)`
+    // /// * `(0, 1, 1)`
+    // /// * `(1, 1, 1)`
+    // pub fn new_3d<F: FnMut((i32, i32, i32)) -> T>(
+    //     size: (usize, usize, usize),
+    //     offset: (i32, i32, i32),
+    //     mut init: F,
+    // ) -> Self {
+    //     let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
+    //     bounds.iter()
+    //         .enumerate()
+    //         .for_each(|(i, pos)| {
+    //             unsafe {
+    //                 let item = ptr.add(i);
+    //                 std::ptr::write(item.as_ptr(), init(pos));
+    //             }
+    //         });
+    //     Self {
+    //         ptr: Some(ptr),
+    //         capacity,
+    //     }
+    // }
 
-    /// Attempt to allocate a new [FixedArray] from a 3D size and offset
-    /// with an initialization function.
-    /// 
-    /// Initialization happens in the order `x -> z -> y`, that your results
-    /// will be ordered like so:
-    /// * `(0, 0, 0)`
-    /// * `(1, 0, 0)`
-    /// * `(0, 0, 1)`
-    /// * `(1, 0, 1)`
-    /// * `(0, 1, 0)`
-    /// * `(1, 1, 0)`
-    /// * `(0, 1, 1)`
-    /// * `(1, 1, 1)`
-    pub fn try_new_3d<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
-        size: (usize, usize, usize),
-        offset: (i32, i32, i32),
-        mut init: F,
-    ) -> Result<Self, E> {
-        let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
-        bounds.iter()
-            .enumerate()
-            .try_for_each(|(i, pos)| {
-                unsafe {
-                    let item = ptr.add(i);
-                    std::ptr::write(item.as_ptr(), init(pos)?);
-                }
-                Ok(())
-            })?;
-        Ok(Self {
-            ptr: Some(ptr),
-            capacity,
-        })
-    }
+    // /// Attempt to allocate a new [FixedArray] from a 3D size and offset
+    // /// with an initialization function.
+    // /// 
+    // /// Initialization happens in the order `x -> z -> y`, that your results
+    // /// will be ordered like so:
+    // /// * `(0, 0, 0)`
+    // /// * `(1, 0, 0)`
+    // /// * `(0, 0, 1)`
+    // /// * `(1, 0, 1)`
+    // /// * `(0, 1, 0)`
+    // /// * `(1, 1, 0)`
+    // /// * `(0, 1, 1)`
+    // /// * `(1, 1, 1)`
+    // pub fn try_new_3d<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
+    //     size: (usize, usize, usize),
+    //     offset: (i32, i32, i32),
+    //     mut init: F,
+    // ) -> Result<Self, E> {
+    //     let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
+    //     bounds.iter()
+    //         .enumerate()
+    //         .try_for_each(|(i, pos)| {
+    //             unsafe {
+    //                 let item = ptr.add(i);
+    //                 std::ptr::write(item.as_ptr(), init(pos)?);
+    //             }
+    //             Ok(())
+    //         })?;
+    //     Ok(Self {
+    //         ptr: Some(ptr),
+    //         capacity,
+    //     })
+    // }
 
     /// Deallocates the internal buffer in this [FixedArray].
     pub fn dealloc(&mut self) {
