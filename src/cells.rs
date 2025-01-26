@@ -1,10 +1,7 @@
-// TODO: Remove this when you're not working on FixedArray.
-#![allow(unused)]
-
-use std::{mem::ManuallyDrop, ptr::NonNull};
-use super::*;
+use crate::{*, constants::*};
 use rollgrid2d::Bounds2D;
-// use rollgrid3d::Bounds3D;
+use rollgrid3d::Bounds3D;
+use std::{mem::ManuallyDrop, ptr::NonNull};
 
 /// An array of type `T`.
 /// This is an abstraction over the memory meant to be used in rolling grid
@@ -22,50 +19,73 @@ impl<T> FixedArray<T> {
     fn prealloc_2d(size: (usize, usize), offset: (i32, i32)) -> (NonNull<T>, Bounds2D, usize) {
         let (width, height) = size;
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
-        if area == 0 { panic!("{}", AREA_IS_ZERO_2D); }
-        if area > i32::MAX as usize { panic!("{}", SIZE_TOO_LARGE); }
+        if area == 0 {
+            panic!("{}", AREA_IS_ZERO_2D);
+        }
+        if area > i32::MAX as usize {
+            panic!("{}", SIZE_TOO_LARGE);
+        }
         if offset.0.checked_add(width as i32).is_none()
-        || offset.1.checked_add(height as i32).is_none() {
+            || offset.1.checked_add(height as i32).is_none()
+        {
             panic!("{}", OFFSET_TOO_CLOSE_TO_MAX);
         }
         unsafe {
             let layout = Self::make_layout(area).expect("Failed to create layout.");
             (
                 NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
-                rollgrid2d::Bounds2D::new(offset, (offset.0 + width as i32, offset.1 + height as i32)),
+                rollgrid2d::Bounds2D::new(
+                    offset,
+                    (offset.0 + width as i32, offset.1 + height as i32),
+                ),
                 area,
             )
         }
     }
 
-    // #[inline(always)]
-    // fn prealloc_3d(size: (usize, usize, usize), offset: (i32, i32, i32)) -> (NonNull<T>, Bounds3D, usize) {
-    //     let (width, height, depth) = size;
-    //     let volume = width.checked_mul(height).expect(SIZE_TOO_LARGE).checked_mul(depth).expect(SIZE_TOO_LARGE);
-    //     if volume == 0 {
-    //         panic!("{VOLUME_IS_ZERO}");
-    //     }
-    //     if volume > i32::MAX as usize {
-    //         panic!("{SIZE_TOO_LARGE}");
-    //     }
-    //     if offset.0.checked_add(width as i32).is_none()
-    //     || offset.1.checked_add(height as i32).is_none()
-    //     || offset.2.checked_add(depth as i32).is_none() {
-    //         panic!("{OFFSET_TOO_CLOSE_TO_MAX}");
-    //     }
-    //     unsafe {
-    //         let layout = Self::make_layout(volume).expect("Failed to create layout.");
-    //         (
-    //             NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
-    //             rollgrid3d::Bounds3D::new(offset, (offset.0 + width as i32, offset.1 + height as i32, offset.2 + depth as i32)),
-    //             volume,
-    //         )
-    //     }
-    // }
+    #[inline(always)]
+    fn prealloc_3d(
+        size: (usize, usize, usize),
+        offset: (i32, i32, i32),
+    ) -> (NonNull<T>, Bounds3D, usize) {
+        let (width, height, depth) = size;
+        let volume = width
+            .checked_mul(height)
+            .expect(SIZE_TOO_LARGE)
+            .checked_mul(depth)
+            .expect(SIZE_TOO_LARGE);
+        if volume == 0 {
+            panic!("{VOLUME_IS_ZERO}");
+        }
+        if volume > i32::MAX as usize {
+            panic!("{SIZE_TOO_LARGE}");
+        }
+        if offset.0.checked_add(width as i32).is_none()
+            || offset.1.checked_add(height as i32).is_none()
+            || offset.2.checked_add(depth as i32).is_none()
+        {
+            panic!("{OFFSET_TOO_CLOSE_TO_MAX}");
+        }
+        unsafe {
+            let layout = Self::make_layout(volume).expect("Failed to create layout.");
+            (
+                NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
+                rollgrid3d::Bounds3D::new(
+                    offset,
+                    (
+                        offset.0 + width as i32,
+                        offset.1 + height as i32,
+                        offset.2 + depth as i32,
+                    ),
+                ),
+                volume,
+            )
+        }
+    }
 
     /// Allocate a new [FixedArray] from a 2D size and offset with an
     /// initialization function.
-    /// 
+    ///
     /// Initialization happens in the order `x -> y`, that your results will be ordered
     /// like so:
     /// * `(0, 0)`
@@ -78,14 +98,10 @@ impl<T> FixedArray<T> {
         mut init: F,
     ) -> Self {
         let (ptr, bounds, capacity) = Self::prealloc_2d(size, offset);
-        bounds.iter()
-            .enumerate()
-            .for_each(|(i, pos)| {
-                unsafe {
-                    let item = ptr.add(i);
-                    std::ptr::write(item.as_ptr(), init(pos));
-                }
-            });
+        bounds.iter().enumerate().for_each(|(i, pos)| unsafe {
+            let item = ptr.add(i);
+            std::ptr::write(item.as_ptr(), init(pos));
+        });
         Self {
             ptr: Some(ptr),
             capacity,
@@ -94,7 +110,7 @@ impl<T> FixedArray<T> {
 
     /// Attempt to allocate a new [FixedArray] from a 2D size and offset
     /// with an initialization function.
-    /// 
+    ///
     /// Initialization happens in the order `x -> y`, that your results will be ordered
     /// like so:
     /// * `(0, 0)`
@@ -106,99 +122,90 @@ impl<T> FixedArray<T> {
         offset: (i32, i32),
         mut init: F,
     ) -> Result<Self, E> {
-        
         let (ptr, bounds, capacity) = Self::prealloc_2d(size, offset);
-        bounds.iter()
-            .enumerate()
-            .try_for_each(|(i, pos)| {
-                unsafe {
-                    let item = ptr.add(i);
-                    std::ptr::write(item.as_ptr(), init(pos)?);
-                }
-                Ok(())
-            })?;
+        bounds.iter().enumerate().try_for_each(|(i, pos)| {
+            unsafe {
+                let item = ptr.add(i);
+                std::ptr::write(item.as_ptr(), init(pos)?);
+            }
+            Ok(())
+        })?;
         Ok(Self {
             ptr: Some(ptr),
             capacity,
         })
     }
 
-    // /// Allocate a new [FixedArray] from a 3D size and offset with an
-    // /// initialization function.
-    // /// 
-    // /// Initialization happens in the order `x -> z -> y`, that your results
-    // /// will be ordered like so:
-    // /// * `(0, 0, 0)`
-    // /// * `(1, 0, 0)`
-    // /// * `(0, 0, 1)`
-    // /// * `(1, 0, 1)`
-    // /// * `(0, 1, 0)`
-    // /// * `(1, 1, 0)`
-    // /// * `(0, 1, 1)`
-    // /// * `(1, 1, 1)`
-    // pub fn new_3d<F: FnMut((i32, i32, i32)) -> T>(
-    //     size: (usize, usize, usize),
-    //     offset: (i32, i32, i32),
-    //     mut init: F,
-    // ) -> Self {
-    //     let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
-    //     bounds.iter()
-    //         .enumerate()
-    //         .for_each(|(i, pos)| {
-    //             unsafe {
-    //                 let item = ptr.add(i);
-    //                 std::ptr::write(item.as_ptr(), init(pos));
-    //             }
-    //         });
-    //     Self {
-    //         ptr: Some(ptr),
-    //         capacity,
-    //     }
-    // }
+    /// Allocate a new [FixedArray] from a 3D size and offset with an
+    /// initialization function.
+    ///
+    /// Initialization happens in the order `x -> z -> y`, that your results
+    /// will be ordered like so:
+    /// * `(0, 0, 0)`
+    /// * `(1, 0, 0)`
+    /// * `(0, 0, 1)`
+    /// * `(1, 0, 1)`
+    /// * `(0, 1, 0)`
+    /// * `(1, 1, 0)`
+    /// * `(0, 1, 1)`
+    /// * `(1, 1, 1)`
+    pub fn new_3d<F: FnMut((i32, i32, i32)) -> T>(
+        size: (usize, usize, usize),
+        offset: (i32, i32, i32),
+        mut init: F,
+    ) -> Self {
+        let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
+        bounds.iter().enumerate().for_each(|(i, pos)| unsafe {
+            let item = ptr.add(i);
+            std::ptr::write(item.as_ptr(), init(pos));
+        });
+        Self {
+            ptr: Some(ptr),
+            capacity,
+        }
+    }
 
-    // /// Attempt to allocate a new [FixedArray] from a 3D size and offset
-    // /// with an initialization function.
-    // /// 
-    // /// Initialization happens in the order `x -> z -> y`, that your results
-    // /// will be ordered like so:
-    // /// * `(0, 0, 0)`
-    // /// * `(1, 0, 0)`
-    // /// * `(0, 0, 1)`
-    // /// * `(1, 0, 1)`
-    // /// * `(0, 1, 0)`
-    // /// * `(1, 1, 0)`
-    // /// * `(0, 1, 1)`
-    // /// * `(1, 1, 1)`
-    // pub fn try_new_3d<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
-    //     size: (usize, usize, usize),
-    //     offset: (i32, i32, i32),
-    //     mut init: F,
-    // ) -> Result<Self, E> {
-    //     let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
-    //     bounds.iter()
-    //         .enumerate()
-    //         .try_for_each(|(i, pos)| {
-    //             unsafe {
-    //                 let item = ptr.add(i);
-    //                 std::ptr::write(item.as_ptr(), init(pos)?);
-    //             }
-    //             Ok(())
-    //         })?;
-    //     Ok(Self {
-    //         ptr: Some(ptr),
-    //         capacity,
-    //     })
-    // }
+    /// Attempt to allocate a new [FixedArray] from a 3D size and offset
+    /// with an initialization function.
+    ///
+    /// Initialization happens in the order `x -> z -> y`, that your results
+    /// will be ordered like so:
+    /// * `(0, 0, 0)`
+    /// * `(1, 0, 0)`
+    /// * `(0, 0, 1)`
+    /// * `(1, 0, 1)`
+    /// * `(0, 1, 0)`
+    /// * `(1, 1, 0)`
+    /// * `(0, 1, 1)`
+    /// * `(1, 1, 1)`
+    pub fn try_new_3d<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
+        size: (usize, usize, usize),
+        offset: (i32, i32, i32),
+        mut init: F,
+    ) -> Result<Self, E> {
+        let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
+        bounds.iter().enumerate().try_for_each(|(i, pos)| {
+            unsafe {
+                let item = ptr.add(i);
+                std::ptr::write(item.as_ptr(), init(pos)?);
+            }
+            Ok(())
+        })?;
+        Ok(Self {
+            ptr: Some(ptr),
+            capacity,
+        })
+    }
 
     /// Deallocates the internal buffer in this [FixedArray].
-    pub fn dealloc(&mut self) {
+    pub unsafe fn dealloc(&mut self) {
         self.internal_dealloc(true);
         self.capacity = 0;
     }
 
     /// Set `drop` to `false` if you have already manually dropped the items.
     #[inline]
-    pub(crate) fn internal_dealloc(&mut self, drop: bool) {
+    pub(crate) unsafe fn internal_dealloc(&mut self, drop: bool) {
         if let Some(ptr) = self.ptr.take() {
             unsafe {
                 if std::mem::needs_drop::<T>() && drop {
@@ -214,7 +221,7 @@ impl<T> FixedArray<T> {
 
     /// Deallocates the buffer and forgets about the contained items (does not drop them).
     #[inline]
-    pub(crate) fn forget_dealloc(&mut self) {
+    pub(crate) unsafe fn forget_dealloc(&mut self) {
         self.internal_dealloc(false);
     }
 
@@ -279,9 +286,7 @@ impl<T> FixedArray<T> {
         let Some(ptr) = self.ptr else {
             panic!("Not allocated.");
         };
-        unsafe {
-            std::slice::from_raw_parts(ptr.as_ref(), self.capacity)
-        }
+        unsafe { std::slice::from_raw_parts(ptr.as_ref(), self.capacity) }
     }
 
     /// Returns the array as a mutable slice.
@@ -290,21 +295,21 @@ impl<T> FixedArray<T> {
         let Some(mut ptr) = self.ptr else {
             panic!("Not allocated.");
         };
-        unsafe {
-            std::slice::from_raw_parts_mut(ptr.as_mut(), self.capacity)
-        }
+        unsafe { std::slice::from_raw_parts_mut(ptr.as_mut(), self.capacity) }
     }
 
     /// Returns the internal pointer. This may return `null` if the buffer has already been deallocated.
     #[inline]
     pub unsafe fn as_ptr(&self) -> *const T {
-        self.ptr.map_or_else(|| std::ptr::null(), |ptr| ptr.as_ptr())
+        self.ptr
+            .map_or_else(|| std::ptr::null(), |ptr| ptr.as_ptr())
     }
 
     /// Returns the internal mutable pointer. This may return `null` if the buffer has already been deallocated.
     #[inline]
     pub unsafe fn as_mut_ptr(&mut self) -> *mut T {
-        self.ptr.map_or_else(|| std::ptr::null_mut(), NonNull::as_ptr)
+        self.ptr
+            .map_or_else(|| std::ptr::null_mut(), NonNull::as_ptr)
     }
 
     /// Converts the array into a boxed slice.
@@ -335,7 +340,7 @@ impl<T> FixedArray<T> {
     pub fn iter(&self) -> FixedArrayRefIterator<'_, T> {
         FixedArrayRefIterator {
             array: self,
-            index: 0
+            index: 0,
         }
     }
 }
@@ -377,7 +382,7 @@ pub struct FixedArrayIterator<T> {
 
 impl<T> Iterator for FixedArrayIterator<T> {
     type Item = T;
-    
+
     fn next(&mut self) -> Option<Self::Item> {
         if self.index == self.array.capacity {
             return None;
@@ -395,11 +400,13 @@ impl<T> Drop for FixedArrayIterator<T> {
         if std::mem::needs_drop::<T>() {
             let capacity = self.array.capacity;
             let array = &mut self.array;
-            (self.index..capacity).for_each(move |index| {
-                unsafe { array.drop_in_place(index); }
+            (self.index..capacity).for_each(move |index| unsafe {
+                array.drop_in_place(index);
             });
         }
-        self.array.internal_dealloc(false);
+        unsafe {
+            self.array.internal_dealloc(false);
+        }
     }
 }
 
@@ -440,9 +447,7 @@ impl<T> std::ops::Index<usize> for FixedArray<T> {
     fn index(&self, index: usize) -> &Self::Output {
         if let Some(ptr) = self.ptr {
             assert!(index < self.capacity, "Index out of bounds.");
-            unsafe {
-                ptr.add(index).as_ref()
-            }
+            unsafe { ptr.add(index).as_ref() }
         } else {
             panic!("Unallocated buffer.");
         }
@@ -453,9 +458,7 @@ impl<T> std::ops::IndexMut<usize> for FixedArray<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         if let Some(ptr) = self.ptr {
             assert!(index < self.capacity, "Index out of bounds.");
-            unsafe {
-                ptr.add(index).as_mut()
-            }
+            unsafe { ptr.add(index).as_mut() }
         } else {
             panic!("Unallocated buffer.");
         }
@@ -464,6 +467,8 @@ impl<T> std::ops::IndexMut<usize> for FixedArray<T> {
 
 impl<T> Drop for FixedArray<T> {
     fn drop(&mut self) {
-        self.internal_dealloc(true);
+        unsafe {
+            self.internal_dealloc(true);
+        }
     }
 }
