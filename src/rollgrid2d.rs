@@ -92,7 +92,7 @@ impl<T> RollGrid2D<T> {
         let new_width = self.size.0 - deflate * 2;
         let new_height = self.size.1 - deflate * 2;
         if new_width * new_height == 0 {
-            panic!("{AREA_IS_ZERO_2D}");
+            panic!("{AREA_IS_ZERO}");
         }
         self.resize_and_reposition(new_width, new_height, new_offset, manage);
     }
@@ -107,7 +107,7 @@ impl<T> RollGrid2D<T> {
         let new_width = self.size.0 - deflate * 2;
         let new_height = self.size.1 - deflate * 2;
         if new_width * new_height == 0 {
-            panic!("{AREA_IS_ZERO_2D}");
+            panic!("{AREA_IS_ZERO}");
         }
         self.try_resize_and_reposition(new_width, new_height, new_offset, manage)
     }
@@ -172,7 +172,7 @@ impl<T> RollGrid2D<T> {
         }
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
         if area == 0 {
-            panic!("{AREA_IS_ZERO_2D}");
+            panic!("{AREA_IS_ZERO}");
         }
         if area > i32::MAX as usize {
             panic!("{SIZE_TOO_LARGE}");
@@ -296,7 +296,7 @@ impl<T> RollGrid2D<T> {
         }
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
         if area == 0 {
-            panic!("{AREA_IS_ZERO_2D}");
+            panic!("{AREA_IS_ZERO}");
         }
         if area > i32::MAX as usize {
             panic!("{SIZE_TOO_LARGE}");

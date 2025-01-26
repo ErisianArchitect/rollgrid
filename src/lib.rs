@@ -10,7 +10,7 @@ mod constants {
     pub const SIZE_TOO_LARGE: &'static str = "Size is too large";
     pub const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bound";
     pub const OUT_OF_BOUNDS: &'static str = "Out of bounds";
-    pub const AREA_IS_ZERO_2D: &'static str = "Width/Height cannot be 0";
+    pub const AREA_IS_ZERO: &'static str = "Width/Height cannot be 0";
     pub const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
     pub const INFLATE_PAST_I32_MAX: &'static str = "Cannot inflate more than i32::MAX";
     pub const INFLATE_OVERFLOW: &'static str = "Inflate operation results in integer overflow";

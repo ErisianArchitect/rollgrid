@@ -20,7 +20,7 @@ impl<T> FixedArray<T> {
         let (width, height) = size;
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
         if area == 0 {
-            panic!("{}", AREA_IS_ZERO_2D);
+            panic!("{}", AREA_IS_ZERO);
         }
         if area > i32::MAX as usize {
             panic!("{}", SIZE_TOO_LARGE);
