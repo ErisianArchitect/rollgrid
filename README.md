@@ -111,17 +111,9 @@ chunks.reposition((chunk_x, chunk_z), |old_pos, (x, z), chunk| {
 This `reposition` method works for the 2d and 3d variants of the rollgrid.
 You can modify this code to fit your purpose.
 
-# New In Version 1.0.0!
-
-- Swapped the underlying cell representation from `Option<T>` to `T`.
-- Switched the internal data structure for storage of grid cells from `Box<[T]>` to a new internal type `FixedArray<T>`.  
-  This was necessary in order to swap the underlying cell representation from `Option<T>` to `T` because I needed a fine-tuned
-  way to manage the dropping of individual elements.
-- Callbacks that modify cells in place now receive a mutable reference rather than a raw value.
-
 # Changelog
 
-### 1.0.0
+### 2.0.0
 
 - Changed the internal representation of the cells in `RollGrid2D` and `RollGrid3D` from `Box<[Option<T>]>` to `rollgrid::cells::FixedArray<T>`. `FixedArray` is an internal type that was created to fulfill the needs of this crate.
 - Removed generic coordinate parameters. Coordinate arguments must be explicitly `(i32, i32)` for `RollGrid2D` and `(i32, i32, i32)` for `RollGrid3D`.
