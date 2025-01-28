@@ -3,8 +3,8 @@ use std::marker::PhantomData;
 pub(crate) mod cells;
 pub mod rollgrid2d;
 pub mod rollgrid3d;
-
-// TODO: Move Bounds2D and Bounds3D into their own modules.
+pub mod bounds2d;
+pub mod bounds3d;
 
 mod constants {
     pub const SIZE_TOO_LARGE: &'static str = "Size is too large";
@@ -18,20 +18,23 @@ mod constants {
     pub const DEFLATE_OVERFLOW: &'static str = "Deflate operation results in integer overflow";
 }
 
-// TODO: Write documentation for this stuff.
-// TODO: Create an implementation for CellManage for FnMut(Manage) (where Manage is an enum with Load, Unload, and Reload).
+/// A trait for managing cells during resize operations on grids.
+/// 
+/// You can easily create a [CellManager] to use as a [CellManage].
 pub trait CellManage<C, T> {
     fn load(&mut self, position: C) -> T;
     fn unload(&mut self, position: C, old_value: T);
     fn reload(&mut self, old_position: C, new_position: C, value: &mut T);
 }
 
+/// A trait for managing cells during fallible resize operations on grids.
 pub trait TryCellManage<C, T, E> {
     fn try_load(&mut self, position: C) -> Result<T, E>;
     fn try_unload(&mut self, position: C, old_value: T) -> Result<(), E>;
     fn try_reload(&mut self, old_position: C, new_position: C, value: &mut T) -> Result<(), E>;
 }
 
+/// Use the utility function [cell_manager] to create a [CellManager].
 pub struct CellManager<C, T, FL, FU, FR, Marker = ()> {
     load: FL,
     unload: FU,
@@ -59,6 +62,27 @@ where
     }
 }
 
+impl<C, T, E, FL, FU, FR> TryCellManage<C, T, E> for CellManager<C, T, FL, FU, FR, (E,)>
+where
+    T: Sized,
+    FL: FnMut(C) -> Result<T, E>,
+    FU: FnMut(C, T) -> Result<(), E>,
+    FR: FnMut(C, C, &mut T) -> Result<(), E>
+{
+    fn try_load(&mut self, position: C) -> Result<T, E> {
+        (self.load)(position)
+    }
+
+    fn try_unload(&mut self, position: C, old_value: T) -> Result<(), E> {
+        (self.unload)(position, old_value)
+    }
+
+    fn try_reload(&mut self, old_position: C, new_position: C, value: &mut T) -> Result<(), E> {
+        (self.reload)(old_position, new_position, value)
+    }
+}
+
+/// Creates a [CellManager] instance that implements [CellManage] using the given `load`, `unload`, and `reload` functions.
 pub fn cell_manager<C, T, FL, FU, FR>(
     load: FL,
     unload: FU,
@@ -75,6 +99,7 @@ where
     }
 }
 
+/// Creates a [CellManager] instance that implements [TryCellManage] using the given `load`, `unload`, and `reload` functions.
 pub fn try_cell_manager<C, T, E, FL, FU, FR>(
     load: FL,
     unload: FU,
@@ -94,7 +119,8 @@ where
 #[cfg(test)]
 mod tests {
     #![allow(unused)]
-    use rollgrid2d::{Bounds2D, RollGrid2D};
+    use crate::bounds2d::Bounds2D;
+    use crate::rollgrid2d::RollGrid2D;
 
     use super::*;
 
@@ -168,7 +194,7 @@ mod tests {
         print_grid(&grid);
         return;
         grid.inflate_size(
-            1,
+            (1, 1),
             cell_manager(
                 |pos: (i32, i32)| {
                     println!("Load: ({}, {})", pos.0, pos.1);
