@@ -1,6 +1,8 @@
-use crate::{*, constants::*};
-use rollgrid2d::Bounds2D;
-use rollgrid3d::Bounds3D;
+use crate::{
+    constants::*,
+    bounds2d::Bounds2D,
+    bounds3d::Bounds3D,
+};
 use std::{mem::ManuallyDrop, ptr::NonNull};
 
 /// An array of type `T`.
@@ -34,7 +36,7 @@ impl<T> FixedArray<T> {
             let layout = Self::make_layout(area).expect("Failed to create layout.");
             (
                 NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
-                rollgrid2d::Bounds2D::new(
+                Bounds2D::new(
                     offset,
                     (offset.0 + width as i32, offset.1 + height as i32),
                 ),
@@ -70,7 +72,7 @@ impl<T> FixedArray<T> {
             let layout = Self::make_layout(volume).expect("Failed to create layout.");
             (
                 NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
-                rollgrid3d::Bounds3D::new(
+                Bounds3D::new(
                     offset,
                     (
                         offset.0 + width as i32,
