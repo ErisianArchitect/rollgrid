@@ -62,7 +62,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Inflate the size by `inflate`, keeping the bounds centered.
-    /// 
+    ///
     /// If the size is `(2, 2)` with an offset of `(1, 1)`, and you want to inflate by `(1, 1)`.
     /// The result of that operation would have a size of `(4, 4)` and an offset of `(0, 0)`.
     ///
@@ -116,7 +116,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to inflate the size by `inflate` using a fallible function, keeping the bounds centered.
-    /// 
+    ///
     /// If the size is `(2, 2)` with an offset of `(1, 1)`, and you want to inflate by `(1, 1)`.
     /// The result of that operation would have a size of `(4, 4)` and an offset of `(0, 0)`.
     ///
@@ -172,7 +172,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Deflate the size by `deflate`, keeping the bounds centered.
-    /// 
+    ///
     /// If the size is `(4, 4)` with an offset of `(0, 0)`, and you want to deflate by `(1, 1)`.
     /// The result of that operation would have a size of `(2, 2)` and an offset of `(1, 1)`.
     ///
@@ -226,7 +226,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to deflate the size by `deflate` using a fallible function, keeping the bounds centered.
-    /// 
+    ///
     /// If the size is `(4, 4)` with an offset of `(0, 0)`, and you want to deflate by `(1, 1)`.
     /// The result of that operation would have a size of `(2, 2)` and an offset of `(1, 1)`.
     ///
@@ -282,7 +282,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Resize the grid without changing the offset.
-    /// 
+    ///
     /// # Example
     /// ```no_run
     /// grid.resize(3, 3, cell_manager(
@@ -313,7 +313,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to resize the grid with a fallible function without changing the offset.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_resize(1, 1, cell_manager(
@@ -351,7 +351,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Resize and reposition the grid simultaneously.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.resize_and_reposition(3, 3, (4, 4), cell_manager(
@@ -480,7 +480,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to resize and reposition the grid using a fallible function.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_resize_and_reposition(3, 3, (4, 4), try_cell_manager(
@@ -616,7 +616,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Translate the grid by offset amount using a reload function.
-    /// 
+    ///
     /// The reload function takes the old position, the new position, and
     /// a mutable reference to the cell where the initial value of the cell
     /// when called is the value at `old_position`. You want to change the
@@ -638,7 +638,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to translate the grid by offset amount using a fallible reload function.
-    /// 
+    ///
     /// The reload function takes the old position, the new position, and
     /// a mutable reference to the cell where the initial value of the cell
     /// when called is the value at `old_position`. You want to change the
@@ -661,7 +661,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Reposition the offset of the grid and reload the slots that are changed.
-    /// 
+    ///
     /// The reload function takes the old position, the new position, and
     /// a mutable reference to the cell where the initial value of the cell
     /// when called is the value at `old_position`. You want to change the
@@ -785,7 +785,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to reposition the offset of the grid and reload the slots that are changed.
-    /// 
+    ///
     /// The reload function takes the old position, the new position, and
     /// a mutable reference to the cell where the initial value of the cell
     /// when called is the value at `old_position`. You want to change the

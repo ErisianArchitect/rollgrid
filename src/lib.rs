@@ -48,7 +48,7 @@ where
     FL: FnMut(C) -> T,
     FU: FnMut(C, T),
     FR: FnMut(C, C, &mut T),
-{   
+{
     /// Load the cell at `position`.
     fn load(&mut self, position: C) -> T {
         (self.load)(position)
