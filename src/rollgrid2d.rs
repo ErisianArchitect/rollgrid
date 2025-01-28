@@ -13,7 +13,7 @@ pub struct RollGrid2D<T: Sized> {
 }
 
 impl<T: Default> RollGrid2D<T> {
-    /// Create a new [RollGrid2D] with all the elements set to the default for `T`.
+    /// Create a new [RollGrid2D] with all the cells set to the default for `T`.
     pub fn new_default(width: usize, height: usize, grid_offset: (i32, i32)) -> Self {
         Self {
             cells: FixedArray::new_2d((width, height), grid_offset, |_| T::default()),
@@ -25,7 +25,10 @@ impl<T: Default> RollGrid2D<T> {
 }
 
 impl<T> RollGrid2D<T> {
-    /// Create a new [RollGrid2D] using an initialize function to initialize elements.
+    /// Create a new [RollGrid2D] using an initialize function to initialize cells.
+    /// 
+    /// The init function should take as input the coordinate that is being
+    /// initialized, and should return the desired value for the cell.
     pub fn new<F: FnMut((i32, i32)) -> T>(
         width: usize,
         height: usize,

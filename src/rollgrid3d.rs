@@ -13,7 +13,7 @@ pub struct RollGrid3D<T> {
 }
 
 impl<T: Default> RollGrid3D<T> {
-    /// Create a new [RollGrid3D] with all the elements set to the default for `T`.
+    /// Create a new [RollGrid3D] with all the cells set to the default for `T`.
     pub fn new_default(
         width: usize,
         height: usize,
