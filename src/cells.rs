@@ -199,7 +199,6 @@ impl<T> FixedArray<T> {
     }
 
     /// Set `drop` to `false` if you have already manually dropped the items.
-    #[inline]
     pub(crate) unsafe fn internal_dealloc(&mut self, drop: bool) {
         if let Some(ptr) = self.ptr.take() {
             unsafe {
@@ -215,7 +214,6 @@ impl<T> FixedArray<T> {
     }
 
     /// Deallocates the buffer and forgets about the contained items (does not drop them).
-    #[inline]
     pub(crate) unsafe fn forget_dealloc(&mut self) {
         self.internal_dealloc(false);
     }
@@ -223,7 +221,6 @@ impl<T> FixedArray<T> {
     /// Only use this method if you know what you are doing.
     /// It uses [std::ptr::read] to read the value at `index`.
     /// If you use this method, make sure to keep track of which cells are read so that you can manually drop the cells that are not read.
-    #[inline]
     pub(crate) unsafe fn read(&self, index: usize) -> T {
         std::ptr::read(&self[index])
     }
@@ -233,14 +230,12 @@ impl<T> FixedArray<T> {
     /// the inner value.
     /// It is advised to use [FixedArray::read()] or [FixedArray::drop_in_place()] before
     /// calling this method.
-    #[inline]
     pub(crate) unsafe fn write(&mut self, index: usize, value: T) {
         std::ptr::write(&mut self[index], value);
     }
 
     /// Replace item at `index` using `replace` function that takes as input the old value and returns the new value.
     /// This will swap the value in-place.
-    #[inline]
     pub fn replace_with<F: FnOnce(T) -> T>(&mut self, index: usize, replace: F) {
         unsafe {
             std::ptr::write(&mut self[index], replace(std::ptr::read(&self[index])));
@@ -248,13 +243,11 @@ impl<T> FixedArray<T> {
     }
 
     /// Replace item at `index` using [std::mem::replace], returns the old value.
-    #[inline]
     pub fn replace(&mut self, index: usize, value: T) -> T {
         std::mem::replace(&mut self[index], value)
     }
 
     /// Drops the value at `index` in place using [std::ptr::drop_in_place].
-    #[inline]
     pub(crate) unsafe fn drop_in_place(&mut self, index: usize) {
         std::ptr::drop_in_place(&mut self[index]);
     }
@@ -270,13 +263,11 @@ impl<T> FixedArray<T> {
     }
 
     /// Gets the length of the array.
-    #[inline]
     pub fn len(&self) -> usize {
         self.capacity
     }
 
     /// Returns the array as a slice.
-    #[inline]
     pub fn as_slice(&self) -> &[T] {
         let Some(ptr) = self.ptr else {
             panic!("Not allocated.");
@@ -285,7 +276,6 @@ impl<T> FixedArray<T> {
     }
 
     /// Returns the array as a mutable slice.
-    #[inline]
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         let Some(mut ptr) = self.ptr else {
             panic!("Not allocated.");
@@ -294,14 +284,12 @@ impl<T> FixedArray<T> {
     }
 
     /// Returns the internal pointer. This may return `null` if the buffer has already been deallocated.
-    #[inline]
     pub unsafe fn as_ptr(&self) -> *const T {
         self.ptr
             .map_or_else(|| std::ptr::null(), |ptr| ptr.as_ptr())
     }
 
     /// Returns the internal mutable pointer. This may return `null` if the buffer has already been deallocated.
-    #[inline]
     pub unsafe fn as_mut_ptr(&mut self) -> *mut T {
         self.ptr
             .map_or_else(|| std::ptr::null_mut(), NonNull::as_ptr)
