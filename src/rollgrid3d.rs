@@ -49,7 +49,7 @@ impl<T> RollGrid3D<T> {
         }
     }
 
-    /// Try to create a new grid with a fallible init function.
+    /// Try to create a new [RollGrid3D] with a fallible init function.
     ///
     /// The init function should take as input the coordinate that is being
     /// initialized, and should return the desired value for the cell.
@@ -69,6 +69,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Inflate the size by `inflate`, keeping the bounds centered.
+    /// 
     /// If the size is `(2, 2, 2)` with an offset of `(1, 1, 1)`, and you want to inflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(4, 4, 4)` and an offset of `(0, 0, 0)`.
     ///
@@ -77,7 +78,7 @@ impl<T> RollGrid3D<T> {
     /// grid.inflate_size((1, 1, 1), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -132,6 +133,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to inflate the size by `inflate` using a fallible function, keeping the bounds centered.
+    /// 
     /// If the size is `(2, 2, 2)` with an offset of `(1, 1, 1)`, and you want to inflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(4, 4, 4)` and an offset of `(0, 0, 0)`.
     ///
@@ -140,7 +142,7 @@ impl<T> RollGrid3D<T> {
     /// grid.try_inflate_size((1, 1, 1), try_cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -158,7 +160,7 @@ impl<T> RollGrid3D<T> {
     ///     }
     /// ))
     /// ```
-    /// See [CellManage].
+    /// See [TryCellManage].
     pub fn try_inflate_size<E, M>(
         &mut self,
         inflate: (usize, usize, usize),
@@ -201,6 +203,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Deflate the size by `deflate`, keeping the bounds centered.
+    /// 
     /// If the size is `(4, 4, 4)` with an offset of `(0, 0, 0)`, and you want to deflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(2, 2, 2)` and an offset of `(1, 1, 1)`.
     ///
@@ -209,7 +212,7 @@ impl<T> RollGrid3D<T> {
     /// grid.deflate_size((1, 1, 1), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -271,6 +274,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to deflate the size by `deflate` using a fallible function, keeping the bounds centered.
+    /// 
     /// If the size is `(4, 4, 4)` with an offset of `(0, 0, 0)`, and you want to deflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(2, 2, 2)` and an offset of `(1, 1, 1)`.
     ///
@@ -279,7 +283,7 @@ impl<T> RollGrid3D<T> {
     /// grid.try_deflate_size((1, 1, 1), try_cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -297,7 +301,7 @@ impl<T> RollGrid3D<T> {
     ///     }
     /// ))
     /// ```
-    /// See [CellManage].
+    /// See [TryCellManage].
     pub fn try_deflate_size<E, M>(
         &mut self,
         deflate: (usize, usize, usize),
@@ -346,14 +350,14 @@ impl<T> RollGrid3D<T> {
         self.try_resize_and_reposition(width, height, depth, position, manage)
     }
 
-    /// Resize the grid, keeping the offset in the same place.
+    /// Resize the grid without changing the offset.
     ///
     /// # Example
     /// ```rust, no_run
     /// grid.resize(1, 1, 1, cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -377,14 +381,14 @@ impl<T> RollGrid3D<T> {
         self.resize_and_reposition(width, height, depth, self.grid_offset, manage);
     }
 
-    /// Try to resize the grid with a fallible function, keeping the offset in the same place.
+    /// Try to resize the grid with a fallible function without changing the offset.
     ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_resize(1, 1, 1, cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -402,7 +406,7 @@ impl<T> RollGrid3D<T> {
     ///     }
     /// ))
     /// ```
-    /// See [CellManage].
+    /// See [TryCellManage].
     pub fn try_resize<E, M>(
         &mut self,
         width: usize,
@@ -416,12 +420,14 @@ impl<T> RollGrid3D<T> {
         self.try_resize_and_reposition(width, height, depth, self.grid_offset, manage)
     }
 
-    /// Resize and reposition the grid.
+    /// Resize and reposition the grid simultaneously.
+    /// 
+    /// # Example
     /// ```rust, no_run
     /// grid.resize_and_reposition(3, 3, 3, (4, 4, 4), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -582,11 +588,13 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to resize and reposition the grid using a fallible function.
+    /// 
+    /// # Example
     /// ```rust, no_run
     /// grid.try_resize_and_reposition(3, 3, 3, (4, 4, 4), try_cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -604,7 +612,7 @@ impl<T> RollGrid3D<T> {
     ///     }
     /// ))
     /// ```
-    /// See [CellManage].
+    /// See [TryCellManage].
     pub fn try_resize_and_reposition<E, M>(
         &mut self,
         width: usize,
@@ -754,7 +762,12 @@ impl<T> RollGrid3D<T> {
         Ok(())
     }
 
-    /// Move the grid by relative offset using a reload function.
+    /// Translate the grid by offset amount using a reload function.
+    /// 
+    /// The reload function takes the old position, the new position, and
+    /// a mutable reference to the cell where the initial value of the cell
+    /// when called is the value at `old_position`. You want to change the
+    /// cell to the correct value for a cell at `new_position`.
     ///
     /// # Example
     /// ```rust, no_run
@@ -775,7 +788,7 @@ impl<T> RollGrid3D<T> {
         self.reposition(new_pos, reload);
     }
 
-    /// Try to move the grid by relative offset using a fallible reload function.
+    /// Try to translate the grid by offset amount using a fallible reload function.
     ///
     /// # Example
     /// ```rust, no_run
@@ -797,7 +810,12 @@ impl<T> RollGrid3D<T> {
         self.try_reposition(new_pos, reload)
     }
 
-    /// Move the grid to a new position using a reload function.
+    /// Reposition the offset of the grid and reload the slots that are changed.
+    /// 
+    /// The reload function takes the old position, the new position, and
+    /// a mutable reference to the cell where the initial value of the cell
+    /// when called is the value at `old_position`. You want to change the
+    /// cell to the correct value for a cell at `new_position`.
     ///
     /// # Example
     /// ```rust, no_run
@@ -1283,7 +1301,12 @@ impl<T> RollGrid3D<T> {
         }
     }
 
-    /// Try to move the grid to a new position using a fallible reload function.
+    /// Try to reposition the offset of the grid and reload the slots that are changed.
+    /// 
+    /// The reload function takes the old position, the new position, and
+    /// a mutable reference to the cell where the initial value of the cell
+    /// when called is the value at `old_position`. You want to change the
+    /// cell to the correct value for a cell at `new_position`.
     ///
     /// # Example
     /// ```rust, no_run
@@ -1880,24 +1903,24 @@ impl<T> RollGrid3D<T> {
         self.grid_offset.0
     }
 
-    /// Get the minimum bound on the `Y` axis.
-    pub fn y_min(&self) -> i32 {
-        self.grid_offset.1
-    }
-
-    /// Get the minimum bound on the `Z` axis.
-    pub fn z_min(&self) -> i32 {
-        self.grid_offset.2
-    }
-
     /// Get the maximum bound on the `X` axis.
     pub fn x_max(&self) -> i32 {
         self.grid_offset.0 + self.size.0 as i32
     }
 
+    /// Get the minimum bound on the `Y` axis.
+    pub fn y_min(&self) -> i32 {
+        self.grid_offset.1
+    }
+
     /// Get the maximum bound on the `Y` axis.
     pub fn y_max(&self) -> i32 {
         self.grid_offset.1 + self.size.1 as i32
+    }
+
+    /// Get the minimum bound on the `Z` axis.
+    pub fn z_min(&self) -> i32 {
+        self.grid_offset.2
     }
 
     /// Get the maximum bound on the `Z` axis.
@@ -1971,7 +1994,7 @@ impl<'a, T> Iterator for RollGrid3DIterator<'a, T> {
     }
 }
 
-/// Mutable iterator over all elements in the [RollGrid3D].
+/// Mutable iterator over all cells in the [RollGrid3D].
 pub struct RollGrid3DMutIterator<'a, T> {
     grid: &'a mut RollGrid3D<T>,
     bounds_iter: Bounds3DIter,

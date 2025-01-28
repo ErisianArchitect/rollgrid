@@ -61,14 +61,17 @@ impl<T> RollGrid2D<T> {
         })
     }
 
-    /// Inflate the size by `inflate`.
+    /// Inflate the size by `inflate`, keeping the bounds centered.
+    /// 
+    /// If the size is `(2, 2)` with an offset of `(1, 1)`, and you want to inflate by `(1, 1)`.
+    /// The result of that operation would have a size of `(4, 4)` and an offset of `(0, 0)`.
     ///
     /// # Example
     /// ```rust, no_run
     /// grid.inflate_size((1, 1), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -112,14 +115,17 @@ impl<T> RollGrid2D<T> {
         self.resize_and_reposition(width, height, position, manage);
     }
 
-    /// Try to inflate the size by `inflate` using a fallible function.
+    /// Try to inflate the size by `inflate` using a fallible function, keeping the bounds centered.
+    /// 
+    /// If the size is `(2, 2)` with an offset of `(1, 1)`, and you want to inflate by `(1, 1)`.
+    /// The result of that operation would have a size of `(4, 4)` and an offset of `(0, 0)`.
     ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_inflate_size((1, 1), try_cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -165,14 +171,17 @@ impl<T> RollGrid2D<T> {
         self.try_resize_and_reposition(width, height, position, manage)
     }
 
-    /// Deflate the size by `defalte`.
+    /// Deflate the size by `deflate`, keeping the bounds centered.
+    /// 
+    /// If the size is `(4, 4)` with an offset of `(0, 0)`, and you want to deflate by `(1, 1)`.
+    /// The result of that operation would have a size of `(2, 2)` and an offset of `(1, 1)`.
     ///
     /// # Example
     /// ```rust, no_run
     /// grid.deflate_size((1, 1), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -216,14 +225,17 @@ impl<T> RollGrid2D<T> {
         self.resize_and_reposition(width, height, position, manage);
     }
 
-    /// Try to deflate the size by `deflate` using a fallible function.
+    /// Try to deflate the size by `deflate` using a fallible function, keeping the bounds centered.
+    /// 
+    /// If the size is `(4, 4)` with an offset of `(0, 0)`, and you want to deflate by `(1, 1)`.
+    /// The result of that operation would have a size of `(2, 2)` and an offset of `(1, 1)`.
     ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_deflate_size((1, 1), try_cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {}", pos);
+    ///         println!("Load: {:?}", pos);
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -269,20 +281,26 @@ impl<T> RollGrid2D<T> {
         self.try_resize_and_reposition(width, height, position, manage)
     }
 
-    /// Resize the grid, keeping it in the same position.
+    /// Resize the grid without changing the offset.
+    /// 
+    /// # Example
     /// ```no_run
     /// grid.resize(3, 3, cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         // Do Loading here.
+    ///         println!("Load: {:?}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         pos
     ///     },
     ///     // Unload
     ///     |pos, value| {
-    ///         // Do unloading here.
+    ///         println!("Unload: {:?}", pos);
     ///     },
     ///     // Reload
     ///     |old_pos, new_pos, value| {
-    ///         // Do reloading here.
+    ///         println!("Reload({:?}, {:?})")
     ///     }
     /// ));
     /// ```
@@ -294,22 +312,30 @@ impl<T> RollGrid2D<T> {
         self.resize_and_reposition(new_width, new_height, self.grid_offset, manage);
     }
 
-    /// Try to resize the grid using a fallible function, keeping it in the same position.
-    /// ```no_run
-    /// grid.try_resize(3, 3, try_cell_manager(
+    /// Try to resize the grid with a fallible function without changing the offset.
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_resize(1, 1, cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         // Do Loading here.
+    ///         println!("Load: {:?}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         Ok(pos)
     ///     },
     ///     // Unload
-    ///     |pos, value| {
-    ///         // Do unloading here.
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///         Ok(())
     ///     },
     ///     // Reload
-    ///     |old_pos, new_pos, value| {
-    ///         // Do reloading here.
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///         Ok(())
     ///     }
-    /// ));
+    /// ))
     /// ```
     /// See [TryCellManage].
     pub fn try_resize<E, M>(
@@ -324,23 +350,28 @@ impl<T> RollGrid2D<T> {
         self.try_resize_and_reposition(new_width, new_height, self.grid_offset, manage)
     }
 
-    // Resize
-    /// Resize and reposition the grid.
-    /// ```no_run
+    /// Resize and reposition the grid simultaneously.
+    /// 
+    /// # Example
+    /// ```rust, no_run
     /// grid.resize_and_reposition(3, 3, (4, 4), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         // Do Loading here.
+    ///         println!("Load: {:?}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         pos
     ///     },
     ///     // Unload
-    ///     |pos, value| {
-    ///         // Do unloading here.
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
     ///     },
     ///     // Reload
-    ///     |old_pos, new_pos, value| {
-    ///         // Do reloading here.
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
     ///     }
-    /// ));
+    /// ))
     /// ```
     /// See [CellManage].
     pub fn resize_and_reposition<M>(
@@ -448,26 +479,30 @@ impl<T> RollGrid2D<T> {
         }
     }
 
-    // Resize
     /// Try to resize and reposition the grid using a fallible function.
-    /// ```no_run
-    /// grid.try_resize_and_reposition(3, 3, (4, 4), try_cell_manage(
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_resize_and_reposition(3, 3, (4, 4), try_cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         // Do loading here.
+    ///         println!("Load: {:?}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
     ///         Ok(pos)
     ///     },
     ///     // Unload
-    ///     |pos, value| {
-    ///         // Do unloading here.
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
     ///         Ok(())
-    ///     }
+    ///     },
     ///     // Reload
-    ///     |old_pos, new_pos, value| {
-    ///         // Do reloading here.
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
     ///         Ok(())
     ///     }
-    /// ));
+    /// ))
     /// ```
     /// See [TryCellManage].
     pub fn try_resize_and_reposition<E, M>(
@@ -580,13 +615,19 @@ impl<T> RollGrid2D<T> {
         Ok(())
     }
 
-    // Translation/Repositioning
-    /// Translate the grid by offset amount with a reload function.
-    /// Signature of the reload function is as follows:
-    /// ```rust,no_run
-    /// fn reload(old_position: (i32, i32), new_position: (i32, i32), old_value: &mut T)
+    /// Translate the grid by offset amount using a reload function.
+    /// 
+    /// The reload function takes the old position, the new position, and
+    /// a mutable reference to the cell where the initial value of the cell
+    /// when called is the value at `old_position`. You want to change the
+    /// cell to the correct value for a cell at `new_position`.
+    ///
+    /// # Example
+    /// ```rust, no_run
+    /// grid.translate((2, 4), |old_position, new_position, cell_mut| {
+    ///     *cell_mut = new_position;
+    /// })
     /// ```
-    /// Where the return value of `reload` is the new value for that slot.
     pub fn translate<F>(&mut self, offset: (i32, i32), reload: F)
     where
         F: FnMut((i32, i32), (i32, i32), &mut T),
@@ -596,12 +637,20 @@ impl<T> RollGrid2D<T> {
         self.reposition((curx + ox, cury + oy), reload);
     }
 
-    /// Try to translate the grid by offset amount with a fallible reload function.
-    /// Signature of the reload function is as follows:
-    /// ```rust,no_run
-    /// fn reload(old_position: (i32, i32), new_position: (i32, i32), old_value: &mut T) -> Result<(), E>
+    /// Try to translate the grid by offset amount using a fallible reload function.
+    /// 
+    /// The reload function takes the old position, the new position, and
+    /// a mutable reference to the cell where the initial value of the cell
+    /// when called is the value at `old_position`. You want to change the
+    /// cell to the correct value for a cell at `new_position`.
+    ///
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_translate((2, 3), |old_position, new_position, cell_mut| {
+    ///     *cell_mut = new_position;
+    ///     Ok(())
+    /// })
     /// ```
-    /// Where the return value of `reload` is the new value for that slot.
     pub fn try_translate<E, F>(&mut self, offset: (i32, i32), reload: F) -> Result<(), E>
     where
         F: FnMut((i32, i32), (i32, i32), &mut T) -> Result<(), E>,
@@ -612,11 +661,18 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Reposition the offset of the grid and reload the slots that are changed.
-    /// Signature of the reload function is as follows:
-    /// ```rust,no_run
-    /// fn reload(old_position: (i32 i32), new_position: (i32 i32), old_value: &mut T)
+    /// 
+    /// The reload function takes the old position, the new position, and
+    /// a mutable reference to the cell where the initial value of the cell
+    /// when called is the value at `old_position`. You want to change the
+    /// cell to the correct value for a cell at `new_position`.
+    ///
+    /// # Example
+    /// ```rust, no_run
+    /// grid.reposition((2, 3), |old_position, new_position, cell_mut| {
+    ///     *cell_mut = new_position;
+    /// })
     /// ```
-    /// Where the return value of `reload` is the new value for that slot.
     pub fn reposition<F>(&mut self, position: (i32, i32), reload: F)
     where
         F: FnMut((i32, i32), (i32, i32), &mut T),
@@ -729,11 +785,18 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to reposition the offset of the grid and reload the slots that are changed.
-    /// Signature of the reload function is as follows:
-    /// ```rust,no_run
-    /// fn reload(old_position: (i32, i32), new_position: (i32, i32), old_value: &mut T) -> Result<(), E>
+    /// 
+    /// The reload function takes the old position, the new position, and
+    /// a mutable reference to the cell where the initial value of the cell
+    /// when called is the value at `old_position`. You want to change the
+    /// cell to the correct value for a cell at `new_position`.
+    ///
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_reposition((2, 3, 4), |old_position, new_position, cell_mut| {
+    ///     *cell_mut = new_position;
+    /// })
     /// ```
-    /// Where the return value of `reload` is the new value for that slot.
     pub fn try_reposition<E, F>(&mut self, position: (i32, i32), reload: F) -> Result<(), E>
     where
         F: FnMut((i32, i32), (i32, i32), &mut T) -> Result<(), E>,
@@ -846,13 +909,16 @@ impl<T> RollGrid2D<T> {
         Ok(())
     }
 
-    /// Get the offset relative to the grid offset.
+    /// Get the offset relative to the grid's offset.
     pub fn relative_offset(&self, coord: (i32, i32)) -> (i32, i32) {
         let (x, y) = coord;
         (x - self.grid_offset.0, y - self.grid_offset.1)
     }
 
-    // Utility function(s)
+    /// The grid has a wrapping offset, which dictates the lookup order of cells.
+    /// This method allows to find the index of a particular offset in the grid.
+    /// Offsets are relative to the world origin `(0, 0, 0)`, and must account for
+    /// the grid offset.
     fn offset_index(&self, (x, y): (i32, i32)) -> Option<usize> {
         let (mx, my) = self.grid_offset;
         let width = self.size.0 as i32;
@@ -888,60 +954,65 @@ impl<T> RollGrid2D<T> {
         self.cells.write(index, value);
     }
 
+    /// Get a reference to the cell's value if it exists and the coord is in bounds, otherwise return `None`.
     pub fn get(&self, coord: (i32, i32)) -> Option<&T> {
         let index = self.offset_index(coord)?;
         Some(&self.cells[index])
     }
 
+    /// Get a mutable reference to the cell's value if it exists and the coord is in bounds, otherwise return `None`.
     pub fn get_mut(&mut self, coord: (i32, i32)) -> Option<&mut T> {
         let index = self.offset_index(coord)?;
         Some(&mut self.cells[index])
     }
 
+    /// Set the cell's value, returning the old value in the process.
     pub fn set(&mut self, coord: (i32, i32), value: T) -> Option<T> {
         let index = self.offset_index(coord)?;
         let dest = &mut self.cells[index];
         Some(std::mem::replace(dest, value))
     }
 
-    // Pleasantries
-
+    /// Get the dimensions of the grid.
     pub fn size(&self) -> (usize, usize) {
         self.size
     }
 
+    /// The size along the X axis.
     pub fn width(&self) -> usize {
         self.size.0
     }
 
+    /// The size along the Y axis.
     pub fn height(&self) -> usize {
         self.size.1
     }
 
-    pub fn wrap_offset(&self) -> (i32, i32) {
-        self.wrap_offset
-    }
-
+    /// Get the offset of the grid.
     pub fn offset(&self) -> (i32, i32) {
         self.grid_offset
     }
 
+    /// Get the minimum bound on the `X` axis.
     pub fn x_min(&self) -> i32 {
         self.grid_offset.0
     }
-
+    /// Get the maximum bound on the `X` axis.
     pub fn x_max(&self) -> i32 {
         self.grid_offset.0 + self.size.0 as i32
     }
 
+    /// Get the minimum bound on the `Y` axis.
     pub fn y_min(&self) -> i32 {
         self.grid_offset.1
     }
 
+    /// Get the maximum bound on the `Y` axis.
     pub fn y_max(&self) -> i32 {
         self.grid_offset.1 + self.size.1 as i32
     }
 
+    /// Get the bounds of the grid.
     pub fn bounds(&self) -> Bounds2D {
         Bounds2D {
             min: (self.x_min(), self.y_min()),
@@ -954,6 +1025,7 @@ impl<T> RollGrid2D<T> {
         self.size.0 * self.size.1
     }
 
+    /// Get an iterator over the cells in the grid.
     pub fn iter<'a>(&'a self) -> RollGrid2DIterator<'a, T> {
         RollGrid2DIterator {
             bounds_iter: self.bounds().iter(),
@@ -961,6 +1033,7 @@ impl<T> RollGrid2D<T> {
         }
     }
 
+    /// Get a mutable iterator over the cells in the grid.
     pub fn iter_mut<'a>(&'a mut self) -> RollGrid2DMutIterator<'a, T> {
         RollGrid2DMutIterator {
             bounds_iter: self.bounds().iter(),
@@ -970,6 +1043,7 @@ impl<T> RollGrid2D<T> {
 }
 
 impl<T: Copy> RollGrid2D<T> {
+    /// Get a copy of the grid value.
     pub fn get_copy(&self, coord: (i32, i32)) -> Option<T> {
         let index = self.offset_index(coord)?;
         Some(self.cells[index])
@@ -1004,7 +1078,7 @@ impl<'a, T> Iterator for RollGrid2DIterator<'a, T> {
     }
 }
 
-/// Mutable iterator over all elements in the [RollGrid2D].
+/// Mutable iterator over all cells in the [RollGrid2D].
 pub struct RollGrid2DMutIterator<'a, T> {
     grid: &'a mut RollGrid2D<T>,
     bounds_iter: Bounds2DIter,
@@ -1017,7 +1091,6 @@ impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
         self.bounds_iter.size_hint()
     }
 
-    /// This method uses `unsafe`.
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
