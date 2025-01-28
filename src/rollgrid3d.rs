@@ -1,4 +1,4 @@
-use crate::{cells::FixedArray, *, constants::*};
+use crate::{*, cells::FixedArray, constants::*, bounds3d::*};
 
 /// A 3D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -30,8 +30,11 @@ impl<T: Default> RollGrid3D<T> {
 }
 
 impl<T> RollGrid3D<T> {
+
     /// Create a new grid with an init function.
-    pub fn new_with_init<F: FnMut((i32, i32, i32)) -> T>(
+    /// 
+    /// The init function should take as input the coordinate that is being initialized, and should return the desired value for the cell.
+    pub fn new<F: FnMut((i32, i32, i32)) -> T>(
         width: usize,
         height: usize,
         depth: usize,
@@ -47,7 +50,9 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to create a new grid with a fallible init function.
-    pub fn try_new_with_init<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
+    /// 
+    /// The init function should take as input the coordinate that is being initialized, and should return the desired value for the cell.
+    pub fn try_new<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
         width: usize,
         height: usize,
         depth: usize,
@@ -65,6 +70,29 @@ impl<T> RollGrid3D<T> {
     /// Inflate the size by `inflate`, keeping the bounds centered.
     /// If the size is `(2, 2, 2)` with an offset of `(1, 1, 1)`, and you want to inflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(4, 4, 4)` and an offset of `(0, 0, 0)`.
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.inflate_size((1, 1, 1), cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         println!("Load: {}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         pos
+    ///     },
+    ///     // Unload
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///     }
+    /// ))
+    /// ```
+    /// See [CellManage].
     pub fn inflate_size<M>(&mut self, inflate: (usize, usize, usize), manage: M)
     where
         M: CellManage<(i32, i32, i32), T>,
@@ -105,6 +133,31 @@ impl<T> RollGrid3D<T> {
     /// Try to inflate the size by `inflate` using a fallible function, keeping the bounds centered.
     /// If the size is `(2, 2, 2)` with an offset of `(1, 1, 1)`, and you want to inflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(4, 4, 4)` and an offset of `(0, 0, 0)`.
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_inflate_size((1, 1, 1), try_cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         println!("Load: {}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         Ok(pos)
+    ///     },
+    ///     // Unload
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///         Ok(())
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///         Ok(())
+    ///     }
+    /// ))
+    /// ```
+    /// See [CellManage].
     pub fn try_inflate_size<E, M>(
         &mut self,
         inflate: (usize, usize, usize),
@@ -149,6 +202,29 @@ impl<T> RollGrid3D<T> {
     /// Deflate the size by `deflate`, keeping the bounds centered.
     /// If the size is `(4, 4, 4)` with an offset of `(0, 0, 0)`, and you want to deflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(2, 2, 2)` and an offset of `(1, 1, 1)`.
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.deflate_size((1, 1, 1), cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         println!("Load: {}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         pos
+    ///     },
+    ///     // Unload
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///     }
+    /// ))
+    /// ```
+    /// See [CellManage].
     pub fn deflate_size<M>(&mut self, deflate: (usize, usize, usize), manage: M)
     where
         M: CellManage<(i32, i32, i32), T>,
@@ -196,6 +272,31 @@ impl<T> RollGrid3D<T> {
     /// Try to deflate the size by `deflate` using a fallible function, keeping the bounds centered.
     /// If the size is `(4, 4, 4)` with an offset of `(0, 0, 0)`, and you want to deflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(2, 2, 2)` and an offset of `(1, 1, 1)`.
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_deflate_size((1, 1, 1), try_cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         println!("Load: {}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         Ok(pos)
+    ///     },
+    ///     // Unload
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///         Ok(())
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///         Ok(())
+    ///     }
+    /// ))
+    /// ```
+    /// See [CellManage].
     pub fn try_deflate_size<E, M>(
         &mut self,
         deflate: (usize, usize, usize),
@@ -245,6 +346,29 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Resize the grid, keeping the offset in the same place.
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.resize(1, 1, 1, cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         println!("Load: {}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         pos
+    ///     },
+    ///     // Unload
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///     }
+    /// ))
+    /// ```
+    /// See [CellManage].
     pub fn resize<M>(&mut self, width: usize, height: usize, depth: usize, manage: M)
     where
         M: CellManage<(i32, i32, i32), T>,
@@ -253,6 +377,31 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to resize the grid with a fallible function, keeping the offset in the same place.
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_resize(1, 1, 1, cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         println!("Load: {}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         Ok(pos)
+    ///     },
+    ///     // Unload
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///         Ok(())
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///         Ok(())
+    ///     }
+    /// ))
+    /// ```
+    /// See [CellManage].
     pub fn try_resize<E, M>(
         &mut self,
         width: usize,
@@ -287,6 +436,7 @@ impl<T> RollGrid3D<T> {
     ///     }
     /// ))
     /// ```
+    /// See [CellManage].
     pub fn resize_and_reposition<M>(
         &mut self,
         width: usize,
@@ -454,6 +604,7 @@ impl<T> RollGrid3D<T> {
     ///     }
     /// ))
     /// ```
+    /// See [CellManage].
     pub fn try_resize_and_reposition<E, M>(
         &mut self,
         width: usize,
@@ -607,6 +758,13 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Move the grid by relative offset using a reload function.
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.translate((2, 3, 4), |old_position, new_position, cell_mut| {
+    ///     *cell_mut = new_position;
+    /// })
+    /// ```
     pub fn translate<F>(&mut self, offset: (i32, i32, i32), reload: F)
     where
         F: FnMut((i32, i32, i32), (i32, i32, i32), &mut T),
@@ -621,6 +779,14 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to move the grid by relative offset using a fallible reload function.
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_translate((2, 3, 4), |old_position, new_position, cell_mut| {
+    ///     *cell_mut = new_position;
+    ///     Ok(())
+    /// })
+    /// ```
     pub fn try_translate<E, F>(&mut self, offset: (i32, i32, i32), reload: F) -> Result<(), E>
     where
         F: FnMut((i32, i32, i32), (i32, i32, i32), &mut T) -> Result<(), E>,
@@ -635,6 +801,13 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Move the grid to a new position using a reload function.
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.reposition((2, 3, 4), |old_position, new_position, cell_mut| {
+    ///     *cell_mut = new_position;
+    /// })
+    /// ```
     pub fn reposition<F>(&mut self, position: (i32, i32, i32), reload: F)
     where
         F: FnMut((i32, i32, i32), (i32, i32, i32), &mut T),
@@ -1110,9 +1283,13 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to move the grid to a new position using a fallible reload function.
-    /// Signature of the reload function is as follows:
-    /// ```rust,no_run
-    /// fn reload(old_position: (i32, i32, i32), new_position: (i32, i32, i32), cell: &mut T) -> Result<(), E>
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_reposition((2, 3, 4), |old_position, new_position, cell_mut| {
+    ///     *cell_mut = new_position;
+    ///     Ok(())
+    /// })
     /// ```
     pub fn try_reposition<E, F>(&mut self, position: (i32, i32, i32), reload: F) -> Result<(), E>
     where
@@ -1602,6 +1779,10 @@ impl<T> RollGrid3D<T> {
         )
     }
 
+    /// The grid has a wrapping offset, which dictates the lookup order of cells.
+    /// This method allows to find the index of a particular offset in the grid.
+    /// Offsets are relative to the world origin `(0, 0, 0)`, and must account for
+    /// the grid offset.
     fn offset_index(&self, (x, y, z): (i32, i32, i32)) -> Option<usize> {
         let (mx, my, mz) = self.grid_offset;
         let width = self.size.0 as i32;
@@ -1627,21 +1808,39 @@ impl<T> RollGrid3D<T> {
         Some(wy as usize * plane + wz as usize * self.size.0 + wx as usize)
     }
 
+    /// Reads the value from the cell without moving it. This leaves the memory in the cell unchanged.
+    pub unsafe fn read(&self, coord: (i32, i32, i32)) -> Option<T> {
+        let index = self.offset_index(coord)?;
+        Some(self.cells.read(index))
+    }
+
+    /// Overwrites a cell at the given coordinate with the given value without reading or dropping the old value.
+    ///
+    /// write does not drop the contents of the cell. This is safe, but it could leak allocations or resources, so care should be taken not to overwrite an object that should be dropped.
+    ///
+    /// Additionally, it does not drop the contents of the cell. Semantically, `value` is moved into the cell at the given coordinate.
+    ///
+    /// This is appropriate for initializing uninitialized cells, or overwriting memory that has previously been [read] from.
+    pub unsafe fn write(&mut self, coord: (i32, i32, i32), value: T) {
+        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS);
+        self.cells.write(index, value);
+    }
+
     /// Get a reference to the cell's value if it exists and the coord is in bounds, otherwise return `None`.
     pub fn get(&self, coord: (i32, i32, i32)) -> Option<&T> {
-        let index = self.offset_index(coord.into())?;
+        let index = self.offset_index(coord)?;
         Some(&self.cells[index])
     }
 
     /// Get a mutable reference to the cell's value if it exists and the coord is in bounds, otherwise return `None`.
     pub fn get_mut(&mut self, coord: (i32, i32, i32)) -> Option<&mut T> {
-        let index = self.offset_index(coord.into())?;
+        let index = self.offset_index(coord)?;
         Some(&mut self.cells[index])
     }
 
     /// Set the cell's value, returning the old value in the process.
     pub fn set(&mut self, coord: (i32, i32, i32), value: T) -> Option<T> {
-        let index = self.offset_index(coord.into())?;
+        let index = self.offset_index(coord)?;
         let dest = &mut self.cells[index];
         Some(std::mem::replace(dest, value))
     }
@@ -1747,168 +1946,6 @@ impl<T: Clone> RollGrid3D<T> {
     }
 }
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-/// A 3D bounding box.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Bounds3D {
-    /// Inclusive minimum bound.
-    pub min: (i32, i32, i32),
-    /// Exclusive maximum bound.
-    pub max: (i32, i32, i32),
-}
-
-impl Bounds3D {
-    /// Create a new [Bounds3D] with the specified minimum and maximum bounds.
-    pub fn new(min: (i32, i32, i32), max: (i32, i32, i32)) -> Self {
-        Self {
-            min,
-            max,
-        }
-    }
-
-    /// Create a new [Bounds3D] from two unordered points.
-    pub fn from_bounds(a: (i32, i32, i32), b: (i32, i32, i32)) -> Self {
-        let x_min = a.0.min(b.0);
-        let y_min = a.1.min(b.1);
-        let z_min = a.2.min(b.2);
-        let x_max = a.0.max(b.0);
-        let y_max = a.1.max(b.1);
-        let z_max = a.2.max(b.2);
-        Self {
-            min: (x_min, y_min, z_min),
-            max: (x_max, y_max, z_max),
-        }
-    }
-
-    /// The size along the X axis.
-    pub fn width(&self) -> u32 {
-        (self.max.0 as i64 - self.min.0 as i64) as u32
-    }
-
-    /// The size along the Y axis.
-    pub fn height(&self) -> u32 {
-        (self.max.1 as i64 - self.min.1 as i64) as u32
-    }
-
-    /// The size along the Z axis.
-    pub fn depth(&self) -> u32 {
-        (self.max.2 as i64 - self.min.2 as i64) as u32
-    }
-
-    /// The volume is `width * height * depth`.
-    pub fn volume(&self) -> i128 {
-        self.width() as i128 * self.height() as i128 * self.depth() as i128
-    }
-
-    /// The minumum bound along the `X` axis.
-    pub fn x_min(&self) -> i32 {
-        self.min.0
-    }
-
-    /// The minimum bound along the `Y` axis.
-    pub fn y_min(&self) -> i32 {
-        self.min.1
-    }
-
-    /// The minimum bound along the `Z` axis.
-    pub fn z_min(&self) -> i32 {
-        self.min.2
-    }
-
-    /// The maximum bound along the `X` axis (exclusive).
-    pub fn x_max(&self) -> i32 {
-        self.max.0
-    }
-
-    /// The maxmimum bound along the `Y` axis (exclusive).
-    pub fn y_max(&self) -> i32 {
-        self.max.1
-    }
-
-    /// The maximum bound along the `Z` axis (exclusive).
-    pub fn z_max(&self) -> i32 {
-        self.max.2
-    }
-
-    // intersects would need to copy self and other anyway, so
-    // just accept copied values rather than references.
-    /// Tests for intersection with another [Bounds3D].
-    pub fn intersects(self, other: Bounds3D) -> bool {
-        let (ax_min, ay_min, az_min) = self.min;
-        let (ax_max, ay_max, az_max) = self.max;
-        let (bx_min, by_min, bz_min) = other.min;
-        let (bx_max, by_max, bz_max) = other.max;
-        ax_min < bx_max
-            && bx_min < ax_max
-            && ay_min < by_max
-            && by_min < ay_max
-            && az_min < bz_max
-            && bz_min < az_max
-    }
-
-    /// Determine if a point is within the [Bounds3D].
-    pub fn contains(self, point: (i32, i32, i32)) -> bool {
-        point.0 >= self.min.0
-            && point.1 >= self.min.1
-            && point.2 >= self.min.2
-            && point.0 < self.max.0
-            && point.1 < self.max.1
-            && point.2 < self.max.2
-    }
-
-    /// Iterate over the points in the [Bounds3D].
-    pub fn iter(self) -> Bounds3DIter {
-        Bounds3DIter {
-            bounds: self,
-            current: self.min,
-        }
-    }
-}
-
-/// Iterator for all points within a [Bounds3D].
-pub struct Bounds3DIter {
-    bounds: Bounds3D,
-    current: (i32, i32, i32),
-}
-
-impl Iterator for Bounds3DIter {
-    type Item = (i32, i32, i32);
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        if self.current.2 == self.bounds.max.2 {
-            return (0, Some(0));
-        }
-        let (x, y, z) = (
-            (self.current.0 - self.bounds.min.0) as usize,
-            (self.current.1 - self.bounds.min.1) as usize,
-            (self.current.2 - self.bounds.min.2) as usize,
-        );
-        let width = self.bounds.width() as usize;
-        let depth = self.bounds.depth() as usize;
-        let volume = self.bounds.volume() as usize;
-        let index = y * width * depth + z * width + x;
-        (volume - index, Some(volume - index))
-    }
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.current.1 == self.bounds.max.1 {
-            return None;
-        }
-        let result = self.current;
-        // inc x, then z, then y
-        self.current = if result.0 + 1 == self.bounds.max.0 {
-            if result.2 + 1 == self.bounds.max.2 {
-                (self.bounds.min.0, result.1 + 1, self.bounds.min.2)
-            } else {
-                (self.bounds.min.0, result.1, result.2 + 1)
-            }
-        } else {
-            (result.0 + 1, result.1, result.2)
-        };
-        Some(result)
-    }
-}
-
 /// Iterator over all cells in a [RollGrid3D].
 pub struct RollGrid3DIterator<'a, T> {
     grid: &'a RollGrid3D<T>,
@@ -1942,7 +1979,6 @@ impl<'a, T> Iterator for RollGrid3DMutIterator<'a, T> {
         self.bounds_iter.size_hint()
     }
 
-    /// This method uses `unsafe`.
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.bounds_iter.next()?;
         let index = self.grid.offset_index(next)?;
@@ -1962,7 +1998,7 @@ mod tests {
     #[test]
     fn iter_test() {
         let mut grid =
-            RollGrid3D::new_with_init(2, 2, 2, (0, 0, 0), |pos: (i32, i32, i32)| pos);
+            RollGrid3D::new(2, 2, 2, (0, 0, 0), |pos: (i32, i32, i32)| pos);
         grid.iter().for_each(|(pos, cell)| {
             assert_eq!(pos, *cell);
         });
@@ -1998,7 +2034,7 @@ mod tests {
             assert_eq!(old, *cell);
             *cell = new;
         }
-        let mut grid = RollGrid3D::new_with_init(4, 4, 4, (0, 0, 0), |pos| pos);
+        let mut grid = RollGrid3D::new(4, 4, 4, (0, 0, 0), |pos| pos);
         verify_grid(&grid);
         for y in -10..11 {
             for z in -10..11 {
@@ -2046,13 +2082,18 @@ mod tests {
                     for y in -1..6 {
                         for z in -1..6 {
                             for x in -1..6 {
-                                let mut grid = RollGrid3D::new_with_init(
+                                let mut grid = RollGrid3D::new(
                                     4,
                                     4,
                                     4,
                                     (0, 0, 0),
                                     |pos: (i32, i32, i32)| DropCoord::from(pos),
                                 );
+                                // reposition to half point to ensure wrapping doesn't cause lookup invalidation.
+                                grid.reposition((2, 2, 2), |old_pos, new_pos, cell| {
+                                    assert_eq!(old_pos, cell.coord);
+                                    cell.coord = new_pos;
+                                });
                                 grid.resize_and_reposition(
                                     width,
                                     height,
@@ -2155,9 +2196,9 @@ mod tests {
             size: (23, 32, 18),
         };
         let index = grid.offset_index(0, 0, 0).expect(OUT_OF_BOUNDS);
-        println!("{index}");
+        assert_eq!(index, 532);
         let (x, y, z) = grid.index_offset(index).expect(OUT_OF_BOUNDS);
-        println!("({x}, {y}, {z})");
+        assert_eq!((x, y, z), (0, 0, 0));
         for y in grid.offset.1..grid.offset.1 + grid.size.1 {
             for z in grid.offset.2..grid.offset.2 + grid.size.2 {
                 for x in grid.offset.0..grid.offset.0 + grid.size.0 {

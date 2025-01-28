@@ -1,4 +1,4 @@
-use crate::{cells::FixedArray, *, constants::*};
+use crate::{cells::FixedArray, bounds2d::*, constants::*, *,};
 
 /// A 2D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -56,63 +56,231 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Inflate the size by `inflate`.
-    pub fn inflate_size<M>(&mut self, inflate: usize, manage: M)
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.inflate_size((1, 1), cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         println!("Load: {}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         pos
+    ///     },
+    ///     // Unload
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///     }
+    /// ))
+    /// ```
+    /// See [CellManage].
+    pub fn inflate_size<M>(&mut self, inflate: (usize, usize), manage: M)
     where
         M: CellManage<(i32, i32), T>,
     {
-        // FIXME: Look at rollgrid3d's inflate_size and try_inflate_size impls.
-        //        The same thing can be done for this impl. This does no error
-        //        checking.
-        let inf = inflate as i32;
-        let new_offset = (self.grid_offset.0 - inf, self.grid_offset.1 - inf);
-        let new_width = self.size.0 + inflate * 2;
-        let new_height = self.size.1 + inflate * 2;
-        self.resize_and_reposition(new_width, new_height, new_offset, manage);
+        if inflate.0 > i32::MAX as usize {
+            panic!("{INFLATE_PAST_I32_MAX}");
+        }
+        if inflate.1 > i32::MAX as usize {
+            panic!("{INFLATE_PAST_I32_MAX}");
+        }
+        let position = (
+            self.grid_offset.0 - inflate.0 as i32,
+            self.grid_offset.1 - inflate.1 as i32,
+        );
+        let width = self
+            .size
+            .0
+            .checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW))
+            .expect(INFLATE_OVERFLOW);
+        let height = self
+            .size
+            .1
+            .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW))
+            .expect(INFLATE_OVERFLOW);
+        self.resize_and_reposition(width, height, position, manage);
     }
 
     /// Try to inflate the size by `inflate` using a fallible function.
-    pub fn try_inflate_size<E, M>(&mut self, inflate: usize, manage: M) -> Result<(), E>
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_inflate_size((1, 1), try_cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         println!("Load: {}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         Ok(pos)
+    ///     },
+    ///     // Unload
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///         Ok(())
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///         Ok(())
+    ///     }
+    /// ))
+    /// ```
+    /// See [TryCellManage].
+    pub fn try_inflate_size<E, M>(&mut self, inflate: (usize, usize), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
-        let inf = inflate as i32;
-        let new_offset = (self.grid_offset.0 - inf, self.grid_offset.1 - inf);
-        let new_width = self.size.0 + inflate * 2;
-        let new_height = self.size.1 + inflate * 2;
-        self.try_resize_and_reposition(new_width, new_height, new_offset, manage)
+        if inflate.0 > i32::MAX as usize {
+            panic!("{INFLATE_PAST_I32_MAX}");
+        }
+        if inflate.1 > i32::MAX as usize {
+            panic!("{INFLATE_PAST_I32_MAX}");
+        }
+        let position = (
+            self.grid_offset.0 - inflate.0 as i32,
+            self.grid_offset.1 - inflate.1 as i32,
+        );
+        let width = self
+            .size
+            .0
+            .checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW))
+            .expect(INFLATE_OVERFLOW);
+        let height = self
+            .size
+            .1
+            .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW))
+            .expect(INFLATE_OVERFLOW);
+        self.try_resize_and_reposition(width, height, position, manage)
     }
 
     /// Deflate the size by `defalte`.
-    pub fn deflate_size<M>(&mut self, deflate: usize, manage: M)
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.deflate_size((1, 1), cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         println!("Load: {}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         pos
+    ///     },
+    ///     // Unload
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///     }
+    /// ))
+    /// ```
+    /// See [CellManage].
+    pub fn deflate_size<M>(&mut self, deflate: (usize, usize), manage: M)
     where
         M: CellManage<(i32, i32), T>,
     {
-        let def = deflate as i32;
-        let new_offset = (self.grid_offset.0 + def, self.grid_offset.1 + def);
-        let new_width = self.size.0 - deflate * 2;
-        let new_height = self.size.1 - deflate * 2;
-        if new_width * new_height == 0 {
-            panic!("{AREA_IS_ZERO}");
+        if deflate.0 > i32::MAX as usize {
+            panic!("{DEFLATE_PAST_I32_MAX}");
         }
-        self.resize_and_reposition(new_width, new_height, new_offset, manage);
+        if deflate.1 > i32::MAX as usize {
+            panic!("{DEFLATE_PAST_I32_MAX}");
+        }
+        let position = (
+            self.grid_offset.0 + deflate.0 as i32,
+            self.grid_offset.1 + deflate.1 as i32
+        );
+        let width = self
+            .size
+            .0
+            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW))
+            .expect(DEFLATE_OVERFLOW);
+        let height = self
+            .size
+            .0
+            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW))
+            .expect(DEFLATE_OVERFLOW);
+        self.resize_and_reposition(width, height, position, manage);
     }
 
     /// Try to deflate the size by `deflate` using a fallible function.
-    pub fn try_deflate_size<E, M>(&mut self, deflate: usize, manage: M) -> Result<(), E>
+    /// 
+    /// # Example
+    /// ```rust, no_run
+    /// grid.try_deflate_size((1, 1), try_cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         println!("Load: {}", pos);
+    ///         // return the loaded value
+    ///         // Typically you wouldn't return the position,
+    ///         // you would want to load a new cell here.
+    ///         Ok(pos)
+    ///     },
+    ///     // Unload
+    ///     |pos, old_value| {
+    ///         println!("Unload: {:?}", pos);
+    ///         Ok(())
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, cell| {
+    ///         println!("Reload({:?}, {:?})")
+    ///         Ok(())
+    ///     }
+    /// ))
+    /// ```
+    /// See [TryCellManage].
+    pub fn try_deflate_size<E, M>(&mut self, deflate: (usize, usize), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
-        let def = deflate as i32;
-        let new_offset = (self.grid_offset.0 + def, self.grid_offset.1 + def);
-        let new_width = self.size.0 - deflate * 2;
-        let new_height = self.size.1 - deflate * 2;
-        if new_width * new_height == 0 {
-            panic!("{AREA_IS_ZERO}");
+        if deflate.0 > i32::MAX as usize {
+            panic!("{DEFLATE_PAST_I32_MAX}");
         }
-        self.try_resize_and_reposition(new_width, new_height, new_offset, manage)
+        if deflate.1 > i32::MAX as usize {
+            panic!("{DEFLATE_PAST_I32_MAX}");
+        }
+        let position = (
+            self.grid_offset.0 + deflate.0 as i32,
+            self.grid_offset.1 + deflate.1 as i32
+        );
+        let width = self
+            .size
+            .0
+            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW))
+            .expect(DEFLATE_OVERFLOW);
+        let height = self
+            .size
+            .0
+            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW))
+            .expect(DEFLATE_OVERFLOW);
+        self.try_resize_and_reposition(width, height, position, manage)
     }
 
     /// Resize the grid, keeping it in the same position.
+    /// ```no_run
+    /// grid.resize(3, 3, cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         // Do Loading here.
+    ///     },
+    ///     // Unload
+    ///     |pos, value| {
+    ///         // Do unloading here.
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, value| {
+    ///         // Do reloading here.
+    ///     }
+    /// ));
+    /// ```
+    /// See [CellManage].
     pub fn resize<M>(&mut self, new_width: usize, new_height: usize, manage: M)
     where
         M: CellManage<(i32, i32), T>,
@@ -121,6 +289,23 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to resize the grid using a fallible function, keeping it in the same position.
+    /// ```no_run
+    /// grid.try_resize(3, 3, try_cell_manager(
+    ///     // Load
+    ///     |pos| {
+    ///         // Do Loading here.
+    ///     },
+    ///     // Unload
+    ///     |pos, value| {
+    ///         // Do unloading here.
+    ///     },
+    ///     // Reload
+    ///     |old_pos, new_pos, value| {
+    ///         // Do reloading here.
+    ///     }
+    /// ));
+    /// ```
+    /// See [TryCellManage].
     pub fn try_resize<E, M>(
         &mut self,
         new_width: usize,
@@ -151,7 +336,7 @@ impl<T> RollGrid2D<T> {
     ///     }
     /// ));
     /// ```
-    /// See [crate::CellManage].
+    /// See [CellManage].
     pub fn resize_and_reposition<M>(
         &mut self,
         width: usize,
@@ -260,21 +445,25 @@ impl<T> RollGrid2D<T> {
     // Resize
     /// Try to resize and reposition the grid using a fallible function.
     /// ```no_run
-    /// grid.resize_and_reposition(3, 3, (4, 4), try_cell_manage(
+    /// grid.try_resize_and_reposition(3, 3, (4, 4), try_cell_manage(
     ///     // Load
     ///     |pos| {
     ///         // Do loading here.
+    ///         Ok(pos)
     ///     },
     ///     // Unload
     ///     |pos, value| {
     ///         // Do unloading here.
+    ///         Ok(())
     ///     }
     ///     // Reload
     ///     |old_pos, new_pos, value| {
     ///         // Do reloading here.
+    ///         Ok(())
     ///     }
     /// ));
     /// ```
+    /// See [TryCellManage].
     pub fn try_resize_and_reposition<E, M>(
         &mut self,
         width: usize,
@@ -676,18 +865,36 @@ impl<T> RollGrid2D<T> {
         Some((wy as usize * self.size.0) + wx as usize)
     }
 
+    /// Reads the value from the cell without moving it. This leaves the memory in the cell unchanged.
+    pub unsafe fn read(&self, coord: (i32, i32)) -> Option<T> {
+        let index = self.offset_index(coord)?;
+        Some(self.cells.read(index))
+    }
+
+    /// Overwrites a cell at the given coordinate with the given value without reading or dropping the old value.
+    ///
+    /// write does not drop the contents of the cell. This is safe, but it could leak allocations or resources, so care should be taken not to overwrite an object that should be dropped.
+    ///
+    /// Additionally, it does not drop the contents of the cell. Semantically, `value` is moved into the cell at the given coordinate.
+    ///
+    /// This is appropriate for initializing uninitialized cells, or overwriting memory that has previously been [read] from.
+    pub unsafe fn write(&mut self, coord: (i32, i32), value: T) {
+        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS);
+        self.cells.write(index, value);
+    }
+
     pub fn get(&self, coord: (i32, i32)) -> Option<&T> {
-        let index = self.offset_index(coord.into())?;
+        let index = self.offset_index(coord)?;
         Some(&self.cells[index])
     }
 
     pub fn get_mut(&mut self, coord: (i32, i32)) -> Option<&mut T> {
-        let index = self.offset_index(coord.into())?;
+        let index = self.offset_index(coord)?;
         Some(&mut self.cells[index])
     }
 
     pub fn set(&mut self, coord: (i32, i32), value: T) -> Option<T> {
-        let index = self.offset_index(coord.into())?;
+        let index = self.offset_index(coord)?;
         let dest = &mut self.cells[index];
         Some(std::mem::replace(dest, value))
     }
@@ -769,131 +976,6 @@ impl<T: Clone> RollGrid2D<T> {
     pub fn get_clone(&self, coord: (i32, i32)) -> Option<T> {
         let index = self.offset_index(coord)?;
         Some(self.cells[index].clone())
-    }
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-/// A 2D bounding box. Essentially a rectangle.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Bounds2D {
-    /// Inclusive minimum bound.
-    pub min: (i32, i32),
-    /// Exclusive maximum bound.
-    pub max: (i32, i32),
-}
-
-impl Bounds2D {
-    /// Create a new [Bounds2D] from an inclusive min and exclusive max.
-    /// If you don't know the min/max bounds, you can use `from_bounds`
-    /// to create a [Bounds2D] from arbitrary coordinates.
-    pub fn new(min: (i32, i32), max: (i32, i32)) -> Self {
-        Self { min: min, max: max }
-    }
-
-    /// Create a new [Bounds2D] by resolving the inclusive min and exclusive max from two coordinates.
-    pub fn from_bounds(a: (i32, i32), b: (i32, i32)) -> Self {
-        let (ax, ay) = a;
-        let (bx, by) = b;
-        let min = (ax.min(bx), ay.min(by));
-        let max = (ax.max(bx), ay.max(by));
-        Self { min, max }
-    }
-
-    /// The size along the X axis.
-    pub fn width(&self) -> u32 {
-        (self.max.0 as i64 - self.min.0 as i64) as u32
-    }
-
-    /// The size along the Y axis.
-    pub fn height(&self) -> u32 {
-        (self.max.1 as i64 - self.min.1 as i64) as u32
-    }
-
-    /// `width` * `height`.
-    pub fn area(&self) -> i64 {
-        self.width() as i64 * self.height() as i64
-    }
-
-    /// The minimum bound on the X axis.
-    pub fn x_min(&self) -> i32 {
-        self.min.0
-    }
-
-    /// The minimum bound on the Y axis.
-    pub fn y_min(&self) -> i32 {
-        self.min.1
-    }
-
-    /// The maximum bound on the X axis (exclusive).
-    pub fn x_max(&self) -> i32 {
-        self.max.0
-    }
-
-    /// The maximum bound on the Y axis (exclusive).
-    pub fn y_max(&self) -> i32 {
-        self.max.1
-    }
-
-    // intersects would need to copy self and other anyway, so
-    // just accept copied values rather than references.
-    /// Tests for intersection with another [Bounds2D].
-    pub fn intersects(self, other: Bounds2D) -> bool {
-        let ((ax_min, ay_min), (ax_max, ay_max)) = (self.min, self.max);
-        let ((bx_min, by_min), (bx_max, by_max)) = (other.min, other.max);
-        ax_min < bx_max && bx_min < ax_max && ay_min < by_max && by_min < ay_max
-    }
-
-    /// Determine if a point is within the [Bounds2D].
-    pub fn contains(self, point: (i32, i32)) -> bool {
-        point.0 >= self.min.0
-            && point.1 >= self.min.0
-            && point.0 < self.max.0
-            && point.1 < self.max.1
-    }
-
-    /// Iterate the coordinates in the [Bounds2D].
-    pub fn iter(self) -> Bounds2DIter {
-        Bounds2DIter {
-            bounds: self,
-            current: self.min,
-        }
-    }
-}
-
-/// Iterator for all points within a [Bounds2D].
-pub struct Bounds2DIter {
-    bounds: Bounds2D,
-    current: (i32, i32),
-}
-
-impl Iterator for Bounds2DIter {
-    type Item = (i32, i32);
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        if self.current.1 == self.bounds.max.1 {
-            return (0, Some(0));
-        }
-        let (x, y) = (
-            self.current.0 - self.bounds.min.0,
-            self.current.1 - self.bounds.min.1,
-        );
-        let width = self.bounds.max.0 - self.bounds.min.0;
-        let height = self.bounds.max.1 - self.bounds.min.1;
-        let size = (width * height) as usize;
-        let index = (y * width + x) as usize;
-        (size - index, Some(size - index))
-    }
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.current.1 == self.bounds.max.1 {
-            return None;
-        }
-        let result = self.current;
-        self.current = (result.0 + 1, result.1);
-        if self.current.0 == self.bounds.max.0 {
-            self.current = (self.bounds.min.0, result.1 + 1);
-        }
-        Some(result)
     }
 }
 
@@ -1019,6 +1101,11 @@ mod tests {
                     for x in -1..6 {
                         let mut grid =
                             RollGrid2D::new(4, 4, (0, 0), |pos: (i32, i32)| DropCoord::from(pos));
+                        // reposition to half point to ensure that wrapping does not cause lookup invalidation.
+                        grid.reposition((2, 2), |old_pos, new_pos, cell| {
+                            assert_eq!(old_pos, cell.coord);
+                            cell.coord = new_pos;
+                        });
                         grid.resize_and_reposition(
                             width,
                             height,
