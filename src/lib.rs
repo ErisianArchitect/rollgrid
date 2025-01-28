@@ -48,15 +48,18 @@ where
     FL: FnMut(C) -> T,
     FU: FnMut(C, T),
     FR: FnMut(C, C, &mut T),
-{
+{   
+    /// Load the cell at `position`.
     fn load(&mut self, position: C) -> T {
         (self.load)(position)
     }
 
+    /// Unload cell that was at `position`.
     fn unload(&mut self, position: C, value: T) {
         (self.unload)(position, value);
     }
 
+    /// Reload cell that was at `old_position` and is being moved to `new_position`.
     fn reload(&mut self, old_position: C, new_position: C, value: &mut T) {
         (self.reload)(old_position, new_position, value);
     }
@@ -69,14 +72,17 @@ where
     FU: FnMut(C, T) -> Result<(), E>,
     FR: FnMut(C, C, &mut T) -> Result<(), E>,
 {
+    /// Load the cell at `position`.
     fn try_load(&mut self, position: C) -> Result<T, E> {
         (self.load)(position)
     }
 
+    /// Unload cell that was at `position`.
     fn try_unload(&mut self, position: C, old_value: T) -> Result<(), E> {
         (self.unload)(position, old_value)
     }
 
+    /// Reload cell that was at `old_position` and is being moved to `new_position`.
     fn try_reload(&mut self, old_position: C, new_position: C, value: &mut T) -> Result<(), E> {
         (self.reload)(old_position, new_position, value)
     }
