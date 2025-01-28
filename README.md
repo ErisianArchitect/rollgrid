@@ -134,3 +134,4 @@ You can modify this code to fit your purpose.
 - Removed `take`.
 - Changed the `Item` for `RollGridXDIterator` and `RollGridXDMutIterator`. Now returns `&T`/`&mut T` rather than `Option<&T>`/`Option<&mut T>`.
 - Replaced the `new` constructor for `RollGrid2D` and `RollGrid3D` with the `new_with_init` constructor. `new_with_init` is now called `new` and the original `new` no longer exists. Likewise changed the name of `try_new_with_init` to `try_new`.
+- In `RollGrid2D`, changed the inflate/deflate to use both width and height rather than inflating/deflating both simultaneously. This is to ensure parity with `RollGrid3D`.
