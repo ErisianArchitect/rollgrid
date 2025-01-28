@@ -936,6 +936,21 @@ impl<T> RollGrid2D<T> {
         Some((wy as usize * self.size.0) + wx as usize)
     }
 
+    /// Replace item at `coord` using `replace` function that takes as
+    /// input the old value and returns the new value. This will swap the
+    /// value in-place.
+    pub fn replace_with<F: FnOnce(T) -> T>(&mut self, coord: (i32, i32), replace: F) {
+        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS);
+        self.cells.replace_with(index, replace);
+    }
+
+    /// Replace item at `coord` using [std::mem::replace] and then returns
+    /// the old value.
+    pub fn replace(&mut self, coord: (i32, i32), value: T) -> T {
+        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS);
+        self.cells.replace(index, value)
+    }
+
     /// Reads the value from the cell without moving it. This leaves the memory in the cell unchanged.
     pub unsafe fn read(&self, coord: (i32, i32)) -> Option<T> {
         let index = self.offset_index(coord)?;
