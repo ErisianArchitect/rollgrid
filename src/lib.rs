@@ -1,10 +1,10 @@
 use std::marker::PhantomData;
 
+pub mod bounds2d;
+pub mod bounds3d;
 pub(crate) mod cells;
 pub mod rollgrid2d;
 pub mod rollgrid3d;
-pub mod bounds2d;
-pub mod bounds3d;
 
 mod constants {
     pub const SIZE_TOO_LARGE: &'static str = "Size is too large";
@@ -19,7 +19,7 @@ mod constants {
 }
 
 /// A trait for managing cells during resize operations on grids.
-/// 
+///
 /// You can easily create a [CellManager] to use as a [CellManage].
 pub trait CellManage<C, T> {
     fn load(&mut self, position: C) -> T;
@@ -67,7 +67,7 @@ where
     T: Sized,
     FL: FnMut(C) -> Result<T, E>,
     FU: FnMut(C, T) -> Result<(), E>,
-    FR: FnMut(C, C, &mut T) -> Result<(), E>
+    FR: FnMut(C, C, &mut T) -> Result<(), E>,
 {
     fn try_load(&mut self, position: C) -> Result<T, E> {
         (self.load)(position)

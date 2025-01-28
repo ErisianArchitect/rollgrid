@@ -1,4 +1,4 @@
-use crate::{*, cells::FixedArray, constants::*, bounds3d::*};
+use crate::{bounds3d::*, cells::FixedArray, constants::*, *};
 
 /// A 3D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -30,10 +30,10 @@ impl<T: Default> RollGrid3D<T> {
 }
 
 impl<T> RollGrid3D<T> {
-
-    /// Create a new grid with an init function.
-    /// 
-    /// The init function should take as input the coordinate that is being initialized, and should return the desired value for the cell.
+    /// Create a new [RollGrid3D] using an initialize function to initialize cells.
+    ///
+    /// The init function should take as input the coordinate that is being
+    /// initialized, and should return the desired value for the cell.
     pub fn new<F: FnMut((i32, i32, i32)) -> T>(
         width: usize,
         height: usize,
@@ -50,8 +50,9 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to create a new grid with a fallible init function.
-    /// 
-    /// The init function should take as input the coordinate that is being initialized, and should return the desired value for the cell.
+    ///
+    /// The init function should take as input the coordinate that is being
+    /// initialized, and should return the desired value for the cell.
     pub fn try_new<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
         width: usize,
         height: usize,
@@ -70,7 +71,7 @@ impl<T> RollGrid3D<T> {
     /// Inflate the size by `inflate`, keeping the bounds centered.
     /// If the size is `(2, 2, 2)` with an offset of `(1, 1, 1)`, and you want to inflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(4, 4, 4)` and an offset of `(0, 0, 0)`.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.inflate_size((1, 1, 1), cell_manager(
@@ -133,7 +134,7 @@ impl<T> RollGrid3D<T> {
     /// Try to inflate the size by `inflate` using a fallible function, keeping the bounds centered.
     /// If the size is `(2, 2, 2)` with an offset of `(1, 1, 1)`, and you want to inflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(4, 4, 4)` and an offset of `(0, 0, 0)`.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_inflate_size((1, 1, 1), try_cell_manager(
@@ -202,7 +203,7 @@ impl<T> RollGrid3D<T> {
     /// Deflate the size by `deflate`, keeping the bounds centered.
     /// If the size is `(4, 4, 4)` with an offset of `(0, 0, 0)`, and you want to deflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(2, 2, 2)` and an offset of `(1, 1, 1)`.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.deflate_size((1, 1, 1), cell_manager(
@@ -272,7 +273,7 @@ impl<T> RollGrid3D<T> {
     /// Try to deflate the size by `deflate` using a fallible function, keeping the bounds centered.
     /// If the size is `(4, 4, 4)` with an offset of `(0, 0, 0)`, and you want to deflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(2, 2, 2)` and an offset of `(1, 1, 1)`.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_deflate_size((1, 1, 1), try_cell_manager(
@@ -346,7 +347,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Resize the grid, keeping the offset in the same place.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.resize(1, 1, 1, cell_manager(
@@ -377,7 +378,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to resize the grid with a fallible function, keeping the offset in the same place.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_resize(1, 1, 1, cell_manager(
@@ -569,8 +570,7 @@ impl<T> RollGrid3D<T> {
                     manage.unload(pos, self.cells.read(index));
                 }
             });
-            let new_grid =
-                FixedArray::new_3d(size, new_position, |pos| manage.load(pos));
+            let new_grid = FixedArray::new_3d(size, new_position, |pos| manage.load(pos));
             self.size = size;
             self.grid_offset = new_position;
             unsafe {
@@ -656,9 +656,7 @@ impl<T> RollGrid3D<T> {
                             .iter()
                             .try_for_each(|pos| {
                                 let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
-                                unsafe {
-                                    manage.try_unload(pos, self.cells.read(index))?
-                                }
+                                unsafe { manage.try_unload(pos, self.cells.read(index))? }
                                 Ok(())
                             })?;
                     }
@@ -744,8 +742,7 @@ impl<T> RollGrid3D<T> {
                 Ok(())
             })?;
             let size = (width, height, depth);
-            let new_grid =
-                FixedArray::try_new_3d(size, new_position, |pos| manage.try_load(pos))?;
+            let new_grid = FixedArray::try_new_3d(size, new_position, |pos| manage.try_load(pos))?;
             self.size = size;
             self.grid_offset = new_position;
             unsafe {
@@ -758,7 +755,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Move the grid by relative offset using a reload function.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.translate((2, 3, 4), |old_position, new_position, cell_mut| {
@@ -779,7 +776,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to move the grid by relative offset using a fallible reload function.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_translate((2, 3, 4), |old_position, new_position, cell_mut| {
@@ -801,7 +798,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Move the grid to a new position using a reload function.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.reposition((2, 3, 4), |old_position, new_position, cell_mut| {
@@ -1275,7 +1272,11 @@ impl<T> RollGrid3D<T> {
                         let prior_y = old_y + yi as i32;
                         let prior_z = old_z + zi as i32;
                         let index = self.offset_index((x, y, z)).expect(OUT_OF_BOUNDS);
-                        reload((prior_x, prior_y, prior_z), (x, y, z), &mut self.cells[index]);
+                        reload(
+                            (prior_x, prior_y, prior_z),
+                            (x, y, z),
+                            &mut self.cells[index],
+                        );
                     }
                 }
             }
@@ -1283,7 +1284,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Try to move the grid to a new position using a fallible reload function.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_reposition((2, 3, 4), |old_position, new_position, cell_mut| {
@@ -1761,7 +1762,11 @@ impl<T> RollGrid3D<T> {
                         let prior_y = old_y + yi as i32;
                         let prior_z = old_z + zi as i32;
                         let index = self.offset_index((x, y, z)).expect(OUT_OF_BOUNDS);
-                        reload((prior_x, prior_y, prior_z), (x, y, z), &mut self.cells[index])?;
+                        reload(
+                            (prior_x, prior_y, prior_z),
+                            (x, y, z),
+                            &mut self.cells[index],
+                        )?;
                     }
                 }
             }
@@ -1997,8 +2002,7 @@ mod tests {
 
     #[test]
     fn iter_test() {
-        let mut grid =
-            RollGrid3D::new(2, 2, 2, (0, 0, 0), |pos: (i32, i32, i32)| pos);
+        let mut grid = RollGrid3D::new(2, 2, 2, (0, 0, 0), |pos: (i32, i32, i32)| pos);
         grid.iter().for_each(|(pos, cell)| {
             assert_eq!(pos, *cell);
         });
@@ -2026,11 +2030,7 @@ mod tests {
                 }
             }
         }
-        fn reload(
-            old: (i32, i32, i32),
-            new: (i32, i32, i32),
-            cell: &mut (i32, i32, i32),
-        ) {
+        fn reload(old: (i32, i32, i32), new: (i32, i32, i32), cell: &mut (i32, i32, i32)) {
             assert_eq!(old, *cell);
             *cell = new;
         }
@@ -2082,13 +2082,10 @@ mod tests {
                     for y in -1..6 {
                         for z in -1..6 {
                             for x in -1..6 {
-                                let mut grid = RollGrid3D::new(
-                                    4,
-                                    4,
-                                    4,
-                                    (0, 0, 0),
-                                    |pos: (i32, i32, i32)| DropCoord::from(pos),
-                                );
+                                let mut grid =
+                                    RollGrid3D::new(4, 4, 4, (0, 0, 0), |pos: (i32, i32, i32)| {
+                                        DropCoord::from(pos)
+                                    });
                                 // reposition to half point to ensure wrapping doesn't cause lookup invalidation.
                                 grid.reposition((2, 2, 2), |old_pos, new_pos, cell| {
                                     assert_eq!(old_pos, cell.coord);
@@ -2100,22 +2097,22 @@ mod tests {
                                     depth,
                                     (x, y, z),
                                     cell_manager(
-                                    // Load
-                                    |pos| {
-                                        DropCoord::from(pos)
-                                    },
-                                    // Unload
-                                    |pos, mut old_value| {
-                                        assert_eq!(pos, old_value.coord);
-                                        old_value.unloaded = true;
-                                    },
-                                    // Reload
-                                    |old_pos, new_pos, cell| {
-                                        cell.unloaded = true;
-                                        assert_eq!(old_pos, cell.coord);
-                                        let mut old = std::mem::replace(cell, DropCoord::from(new_pos));
-                                        old.unloaded = true;
-                                    }),
+                                        // Load
+                                        |pos| DropCoord::from(pos),
+                                        // Unload
+                                        |pos, mut old_value| {
+                                            assert_eq!(pos, old_value.coord);
+                                            old_value.unloaded = true;
+                                        },
+                                        // Reload
+                                        |old_pos, new_pos, cell| {
+                                            cell.unloaded = true;
+                                            assert_eq!(old_pos, cell.coord);
+                                            let mut old =
+                                                std::mem::replace(cell, DropCoord::from(new_pos));
+                                            old.unloaded = true;
+                                        },
+                                    ),
                                 );
                                 grid.iter_mut().for_each(|(_, cell)| {
                                     cell.unloaded = true;

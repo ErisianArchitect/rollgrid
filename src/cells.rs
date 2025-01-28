@@ -1,8 +1,4 @@
-use crate::{
-    constants::*,
-    bounds2d::Bounds2D,
-    bounds3d::Bounds3D,
-};
+use crate::{bounds2d::Bounds2D, bounds3d::Bounds3D, constants::*};
 use std::{mem::ManuallyDrop, ptr::NonNull};
 
 /// An array of type `T`.
@@ -36,10 +32,7 @@ impl<T> FixedArray<T> {
             let layout = Self::make_layout(area).expect("Failed to create layout.");
             (
                 NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
-                Bounds2D::new(
-                    offset,
-                    (offset.0 + width as i32, offset.1 + height as i32),
-                ),
+                Bounds2D::new(offset, (offset.0 + width as i32, offset.1 + height as i32)),
                 area,
             )
         }

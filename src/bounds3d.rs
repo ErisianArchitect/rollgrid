@@ -11,10 +11,7 @@ pub struct Bounds3D {
 impl Bounds3D {
     /// Create a new [Bounds3D] with the specified minimum and maximum bounds.
     pub fn new(min: (i32, i32, i32), max: (i32, i32, i32)) -> Self {
-        Self {
-            min,
-            max,
-        }
+        Self { min, max }
     }
 
     /// Create a new [Bounds3D] from two unordered points.

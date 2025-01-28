@@ -1,4 +1,4 @@
-use crate::{cells::FixedArray, bounds2d::*, constants::*, *,};
+use crate::{bounds2d::*, cells::FixedArray, constants::*, *};
 
 /// A 2D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -26,7 +26,7 @@ impl<T: Default> RollGrid2D<T> {
 
 impl<T> RollGrid2D<T> {
     /// Create a new [RollGrid2D] using an initialize function to initialize cells.
-    /// 
+    ///
     /// The init function should take as input the coordinate that is being
     /// initialized, and should return the desired value for the cell.
     pub fn new<F: FnMut((i32, i32)) -> T>(
@@ -44,6 +44,9 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to create a new [RollGrid2D] using a fallible initialize function to initialize elements.
+    ///
+    /// The init function should take as input the coordinate that is being
+    /// initialized, and should return the desired value for the cell.
     pub fn try_new<E, F: FnMut((i32, i32)) -> Result<T, E>>(
         width: usize,
         height: usize,
@@ -59,7 +62,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Inflate the size by `inflate`.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.inflate_size((1, 1), cell_manager(
@@ -110,7 +113,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to inflate the size by `inflate` using a fallible function.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_inflate_size((1, 1), try_cell_manager(
@@ -163,7 +166,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Deflate the size by `defalte`.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.deflate_size((1, 1), cell_manager(
@@ -198,7 +201,7 @@ impl<T> RollGrid2D<T> {
         }
         let position = (
             self.grid_offset.0 + deflate.0 as i32,
-            self.grid_offset.1 + deflate.1 as i32
+            self.grid_offset.1 + deflate.1 as i32,
         );
         let width = self
             .size
@@ -214,7 +217,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Try to deflate the size by `deflate` using a fallible function.
-    /// 
+    ///
     /// # Example
     /// ```rust, no_run
     /// grid.try_deflate_size((1, 1), try_cell_manager(
@@ -251,7 +254,7 @@ impl<T> RollGrid2D<T> {
         }
         let position = (
             self.grid_offset.0 + deflate.0 as i32,
-            self.grid_offset.1 + deflate.1 as i32
+            self.grid_offset.1 + deflate.1 as i32,
         );
         let width = self
             .size
@@ -565,8 +568,7 @@ impl<T> RollGrid2D<T> {
                 Ok(())
             })?;
             let size = (width, height);
-            let new_grid =
-                FixedArray::try_new_2d(size, new_position, |pos| manage.try_load(pos))?;
+            let new_grid = FixedArray::try_new_2d(size, new_position, |pos| manage.try_load(pos))?;
             self.size = size;
             self.grid_offset = new_position;
             unsafe {
