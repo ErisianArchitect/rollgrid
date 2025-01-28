@@ -32,17 +32,17 @@ Now, that's not the benefit of this library. When repositioning the grid, it doe
 Here are a couple examples in practice
 
 ```rust
-let mut grid = RollGrid2D::new_with_init(4, 4, (0, 0), |pos: (i32, i32)| {
-    Some(pos)
+let mut grid = RollGrid2D::new(4, 4, (0, 0), |pos: (i32, i32)| {
+    pos
 });
 println!("Initial grid:");
 print_grid(&grid);
 let mut iterations = 0;
 let mut changes = vec![];
-grid.reposition((1, 2), |old, new, old_value| {
+grid.reposition((1, 2), |old, new, cell_mut| {
     iterations += 1;
     changes.push((old, new));
-    Some(new)
+    *cell_mut = new;
 });
 println!("Changes:");
 for (old, new) in changes {
@@ -88,7 +88,6 @@ One more example, a little more advanced:
 
 ```rust
 chunks.reposition((chunk_x, chunk_z), |old_pos, (x, z), chunk| {
-    let mut chunk = chunk.expect("Chunk was None");
     self.unload_chunk(&mut chunk);
     chunk.block_offset = Coord::new(x * 16, WORLD_BOTTOM, z * 16);
     if let Some(region) = regions.get_mut((x >> 5, z >> 5)) {
@@ -106,7 +105,6 @@ chunks.reposition((chunk_x, chunk_z), |old_pos, (x, z), chunk| {
     }
     chunk.block_offset.x = x * 16;
     chunk.block_offset.z = z * 16;
-    Some(chunk)
 });
 ```
 
