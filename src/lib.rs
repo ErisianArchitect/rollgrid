@@ -5,6 +5,9 @@ pub mod bounds3d;
 pub(crate) mod cells;
 pub mod rollgrid2d;
 pub mod rollgrid3d;
+pub mod grid2d;
+pub mod grid3d;
+pub mod math;
 
 mod constants {
     pub const SIZE_TOO_LARGE: &'static str = "Size is too large";
