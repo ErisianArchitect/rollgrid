@@ -15,16 +15,16 @@ mod error_messages {
             pub const $name: &'static str = $msg;
         };
     }
-    pub const NOT_ALLOCATED: &'static str = "Not allocated.";
-    pub const SIZE_TOO_LARGE: &'static str = "Size is too large";
-    pub const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bound";
-    pub const OUT_OF_BOUNDS: &'static str = "Out of bounds";
-    pub const AREA_IS_ZERO: &'static str = "Width/Height cannot be 0";
-    pub const VOLUME_IS_ZERO: &'static str = "Width/Height/Depth cannot be 0";
-    pub const INFLATE_PAST_I32_MAX: &'static str = "Cannot inflate more than i32::MAX";
-    pub const INFLATE_OVERFLOW: &'static str = "Inflate operation results in integer overflow";
-    pub const DEFLATE_PAST_I32_MAX: &'static str = "Cannot deflate more than i32::MAX";
-    pub const DEFLATE_OVERFLOW: &'static str = "Deflate operation results in integer overflow";
+    msg!(NOT_ALLOCATED = "Not allocated.");
+    msg!(SIZE_TOO_LARGE = "Size is too large");
+    msg!(OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound");
+    msg!(OUT_OF_BOUNDS = "Out of bounds");
+    msg!(AREA_IS_ZERO = "Width/Height cannot be 0");
+    msg!(VOLUME_IS_ZERO = "Width/Height/Depth cannot be 0");
+    msg!(INFLATE_PAST_I32_MAX = "Cannot inflate more than i32::MAX");
+    msg!(INFLATE_OVERFLOW = "Inflate operation results in integer overflow");
+    msg!(DEFLATE_PAST_I32_MAX = "Cannot deflate more than i32::MAX");
+    msg!(DEFLATE_OVERFLOW = "Deflate operation results in integer overflow");
 }
 
 /// A trait for managing cells during resize operations on grids.
