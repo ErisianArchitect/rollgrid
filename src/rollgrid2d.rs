@@ -7,14 +7,14 @@ use crate::{bounds2d::*, cells::FixedArray, error_messages::*, *};
 /// in the same position in the underlying array.
 pub struct RollGrid2D<T: Sized> {
     cells: FixedArray<T>,
-    size: (usize, usize),
+    size: (u32, u32),
     wrap_offset: (i32, i32),
     grid_offset: (i32, i32),
 }
 
 impl<T: Default> RollGrid2D<T> {
     /// Create a new [RollGrid2D] with all the cells set to the default for `T`.
-    pub fn new_default(width: usize, height: usize, grid_offset: (i32, i32)) -> Self {
+    pub fn new_default(width: u32, height: u32, grid_offset: (i32, i32)) -> Self {
         Self {
             cells: FixedArray::new_2d((width, height), grid_offset, |_| T::default()),
             size: (width, height),
@@ -30,8 +30,8 @@ impl<T> RollGrid2D<T> {
     /// The init function should take as input the coordinate that is being
     /// initialized, and should return the desired value for the cell.
     pub fn new<F: FnMut((i32, i32)) -> T>(
-        width: usize,
-        height: usize,
+        width: u32,
+        height: u32,
         grid_offset: (i32, i32),
         init: F,
     ) -> Self {
@@ -48,8 +48,8 @@ impl<T> RollGrid2D<T> {
     /// The init function should take as input the coordinate that is being
     /// initialized, and should return the desired value for the cell.
     pub fn try_new<E, F: FnMut((i32, i32)) -> Result<T, E>>(
-        width: usize,
-        height: usize,
+        width: u32,
+        height: u32,
         grid_offset: (i32, i32),
         init: F,
     ) -> Result<Self, E> {
@@ -88,15 +88,15 @@ impl<T> RollGrid2D<T> {
     /// ))
     /// ```
     /// See [CellManage].
-    pub fn inflate_size<M>(&mut self, inflate: (usize, usize), manage: M)
+    pub fn inflate_size<M>(&mut self, inflate: (u32, u32), manage: M)
     where
         M: CellManage<(i32, i32), T>,
     {
-        if inflate.0 > i32::MAX as usize {
-            panic!("{INFLATE_PAST_I32_MAX}");
+        if inflate.0 > i32::MAX as u32 {
+            panic!("{}", INFLATE_PAST_I32_MAX);
         }
-        if inflate.1 > i32::MAX as usize {
-            panic!("{INFLATE_PAST_I32_MAX}");
+        if inflate.1 > i32::MAX as u32 {
+            panic!("{}", INFLATE_PAST_I32_MAX);
         }
         let position = (
             self.grid_offset.0 - inflate.0 as i32,
@@ -144,15 +144,15 @@ impl<T> RollGrid2D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_inflate_size<E, M>(&mut self, inflate: (usize, usize), manage: M) -> Result<(), E>
+    pub fn try_inflate_size<E, M>(&mut self, inflate: (u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
-        if inflate.0 > i32::MAX as usize {
-            panic!("{INFLATE_PAST_I32_MAX}");
+        if inflate.0 > i32::MAX as u32 {
+            panic!("{}", INFLATE_PAST_I32_MAX);
         }
-        if inflate.1 > i32::MAX as usize {
-            panic!("{INFLATE_PAST_I32_MAX}");
+        if inflate.1 > i32::MAX as u32 {
+            panic!("{}", INFLATE_PAST_I32_MAX);
         }
         let position = (
             self.grid_offset.0 - inflate.0 as i32,
@@ -198,14 +198,14 @@ impl<T> RollGrid2D<T> {
     /// ))
     /// ```
     /// See [CellManage].
-    pub fn deflate_size<M>(&mut self, deflate: (usize, usize), manage: M)
+    pub fn deflate_size<M>(&mut self, deflate: (u32, u32), manage: M)
     where
         M: CellManage<(i32, i32), T>,
     {
-        if deflate.0 > i32::MAX as usize {
+        if deflate.0 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
-        if deflate.1 > i32::MAX as usize {
+        if deflate.1 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
         let position = (
@@ -254,14 +254,14 @@ impl<T> RollGrid2D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_deflate_size<E, M>(&mut self, deflate: (usize, usize), manage: M) -> Result<(), E>
+    pub fn try_deflate_size<E, M>(&mut self, deflate: (u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
-        if deflate.0 > i32::MAX as usize {
+        if deflate.0 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
-        if deflate.1 > i32::MAX as usize {
+        if deflate.1 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
         let position = (
@@ -305,7 +305,7 @@ impl<T> RollGrid2D<T> {
     /// ));
     /// ```
     /// See [CellManage].
-    pub fn resize<M>(&mut self, new_width: usize, new_height: usize, manage: M)
+    pub fn resize<M>(&mut self, new_width: u32, new_height: u32, manage: M)
     where
         M: CellManage<(i32, i32), T>,
     {
@@ -340,8 +340,8 @@ impl<T> RollGrid2D<T> {
     /// See [TryCellManage].
     pub fn try_resize<E, M>(
         &mut self,
-        new_width: usize,
-        new_height: usize,
+        new_width: u32,
+        new_height: u32,
         manage: M,
     ) -> Result<(), E>
     where
@@ -376,8 +376,8 @@ impl<T> RollGrid2D<T> {
     /// See [CellManage].
     pub fn resize_and_reposition<M>(
         &mut self,
-        width: usize,
-        height: usize,
+        width: u32,
+        height: u32,
         new_position: (i32, i32),
         manage: M,
     ) where
@@ -396,7 +396,7 @@ impl<T> RollGrid2D<T> {
         if area == 0 {
             panic!("{AREA_IS_ZERO}");
         }
-        if area > i32::MAX as usize {
+        if area > i32::MAX as u32 {
             panic!("{SIZE_TOO_LARGE}");
         }
         let (new_x, new_y) = new_position;
@@ -507,8 +507,8 @@ impl<T> RollGrid2D<T> {
     /// See [TryCellManage].
     pub fn try_resize_and_reposition<E, M>(
         &mut self,
-        width: usize,
-        height: usize,
+        width: u32,
+        height: u32,
         new_position: (i32, i32),
         manage: M,
     ) -> Result<(), E>
@@ -528,7 +528,7 @@ impl<T> RollGrid2D<T> {
         if area == 0 {
             panic!("{AREA_IS_ZERO}");
         }
-        if area > i32::MAX as usize {
+        if area > i32::MAX as u32 {
             panic!("{SIZE_TOO_LARGE}");
         }
         let (new_x, new_y) = new_position;
@@ -933,7 +933,7 @@ impl<T> RollGrid2D<T> {
         let (wrap_x, wrap_y) = (self.wrap_offset.0 as i32, self.wrap_offset.1 as i32);
         let wx = (nx + wrap_x).rem_euclid(width);
         let wy = (ny + wrap_y).rem_euclid(height);
-        Some((wy as usize * self.size.0) + wx as usize)
+        Some((wy as usize * self.size.0 as usize) + wx as usize)
     }
 
     /// Replace item at `coord` using `replace` function that takes as
@@ -989,17 +989,17 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Get the dimensions of the grid.
-    pub fn size(&self) -> (usize, usize) {
+    pub fn size(&self) -> (u32, u32) {
         self.size
     }
 
     /// The size along the X axis.
-    pub fn width(&self) -> usize {
+    pub fn width(&self) -> u32 {
         self.size.0
     }
 
     /// The size along the Y axis.
-    pub fn height(&self) -> usize {
+    pub fn height(&self) -> u32 {
         self.size.1
     }
 
@@ -1037,7 +1037,7 @@ impl<T> RollGrid2D<T> {
 
     /// This is equivalent to the area (width * height).
     pub fn len(&self) -> usize {
-        self.size.0 * self.size.1
+        self.size.0 as usize * self.size.1 as usize
     }
 
     /// Get an iterator over the cells in the grid.
