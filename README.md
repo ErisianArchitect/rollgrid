@@ -113,6 +113,11 @@ You can modify this code to fit your purpose.
 
 # Changelog
 
+### 3.0.0
+
+- Added `Grid2D` and `Grid3D`.
+- Added `math` module, for some useful math functionality that this crate uses.
+
 ### 2.0.0
 
 - Changed the internal representation of the cells in `RollGrid2D` and `RollGrid3D` from `Box<[Option<T>]>` to `rollgrid::cells::FixedArray<T>`. `FixedArray` is an internal type that was created to fulfill the needs of this crate.
