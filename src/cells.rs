@@ -16,10 +16,12 @@ impl<T> FixedArray<T> {
     #[inline(always)]
     fn prealloc_2d(size: (u32, u32), offset: (i32, i32)) -> (NonNull<T>, Bounds2D, usize) {
         let (width, height) = (size.0 as usize, size.1 as usize);
-        if (offset.0 as i64 + width as i64) > i32::MAX as i64 {
+        let x_max = offset.0 as i64 + width as i64;
+        if x_max > i32::MAX as i64 {
             panic!("{}", X_MAX_EXCEEDS_MAXIMUM);
         }
-        if (offset.1 as i64 + height as i64) > i32::MAX as i64 {
+        let y_max = offset.1 as i64 + height as i64;
+        if y_max > i32::MAX as i64 {
             panic!("{}", Y_MAX_EXCEEDS_MAXIMUM);
         }
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
@@ -30,7 +32,7 @@ impl<T> FixedArray<T> {
             let layout = Self::make_layout(area).expect("Failed to create layout.");
             (
                 NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
-                Bounds2D::new(offset, (offset.0 + width as i32, offset.1 + height as i32)),
+                Bounds2D::new(offset, (x_max as i32, y_max as i32)),
                 area,
             )
         }
