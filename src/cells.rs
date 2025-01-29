@@ -1,8 +1,6 @@
 use crate::{bounds2d::Bounds2D, bounds3d::Bounds3D, constants::*};
 use std::{mem::ManuallyDrop, ptr::NonNull};
 
-const NOT_ALLOCATED: &'static str = "Not allocated.";
-
 /// An array of type `T`.
 /// This is an abstraction over the memory meant to be used in rolling grid
 /// implementations. This struct allows for taking values from the buffer without
