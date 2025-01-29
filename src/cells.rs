@@ -32,7 +32,13 @@ impl<T> FixedArray<T> {
             let layout = Self::make_layout(area).expect("Failed to create layout.");
             (
                 NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
-                Bounds2D::new(offset, (x_max as i32, y_max as i32)),
+                Bounds2D::new(
+                    offset,
+                    (
+                        x_max as i32,
+                        y_max as i32,
+                    )
+                ),
                 area,
             )
         }
