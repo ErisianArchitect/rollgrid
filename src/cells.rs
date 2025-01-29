@@ -102,10 +102,12 @@ impl<T> FixedArray<T> {
         mut init: F,
     ) -> Self {
         let (ptr, bounds, capacity) = Self::prealloc_2d(size, offset);
-        bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
-            let item = ptr.add(i);
-            std::ptr::write(item.as_ptr(), init(pos));
-        });
+        if std::mem::size_of::<T>() != 0 {
+            bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
+                let item = ptr.add(i);
+                std::ptr::write(item.as_ptr(), init(pos));
+            });
+        }
         Self {
             ptr: Some(ptr),
             capacity,
@@ -127,13 +129,15 @@ impl<T> FixedArray<T> {
         mut init: F,
     ) -> Result<Self, E> {
         let (ptr, bounds, capacity) = Self::prealloc_2d(size, offset);
-        bounds.iter().enumerate().try_for_each(move |(i, pos)| {
-            unsafe {
-                let item = ptr.add(i);
-                std::ptr::write(item.as_ptr(), init(pos)?);
-            }
-            Ok(())
-        })?;
+        if std::mem::size_of::<T>() != 0 {
+            bounds.iter().enumerate().try_for_each(move |(i, pos)| {
+                unsafe {
+                    let item = ptr.add(i);
+                    std::ptr::write(item.as_ptr(), init(pos)?);
+                }
+                Ok(())
+            })?;
+        }
         Ok(Self {
             ptr: Some(ptr),
             capacity,
@@ -159,10 +163,12 @@ impl<T> FixedArray<T> {
         mut init: F,
     ) -> Self {
         let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
-        bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
-            let item = ptr.add(i);
-            std::ptr::write(item.as_ptr(), init(pos));
-        });
+        if std::mem::size_of::<T>() != 0 {
+            bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
+                let item = ptr.add(i);
+                std::ptr::write(item.as_ptr(), init(pos));
+            });
+        }
         Self {
             ptr: Some(ptr),
             capacity,
@@ -188,13 +194,15 @@ impl<T> FixedArray<T> {
         mut init: F,
     ) -> Result<Self, E> {
         let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
-        bounds.iter().enumerate().try_for_each(move |(i, pos)| {
-            unsafe {
-                let item = ptr.add(i);
-                std::ptr::write(item.as_ptr(), init(pos)?);
-            }
-            Ok(())
-        })?;
+        if std::mem::size_of::<T>() != 0 {
+            bounds.iter().enumerate().try_for_each(move |(i, pos)| {
+                unsafe {
+                    let item = ptr.add(i);
+                    std::ptr::write(item.as_ptr(), init(pos)?);
+                }
+                Ok(())
+            })?;
+        }
         Ok(Self {
             ptr: Some(ptr),
             capacity,
