@@ -9,7 +9,7 @@ pub mod grid2d;
 pub mod grid3d;
 pub mod math;
 
-mod constants {
+mod error_messages {
     pub const NOT_ALLOCATED: &'static str = "Not allocated.";
     pub const SIZE_TOO_LARGE: &'static str = "Size is too large";
     pub const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bound";
