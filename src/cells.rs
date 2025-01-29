@@ -14,19 +14,17 @@ pub struct FixedArray<T> {
 
 impl<T> FixedArray<T> {
     #[inline(always)]
-    fn prealloc_2d(size: (usize, usize), offset: (i32, i32)) -> (NonNull<T>, Bounds2D, usize) {
-        let (width, height) = size;
+    fn prealloc_2d(size: (u32, u32), offset: (i32, i32)) -> (NonNull<T>, Bounds2D, usize) {
+        let (width, height) = (size.0 as usize, size.1 as usize);
+        if (offset.0 as i64 + width as i64) > i32::MAX as i64 {
+            panic!("{}", X_MAX_EXCEEDS_MAXIMUM);
+        }
+        if (offset.1 as i64 + height as i64) > i32::MAX as i64 {
+            panic!("{}", Y_MAX_EXCEEDS_MAXIMUM);
+        }
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
         if area == 0 {
             panic!("{}", AREA_IS_ZERO);
-        }
-        if area > i32::MAX as usize {
-            panic!("{}", SIZE_TOO_LARGE);
-        }
-        if offset.0.checked_add(width as i32).is_none()
-            || offset.1.checked_add(height as i32).is_none()
-        {
-            panic!("{}", OFFSET_TOO_CLOSE_TO_MAX);
         }
         unsafe {
             let layout = Self::make_layout(area).expect("Failed to create layout.");
@@ -40,26 +38,29 @@ impl<T> FixedArray<T> {
 
     #[inline(always)]
     fn prealloc_3d(
-        size: (usize, usize, usize),
+        size: (u32, u32, u32),
         offset: (i32, i32, i32),
     ) -> (NonNull<T>, Bounds3D, usize) {
-        let (width, height, depth) = size;
+        let (width, height, depth) = (size.0 as usize, size.1 as usize, size.2 as usize);
+        let x_max = offset.0 as i64 + width as i64;
+        if x_max > i32::MAX as i64 {
+            panic!("{}", X_MAX_EXCEEDS_MAXIMUM);
+        }
+        let y_max = offset.1 as i64 + height as i64;
+        if y_max > i32::MAX as i64 {
+            panic!("{}", Y_MAX_EXCEEDS_MAXIMUM);
+        }
+        let z_max = offset.2 as i64 + depth as i64;
+        if z_max > i32::MAX as i64 {
+            panic!("{}", Z_MAX_EXCEEDS_MAXIMUM);
+        }
         let volume = width
             .checked_mul(height)
             .expect(SIZE_TOO_LARGE)
             .checked_mul(depth)
             .expect(SIZE_TOO_LARGE);
         if volume == 0 {
-            panic!("{VOLUME_IS_ZERO}");
-        }
-        if volume > i32::MAX as usize {
-            panic!("{SIZE_TOO_LARGE}");
-        }
-        if offset.0.checked_add(width as i32).is_none()
-            || offset.1.checked_add(height as i32).is_none()
-            || offset.2.checked_add(depth as i32).is_none()
-        {
-            panic!("{OFFSET_TOO_CLOSE_TO_MAX}");
+            panic!("{}", VOLUME_IS_ZERO);
         }
         unsafe {
             let layout = Self::make_layout(volume).expect("Failed to create layout.");
@@ -68,9 +69,9 @@ impl<T> FixedArray<T> {
                 Bounds3D::new(
                     offset,
                     (
-                        offset.0 + width as i32,
-                        offset.1 + height as i32,
-                        offset.2 + depth as i32,
+                        x_max as i32,
+                        y_max as i32,
+                        z_max as i32,
                     ),
                 ),
                 volume,
@@ -88,7 +89,7 @@ impl<T> FixedArray<T> {
     /// * `(0, 1)`
     /// * `(1, 1)`
     pub fn new_2d<F: FnMut((i32, i32)) -> T>(
-        size: (usize, usize),
+        size: (u32, u32),
         offset: (i32, i32),
         mut init: F,
     ) -> Self {
@@ -113,7 +114,7 @@ impl<T> FixedArray<T> {
     /// * `(0, 1)`
     /// * `(1, 1)`
     pub fn try_new_2d<E, F: FnMut((i32, i32)) -> Result<T, E>>(
-        size: (usize, usize),
+        size: (u32, u32),
         offset: (i32, i32),
         mut init: F,
     ) -> Result<Self, E> {
@@ -145,7 +146,7 @@ impl<T> FixedArray<T> {
     /// * `(0, 1, 1)`
     /// * `(1, 1, 1)`
     pub fn new_3d<F: FnMut((i32, i32, i32)) -> T>(
-        size: (usize, usize, usize),
+        size: (u32, u32, u32),
         offset: (i32, i32, i32),
         mut init: F,
     ) -> Self {
@@ -174,7 +175,7 @@ impl<T> FixedArray<T> {
     /// * `(0, 1, 1)`
     /// * `(1, 1, 1)`
     pub fn try_new_3d<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
-        size: (usize, usize, usize),
+        size: (u32, u32, u32),
         offset: (i32, i32, i32),
         mut init: F,
     ) -> Result<Self, E> {
