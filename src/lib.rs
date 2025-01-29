@@ -10,6 +10,11 @@ pub mod grid3d;
 pub mod math;
 
 mod error_messages {
+    macro_rules! msg {
+        ($name:ident = $msg:literal) => {
+            pub const $name: &'static str = $msg;
+        };
+    }
     pub const NOT_ALLOCATED: &'static str = "Not allocated.";
     pub const SIZE_TOO_LARGE: &'static str = "Size is too large";
     pub const OFFSET_TOO_CLOSE_TO_MAX: &'static str = "Offset is too close to maximum bound";
