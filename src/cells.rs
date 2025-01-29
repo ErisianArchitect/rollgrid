@@ -93,7 +93,7 @@ impl<T> FixedArray<T> {
         mut init: F,
     ) -> Self {
         let (ptr, bounds, capacity) = Self::prealloc_2d(size, offset);
-        bounds.iter().enumerate().for_each(|(i, pos)| unsafe {
+        bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
             let item = ptr.add(i);
             std::ptr::write(item.as_ptr(), init(pos));
         });
@@ -118,7 +118,7 @@ impl<T> FixedArray<T> {
         mut init: F,
     ) -> Result<Self, E> {
         let (ptr, bounds, capacity) = Self::prealloc_2d(size, offset);
-        bounds.iter().enumerate().try_for_each(|(i, pos)| {
+        bounds.iter().enumerate().try_for_each(move |(i, pos)| {
             unsafe {
                 let item = ptr.add(i);
                 std::ptr::write(item.as_ptr(), init(pos)?);
@@ -150,7 +150,7 @@ impl<T> FixedArray<T> {
         mut init: F,
     ) -> Self {
         let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
-        bounds.iter().enumerate().for_each(|(i, pos)| unsafe {
+        bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
             let item = ptr.add(i);
             std::ptr::write(item.as_ptr(), init(pos));
         });
@@ -179,7 +179,7 @@ impl<T> FixedArray<T> {
         mut init: F,
     ) -> Result<Self, E> {
         let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
-        bounds.iter().enumerate().try_for_each(|(i, pos)| {
+        bounds.iter().enumerate().try_for_each(move |(i, pos)| {
             unsafe {
                 let item = ptr.add(i);
                 std::ptr::write(item.as_ptr(), init(pos)?);
@@ -320,10 +320,39 @@ impl<T> FixedArray<T> {
         }
     }
 
+    /// Creates an iterator over elements by reference in the array.
     pub fn iter(&self) -> FixedArrayRefIterator<'_, T> {
         FixedArrayRefIterator {
             array: self,
             index: 0,
+        }
+    }
+
+    /// Returns the raw pointer and capacity.
+    pub unsafe fn into_raw(self) -> (*mut T, usize) {
+        let ptr = self
+            .ptr
+            .map(|ptr| ptr.as_ptr())
+            .unwrap_or_else(|| std::ptr::null_mut());
+        let capacity = self.capacity;
+        (
+            ptr,
+            capacity
+        )
+    }
+
+    /// Creates a new FixedArray from a raw pointer and a capacity.
+    pub unsafe fn from_raw(data: *mut T, capacity: usize) -> Self {
+        if data.is_null() {
+            Self {
+                ptr: None,
+                capacity: 0,
+            }
+        } else {
+            Self {
+                ptr: Some(NonNull::new_unchecked(data)),
+                capacity,
+            }
         }
     }
 }
