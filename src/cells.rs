@@ -1,6 +1,8 @@
 use crate::{bounds2d::Bounds2D, bounds3d::Bounds3D, constants::*};
 use std::{mem::ManuallyDrop, ptr::NonNull};
 
+const NOT_ALLOCATED: &'static str = "Not allocated.";
+
 /// An array of type `T`.
 /// This is an abstraction over the memory meant to be used in rolling grid
 /// implementations. This struct allows for taking values from the buffer without
@@ -270,7 +272,7 @@ impl<T> FixedArray<T> {
     /// Returns the array as a slice.
     pub fn as_slice(&self) -> &[T] {
         let Some(ptr) = self.ptr else {
-            panic!("Not allocated.");
+            panic!("{}", NOT_ALLOCATED);
         };
         unsafe { std::slice::from_raw_parts(ptr.as_ref(), self.capacity) }
     }
@@ -278,7 +280,7 @@ impl<T> FixedArray<T> {
     /// Returns the array as a mutable slice.
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         let Some(mut ptr) = self.ptr else {
-            panic!("Not allocated.");
+            panic!("{}", NOT_ALLOCATED);
         };
         unsafe { std::slice::from_raw_parts_mut(ptr.as_mut(), self.capacity) }
     }
@@ -296,7 +298,7 @@ impl<T> FixedArray<T> {
     /// Converts the array into a boxed slice.
     pub fn into_boxed_slice(self) -> Box<[T]> {
         let Some(ptr) = self.ptr else {
-            panic!("Not allocated.");
+            panic!("{}", NOT_ALLOCATED);
         };
         unsafe {
             let slice_ptr = std::ptr::slice_from_raw_parts_mut(ptr.as_ptr(), self.capacity);
@@ -309,7 +311,7 @@ impl<T> FixedArray<T> {
     /// Converts the array into a `Vec<T>`.
     pub fn into_vec(self) -> Vec<T> {
         let Some(ptr) = self.ptr else {
-            panic!("Not allocated.");
+            panic!("{}", NOT_ALLOCATED);
         };
         unsafe {
             let result = Vec::from_raw_parts(ptr.as_ptr(), self.capacity, self.capacity);
