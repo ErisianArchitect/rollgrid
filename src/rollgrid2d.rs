@@ -1171,6 +1171,13 @@ mod tests {
     }
 
     #[test]
+    fn big_zst_grid() {
+        let mut big_grid = RollGrid2D::new_zst(100, 100, (0, 0));
+        big_grid.reposition((123, 456), |_, _, _| ());
+        _ = big_grid.get((123, 456)).expect("Failed to get.");
+    }
+
+    #[test]
     fn visual_example() {
         let mut grid = RollGrid2D::new(4, 4, (0, 0), |pos: (i32, i32)| pos);
         println!("Initial grid:");
