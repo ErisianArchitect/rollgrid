@@ -1,4 +1,4 @@
-use crate::{bounds2d::*, cells::FixedArray, error_messages::*, *};
+use crate::{bounds2d::*, cells::FixedArray, error_messages::*, math::*, *};
 
 /// A 2D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -119,7 +119,10 @@ impl<T> RollGrid2D<T> {
     ///
     /// If the size is `(2, 2)` with an offset of `(1, 1)`, and you want to inflate by `(1, 1)`.
     /// The result of that operation would have a size of `(4, 4)` and an offset of `(0, 0)`.
-    ///
+    /// 
+    /// # Panics
+    /// - If either dimension of `inflate` exceeds `i32::MAX`.
+    /// - If either dimension of the inflated size exceeds `u32::MAX`
     /// # Example
     /// ```rust, no_run
     /// grid.try_inflate_size((1, 1), try_cell_manager(
@@ -176,6 +179,9 @@ impl<T> RollGrid2D<T> {
     /// If the size is `(4, 4)` with an offset of `(0, 0)`, and you want to deflate by `(1, 1)`.
     /// The result of that operation would have a size of `(2, 2)` and an offset of `(1, 1)`.
     ///
+    /// # Panics
+    /// - If either dimension of `inflate` exceeds `i32::MAX`.
+    /// - If either dimension of the inflated size exceeds `u32::MAX`
     /// # Example
     /// ```rust, no_run
     /// grid.deflate_size((1, 1), cell_manager(
@@ -230,6 +236,9 @@ impl<T> RollGrid2D<T> {
     /// If the size is `(4, 4)` with an offset of `(0, 0)`, and you want to deflate by `(1, 1)`.
     /// The result of that operation would have a size of `(2, 2)` and an offset of `(1, 1)`.
     ///
+    /// # Panics
+    /// - If either dimension of `inflate` exceeds `i32::MAX`.
+    /// - If either dimension of the inflated size exceeds `u32::MAX`
     /// # Example
     /// ```rust, no_run
     /// grid.try_deflate_size((1, 1), try_cell_manager(
@@ -283,6 +292,9 @@ impl<T> RollGrid2D<T> {
 
     /// Resize the grid without changing the offset.
     ///
+    /// # Panics
+    /// - If either dimension of `inflate` exceeds `i32::MAX`.
+    /// - If either dimension of the inflated size exceeds `u32::MAX`
     /// # Example
     /// ```no_run
     /// grid.resize(3, 3, cell_manager(
@@ -524,11 +536,13 @@ impl<T> RollGrid2D<T> {
             }
             return Ok(());
         }
+        let width = width as usize;
+        let height = height as usize;
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
         if area == 0 {
             panic!("{AREA_IS_ZERO}");
         }
-        if area > i32::MAX as u32 {
+        if area > i32::MAX as usize {
             panic!("{SIZE_TOO_LARGE}");
         }
         let (new_x, new_y) = new_position;
@@ -537,6 +551,7 @@ impl<T> RollGrid2D<T> {
         // Determine what needs to be unloaded
         let old_bounds: Bounds2D = self.bounds();
         let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
+        let size = (width as u32, height as u32);
         if old_bounds.intersects(new_bounds) {
             macro_rules! unload_bounds {
                 ($cond: expr => xmin = $xmin:expr; ymin = $ymin:expr; xmax = $xmax:expr; ymax = $ymax:expr;) => {
@@ -577,7 +592,6 @@ impl<T> RollGrid2D<T> {
                 xmax = old_bounds.x_max();
                 ymax = old_bounds.y_max();
             );
-            let size = (width, height);
             let new_grid = FixedArray::try_new_2d(size, new_position, |pos| {
                 if old_bounds.contains(pos) {
                     let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
@@ -602,7 +616,6 @@ impl<T> RollGrid2D<T> {
                 }
                 Ok(())
             })?;
-            let size = (width, height);
             let new_grid = FixedArray::try_new_2d(size, new_position, |pos| manage.try_load(pos))?;
             self.size = size;
             self.grid_offset = new_position;
@@ -920,9 +933,11 @@ impl<T> RollGrid2D<T> {
     /// Offsets are relative to the world origin `(0, 0, 0)`, and must account for
     /// the grid offset.
     fn offset_index(&self, (x, y): (i32, i32)) -> Option<usize> {
+        let (x, y) = (x as i64, y as i64);
         let (mx, my) = self.grid_offset;
-        let width = self.size.0 as i32;
-        let height = self.size.1 as i32;
+        let (mx, my) = (mx as i64, my as i64);
+        let width = self.size.0 as i64;
+        let height = self.size.1 as i64;
         if x >= mx + width || y >= my + height || x < mx || y < my {
             return None;
         }
@@ -930,7 +945,7 @@ impl<T> RollGrid2D<T> {
         let nx = x - mx;
         let ny = y - my;
         // Wrap x and y
-        let (wrap_x, wrap_y) = (self.wrap_offset.0 as i32, self.wrap_offset.1 as i32);
+        let (wrap_x, wrap_y) = (self.wrap_offset.0 as i64, self.wrap_offset.1 as i64);
         let wx = (nx + wrap_x).rem_euclid(width);
         let wy = (ny + wrap_y).rem_euclid(height);
         Some((wy as usize * self.size.0 as usize) + wx as usize)
