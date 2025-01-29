@@ -7,7 +7,7 @@ use crate::{bounds3d::*, cells::FixedArray, error_messages::*, *};
 /// in the same position in the underlying array.
 pub struct RollGrid3D<T> {
     cells: FixedArray<T>,
-    size: (usize, usize, usize),
+    size: (u32, u32, u32),
     wrap_offset: (i32, i32, i32),
     grid_offset: (i32, i32, i32),
 }
@@ -15,9 +15,9 @@ pub struct RollGrid3D<T> {
 impl<T: Default> RollGrid3D<T> {
     /// Create a new [RollGrid3D] with all the cells set to the default for `T`.
     pub fn new_default(
-        width: usize,
-        height: usize,
-        depth: usize,
+        width: u32,
+        height: u32,
+        depth: u32,
         grid_offset: (i32, i32, i32),
     ) -> Self {
         Self {
@@ -35,9 +35,9 @@ impl<T> RollGrid3D<T> {
     /// The init function should take as input the coordinate that is being
     /// initialized, and should return the desired value for the cell.
     pub fn new<F: FnMut((i32, i32, i32)) -> T>(
-        width: usize,
-        height: usize,
-        depth: usize,
+        width: u32,
+        height: u32,
+        depth: u32,
         grid_offset: (i32, i32, i32),
         init: F,
     ) -> Self {
@@ -54,9 +54,9 @@ impl<T> RollGrid3D<T> {
     /// The init function should take as input the coordinate that is being
     /// initialized, and should return the desired value for the cell.
     pub fn try_new<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
-        width: usize,
-        height: usize,
-        depth: usize,
+        width: u32,
+        height: u32,
+        depth: u32,
         grid_offset: (i32, i32, i32),
         init: F,
     ) -> Result<Self, E> {
@@ -95,17 +95,17 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [CellManage].
-    pub fn inflate_size<M>(&mut self, inflate: (usize, usize, usize), manage: M)
+    pub fn inflate_size<M>(&mut self, inflate: (u32, u32, u32), manage: M)
     where
         M: CellManage<(i32, i32, i32), T>,
     {
-        if inflate.0 > i32::MAX as usize {
+        if inflate.0 > i32::MAX as u32 {
             panic!("{INFLATE_PAST_I32_MAX}");
         }
-        if inflate.1 > i32::MAX as usize {
+        if inflate.1 > i32::MAX as u32 {
             panic!("{INFLATE_PAST_I32_MAX}");
         }
-        if inflate.2 > i32::MAX as usize {
+        if inflate.2 > i32::MAX as u32 {
             panic!("{INFLATE_PAST_I32_MAX}");
         }
         // let inf = inflate as i32;
@@ -163,19 +163,19 @@ impl<T> RollGrid3D<T> {
     /// See [TryCellManage].
     pub fn try_inflate_size<E, M>(
         &mut self,
-        inflate: (usize, usize, usize),
+        inflate: (u32, u32, u32),
         manage: M,
     ) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
-        if inflate.0 > i32::MAX as usize {
+        if inflate.0 > i32::MAX as u32 {
             panic!("{INFLATE_PAST_I32_MAX}");
         }
-        if inflate.1 > i32::MAX as usize {
+        if inflate.1 > i32::MAX as u32 {
             panic!("{INFLATE_PAST_I32_MAX}");
         }
-        if inflate.2 > i32::MAX as usize {
+        if inflate.2 > i32::MAX as u32 {
             panic!("{INFLATE_PAST_I32_MAX}");
         }
         // let inf = inflate as i32;
@@ -229,17 +229,17 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [CellManage].
-    pub fn deflate_size<M>(&mut self, deflate: (usize, usize, usize), manage: M)
+    pub fn deflate_size<M>(&mut self, deflate: (u32, u32, u32), manage: M)
     where
         M: CellManage<(i32, i32, i32), T>,
     {
-        if deflate.0 > i32::MAX as usize {
+        if deflate.0 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
-        if deflate.1 > i32::MAX as usize {
+        if deflate.1 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
-        if deflate.2 > i32::MAX as usize {
+        if deflate.2 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
         let position = (
@@ -304,19 +304,19 @@ impl<T> RollGrid3D<T> {
     /// See [TryCellManage].
     pub fn try_deflate_size<E, M>(
         &mut self,
-        deflate: (usize, usize, usize),
+        deflate: (u32, u32, u32),
         manage: M,
     ) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
-        if deflate.0 > i32::MAX as usize {
+        if deflate.0 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
-        if deflate.1 > i32::MAX as usize {
+        if deflate.1 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
-        if deflate.2 > i32::MAX as usize {
+        if deflate.2 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
         let position = (
@@ -374,7 +374,7 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [CellManage].
-    pub fn resize<M>(&mut self, width: usize, height: usize, depth: usize, manage: M)
+    pub fn resize<M>(&mut self, width: u32, height: u32, depth: u32, manage: M)
     where
         M: CellManage<(i32, i32, i32), T>,
     {
@@ -409,9 +409,9 @@ impl<T> RollGrid3D<T> {
     /// See [TryCellManage].
     pub fn try_resize<E, M>(
         &mut self,
-        width: usize,
-        height: usize,
-        depth: usize,
+        width: u32,
+        height: u32,
+        depth: u32,
         manage: M,
     ) -> Result<(), E>
     where
@@ -446,9 +446,9 @@ impl<T> RollGrid3D<T> {
     /// See [CellManage].
     pub fn resize_and_reposition<M>(
         &mut self,
-        width: usize,
-        height: usize,
-        depth: usize,
+        width: u32,
+        height: u32,
+        depth: u32,
         new_position: (i32, i32, i32),
         manage: M,
     ) where
@@ -472,7 +472,7 @@ impl<T> RollGrid3D<T> {
         if volume == 0 {
             panic!("{VOLUME_IS_ZERO}");
         };
-        if volume > i32::MAX as usize {
+        if volume > i32::MAX as u32 {
             panic!("{SIZE_TOO_LARGE}");
         }
         let (new_x, new_y, new_z) = new_position;
@@ -615,9 +615,9 @@ impl<T> RollGrid3D<T> {
     /// See [TryCellManage].
     pub fn try_resize_and_reposition<E, M>(
         &mut self,
-        width: usize,
-        height: usize,
-        depth: usize,
+        width: u32,
+        height: u32,
+        depth: u32,
         new_position: (i32, i32, i32),
         manage: M,
     ) -> Result<(), E>
@@ -644,7 +644,7 @@ impl<T> RollGrid3D<T> {
         if volume == 0 {
             panic!("{VOLUME_IS_ZERO}");
         };
-        if volume > i32::MAX as usize {
+        if volume > i32::MAX as u32 {
             panic!("{SIZE_TOO_LARGE}");
         }
         let (new_x, new_y, new_z) = new_position;
@@ -1833,7 +1833,7 @@ impl<T> RollGrid3D<T> {
         let wy = (ny + wy).rem_euclid(height);
         let wz = (nz + wz).rem_euclid(depth);
         let plane = self.size.0 * self.size.2;
-        Some(wy as usize * plane + wz as usize * self.size.0 + wx as usize)
+        Some(wy as usize * plane as usize + wz as usize * self.size.0 as usize + wx as usize)
     }
 
     /// Replace item at `coord` using `replace` function that takes as
@@ -1889,22 +1889,22 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Get the dimensions of the grid.
-    pub fn size(&self) -> (usize, usize, usize) {
+    pub fn size(&self) -> (u32, u32, u32) {
         self.size
     }
 
     /// The size along the X axis.
-    pub fn width(&self) -> usize {
+    pub fn width(&self) -> u32 {
         self.size.0
     }
 
     /// The size along the Y axis.
-    pub fn height(&self) -> usize {
+    pub fn height(&self) -> u32 {
         self.size.1
     }
 
     /// The size along the Z axis.
-    pub fn depth(&self) -> usize {
+    pub fn depth(&self) -> u32 {
         self.size.2
     }
 
@@ -1953,7 +1953,7 @@ impl<T> RollGrid3D<T> {
 
     /// This is equivalent to the volume (width * height * depth).
     pub fn len(&self) -> usize {
-        self.size.0 * self.size.1 * self.size.2
+        self.size.0 as usize * self.size.1 as usize * self.size.2 as usize
     }
 
     /// Get an iterator over the cells in the grid.
