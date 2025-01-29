@@ -285,14 +285,12 @@ impl<T> FixedArray<T> {
 
     /// Returns the internal pointer. This may return `null` if the buffer has already been deallocated.
     pub unsafe fn as_ptr(&self) -> *const T {
-        self.ptr
-            .map_or_else(|| std::ptr::null(), |ptr| ptr.as_ptr())
+        self.ptr.map_or(std::ptr::null(), |ptr| ptr.as_ptr())
     }
 
     /// Returns the internal mutable pointer. This may return `null` if the buffer has already been deallocated.
     pub unsafe fn as_mut_ptr(&mut self) -> *mut T {
-        self.ptr
-            .map_or_else(|| std::ptr::null_mut(), NonNull::as_ptr)
+        self.ptr.map_or(std::ptr::null_mut(), NonNull::as_ptr)
     }
 
     /// Converts the array into a boxed slice.
