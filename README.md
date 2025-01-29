@@ -118,6 +118,7 @@ You can modify this code to fit your purpose.
 - Added `Grid2D` and `Grid3D`.
 - Added `math` module, for some useful math functionality that this crate uses.
 - Modified `RollGrid2D` and `RollGrid3D` to use `u32` for dimensions rather than `usize`. This makes it more clear what types of values should be used.
+- Added `new_zst` constructor to `RollGrid2D` and `RollGrid3D`.
 
 ### 2.0.0
 
