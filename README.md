@@ -113,7 +113,7 @@ You can modify this code to fit your purpose.
 
 # Changelog
 
-### 3.0.0
+### 3.0.0-alpha1
 
 - Added `Grid2D` and `Grid3D`.
 - Added `math` module, for some useful math functionality that this crate uses.
