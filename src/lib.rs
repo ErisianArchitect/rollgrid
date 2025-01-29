@@ -15,8 +15,9 @@ mod error_messages {
             pub const $name: &'static str = $msg;
         };
     }
-    msg!(RIGHT_EXCEEDS_MAXIMUM = "Rightmost bound exceeds maximum.");
-    msg!(BOTTOM_EXCEEDS_MAXIMUM = "Bottommost bound exceeds maximum.");
+    msg!(X_MAX_EXCEEDS_MAXIMUM = "Rightmost bound exceeds maximum.");
+    msg!(Y_MAX_EXCEEDS_MAXIMUM = "Topmost bound exceeds maximum.");
+    msg!(Z_MAX_EXCEEDS_MAXIMUM = "Backmost bound exceeds maximum.");
     msg!(NOT_ALLOCATED = "Not allocated.");
     msg!(SIZE_TOO_LARGE = "Size is too large");
     msg!(OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound");
