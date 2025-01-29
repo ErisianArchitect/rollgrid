@@ -8,8 +8,8 @@ use std::{mem::ManuallyDrop, ptr::NonNull};
 /// gives the user the ability to manually manage dropping of individual regions.
 /// The user manages the dimensionality and bounds of the [FixedArray].
 pub struct FixedArray<T> {
-    ptr: Option<NonNull<T>>,
-    capacity: usize,
+    pub(crate) ptr: Option<NonNull<T>>,
+    pub(crate) capacity: usize,
 }
 
 impl<T> FixedArray<T> {
