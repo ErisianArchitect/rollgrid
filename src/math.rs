@@ -1,4 +1,18 @@
 
+pub struct TupleConverter;
+
+pub trait DimensionsType: Sized {}
+
+pub trait ConvertTuple<A: DimensionsType, B: DimensionsType> {
+    fn convert(input: A) -> B;
+}
+
+pub trait Convert: DimensionsType {
+    fn convert<T>(self) -> T
+    where
+    T: DimensionsType,
+    TupleConverter: ConvertTuple<Self, T>;
+}
 
 pub trait AddCoord<Rhs> {
     type Output;
@@ -23,6 +37,54 @@ pub trait DivCoord<Rhs> {
 pub trait RemCoord<Rhs> {
     type Output;
     fn rem_coord(self, rhs: Rhs) -> Self::Output;
+}
+
+// ******** IMPLEMENTATIONS ********
+
+impl DimensionsType for (i32, i32) {}
+impl DimensionsType for (i32, i32, i32) {}
+impl DimensionsType for (u32, u32) {}
+impl DimensionsType for (u32, u32, u32) {}
+impl DimensionsType for (i64, i64) {}
+impl DimensionsType for (i64, i64, i64) {}
+impl DimensionsType for (usize, usize) {}
+impl DimensionsType for (usize, usize, usize) {}
+
+impl ConvertTuple<(i32, i32), (i64, i64)> for TupleConverter {
+    fn convert(input: (i32, i32)) -> (i64, i64) {
+        (
+            input.0 as i64,
+            input.1 as i64,
+        )
+    }
+}
+
+impl ConvertTuple<(u32, u32), (i64, i64)> for TupleConverter {
+    fn convert(input: (u32, u32)) -> (i64, i64) {
+        (
+            input.0 as i64,
+            input.1 as i64,
+        )
+    }
+}
+
+impl ConvertTuple<(u32, u32), (usize, usize)> for TupleConverter {
+    fn convert(input: (u32, u32)) -> (usize, usize) {
+        (
+            input.0 as usize,
+            input.1 as usize,
+        )
+    }
+}
+
+impl<A: DimensionsType> Convert for A {
+    fn convert<T>(self) -> T
+    where
+        T: DimensionsType,
+        TupleConverter: ConvertTuple<Self, T>
+    {
+        TupleConverter::convert(self)
+    }
 }
 
 impl AddCoord<(i32, i32)> for (i32, i32) {
@@ -260,7 +322,7 @@ impl RemCoord<i32> for (i32, i32, i32) {
 /// Since `i32::MAX - i32::MIN == u32::MAX`, it's possible to subtract
 /// an i32 from an i32 where the result can fit into a u32 so long as the left-hand side is greater or equal
 /// to the right-hand side.
-pub const fn checked_sub_i32_to_u32(lhs: i32, rhs: i32) -> Option<u32> {
+pub const fn checked_sub_i32_into_u32(lhs: i32, rhs: i32) -> Option<u32> {
     if rhs > lhs {
         return None;
     }
@@ -275,12 +337,20 @@ pub const fn checked_sub_i32_to_u32(lhs: i32, rhs: i32) -> Option<u32> {
 /// to the right-hand side.
 /// 
 /// In debug mode, this function will panic if `rhs > lhs`.
-pub const fn sub_i32_to_u32(lhs: i32, rhs: i32) -> u32 {
+pub const fn sub_i32_into_u32(lhs: i32, rhs: i32) -> u32 {
     debug_assert!(rhs <= lhs);
     let lhs = lhs as i64;
     let rhs = rhs as i64;
     let result = lhs - rhs;
     result as u32
+}
+
+pub const fn add_u32_to_i32(lhs: i32, rhs: u32) -> i32 {
+    let lhs = lhs as i64;
+    let rhs = rhs as i64;
+    let result = lhs + rhs;
+    debug_assert!(result <= i32::MAX as i64);
+    result as i32
 }
 
 #[cfg(test)]
@@ -291,9 +361,10 @@ mod tests {
 
     #[test]
     fn safe_math_test() {
-        let result = checked_sub_i32_to_u32(i32::MAX, i32::MIN);
+        let result = checked_sub_i32_into_u32(i32::MAX, i32::MIN);
         assert_eq!(result, Some(u32::MAX));
-        
+        let result = add_u32_to_i32(i32::MIN, u32::MAX);
+        assert_eq!(result, i32::MAX);
     }
 
     #[test]
@@ -326,5 +397,12 @@ mod tests {
         assert_eq!(a.mul_coord(b), (565, 720, 1230), "(i32, i32, i32) * i32");
         assert_eq!(a.div_coord(b), (22, 28, 49), "(i32, i32, i32) / i32");
         assert_eq!(a.rem_coord(b), (3, 4, 1), "(i32, i32, i32) % i32");
+    }
+
+    #[test]
+    fn convert_test() {
+        let a: (i32, i32) = (123, 456);
+        let b = a.convert::<(i64, i64)>();
+        println!("{b:?}");
     }
 }
