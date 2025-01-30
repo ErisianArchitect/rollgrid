@@ -10,11 +10,38 @@ pub mod grid3d;
 pub mod math;
 
 mod error_messages {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct PanicMsg(&'static str);
+
+    impl PanicMsg {
+        pub fn panic(self) -> ! {
+            panic!("{}", self.0);
+        }
+
+        pub fn msg(self) -> &'static str {
+            self.0
+        }
+    }
+
+    impl std::fmt::Display for PanicMsg {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.0)
+        }
+    }
+
+    impl std::ops::Deref for PanicMsg {
+        type Target = str;
+        fn deref(&self) -> &Self::Target {
+            self.0
+        }
+    }
+
     macro_rules! msg {
         ($name:ident = $msg:literal) => {
-            pub const $name: &'static str = $msg;
+            pub const $name: PanicMsg = PanicMsg($msg);
         };
     }
+
     msg!(X_MAX_EXCEEDS_MAXIMUM = "X max bound exceeds maximum.");
     msg!(Y_MAX_EXCEEDS_MAXIMUM = "Y max bound exceeds maximum.");
     msg!(Z_MAX_EXCEEDS_MAXIMUM = "Z max bound exceeds maximum.");
