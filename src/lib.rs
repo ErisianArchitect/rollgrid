@@ -18,15 +18,21 @@ mod error_messages {
             panic!("{}", self.0);
         }
 
-        pub fn assert(self, condition: bool) {
+        pub fn panic_if(self, condition: bool) {
             if condition {
+                panic!("{}", self.0);
+            }
+        }
+
+        pub fn assert(self, condition: bool) {
+            if !condition {
                 self.panic();
             }
         }
 
         pub fn debug_assert(self, condition: bool) {
             #[cfg(debug_assertions)]
-            if condition {
+            if !condition {
                 self.panic();
             }
         }
