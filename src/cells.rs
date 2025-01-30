@@ -18,15 +18,15 @@ impl<T> FixedArray<T> {
         let (width, height) = (size.0 as usize, size.1 as usize);
         let x_max = offset.0 as i64 + width as i64;
         if x_max > i32::MAX as i64 {
-            panic!("{}", X_MAX_EXCEEDS_MAXIMUM);
+            X_MAX_EXCEEDS_MAXIMUM.panic();
         }
         let y_max = offset.1 as i64 + height as i64;
         if y_max > i32::MAX as i64 {
-            panic!("{}", Y_MAX_EXCEEDS_MAXIMUM);
+            Y_MAX_EXCEEDS_MAXIMUM.panic();
         }
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE.msg());
         if area == 0 {
-            panic!("{}", AREA_IS_ZERO);
+            AREA_IS_ZERO.panic();
         }
         unsafe {
             let layout = Self::make_layout(area).expect("Failed to create layout.");
@@ -52,15 +52,15 @@ impl<T> FixedArray<T> {
         let (width, height, depth) = (size.0 as usize, size.1 as usize, size.2 as usize);
         let x_max = offset.0 as i64 + width as i64;
         if x_max > i32::MAX as i64 {
-            panic!("{}", X_MAX_EXCEEDS_MAXIMUM);
+            X_MAX_EXCEEDS_MAXIMUM.panic();
         }
         let y_max = offset.1 as i64 + height as i64;
         if y_max > i32::MAX as i64 {
-            panic!("{}", Y_MAX_EXCEEDS_MAXIMUM);
+            Y_MAX_EXCEEDS_MAXIMUM.panic();
         }
         let z_max = offset.2 as i64 + depth as i64;
         if z_max > i32::MAX as i64 {
-            panic!("{}", Z_MAX_EXCEEDS_MAXIMUM);
+            Z_MAX_EXCEEDS_MAXIMUM.panic();
         }
         let volume = width
             .checked_mul(height)
@@ -68,7 +68,7 @@ impl<T> FixedArray<T> {
             .checked_mul(depth)
             .expect(SIZE_TOO_LARGE.msg());
         if volume == 0 {
-            panic!("{}", VOLUME_IS_ZERO);
+            VOLUME_IS_ZERO.panic();
         }
         unsafe {
             let layout = Self::make_layout(volume).expect("Failed to create layout.");
@@ -287,7 +287,7 @@ impl<T> FixedArray<T> {
     /// Returns the array as a slice.
     pub fn as_slice(&self) -> &[T] {
         let Some(ptr) = self.ptr else {
-            panic!("{}", NOT_ALLOCATED);
+            NOT_ALLOCATED.panic();
         };
         unsafe { std::slice::from_raw_parts(ptr.as_ref(), self.capacity) }
     }
@@ -295,7 +295,7 @@ impl<T> FixedArray<T> {
     /// Returns the array as a mutable slice.
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         let Some(mut ptr) = self.ptr else {
-            panic!("{}", NOT_ALLOCATED);
+            NOT_ALLOCATED.panic();
         };
         unsafe { std::slice::from_raw_parts_mut(ptr.as_mut(), self.capacity) }
     }
@@ -313,7 +313,7 @@ impl<T> FixedArray<T> {
     /// Converts the array into a boxed slice.
     pub fn into_boxed_slice(self) -> Box<[T]> {
         let Some(ptr) = self.ptr else {
-            panic!("{}", NOT_ALLOCATED);
+            NOT_ALLOCATED.panic();
         };
         unsafe {
             let slice_ptr = std::ptr::slice_from_raw_parts_mut(ptr.as_ptr(), self.capacity);
@@ -326,7 +326,7 @@ impl<T> FixedArray<T> {
     /// Converts the array into a `Vec<T>`.
     pub fn into_vec(self) -> Vec<T> {
         let Some(ptr) = self.ptr else {
-            panic!("{}", NOT_ALLOCATED);
+            NOT_ALLOCATED.panic();
         };
         unsafe {
             let result = Vec::from_raw_parts(ptr.as_ptr(), self.capacity, self.capacity);
@@ -476,7 +476,7 @@ impl<T> std::ops::Index<usize> for FixedArray<T> {
             assert!(index < self.capacity, "Index out of bounds.");
             unsafe { ptr.add(index).as_ref() }
         } else {
-            panic!("Unallocated buffer.");
+            UNALLOCATED_BUFFER.panic();
         }
     }
 }
@@ -487,7 +487,7 @@ impl<T> std::ops::IndexMut<usize> for FixedArray<T> {
             assert!(index < self.capacity, "Index out of bounds.");
             unsafe { ptr.add(index).as_mut() }
         } else {
-            panic!("Unallocated buffer.");
+            UNALLOCATED_BUFFER.panic();
         }
     }
 }
