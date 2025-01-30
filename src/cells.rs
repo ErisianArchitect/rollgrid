@@ -17,13 +17,9 @@ impl<T> FixedArray<T> {
     fn prealloc_2d(size: (u32, u32), offset: (i32, i32)) -> (NonNull<T>, Bounds2D, usize) {
         let (width, height) = (size.0 as usize, size.1 as usize);
         let x_max = offset.0 as i64 + width as i64;
-        if x_max > i32::MAX as i64 {
-            X_MAX_EXCEEDS_MAXIMUM.panic();
-        }
+        X_MAX_EXCEEDS_MAXIMUM.panic_if(x_max > i32::MAX as i64);
         let y_max = offset.1 as i64 + height as i64;
-        if y_max > i32::MAX as i64 {
-            Y_MAX_EXCEEDS_MAXIMUM.panic();
-        }
+        Y_MAX_EXCEEDS_MAXIMUM.panic_if(y_max > i32::MAX as i64);
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE.msg());
         if area == 0 {
             AREA_IS_ZERO.panic();
@@ -51,17 +47,11 @@ impl<T> FixedArray<T> {
     ) -> (NonNull<T>, Bounds3D, usize) {
         let (width, height, depth) = (size.0 as usize, size.1 as usize, size.2 as usize);
         let x_max = offset.0 as i64 + width as i64;
-        if x_max > i32::MAX as i64 {
-            X_MAX_EXCEEDS_MAXIMUM.panic();
-        }
+        X_MAX_EXCEEDS_MAXIMUM.panic_if(x_max > i32::MAX as i64);
         let y_max = offset.1 as i64 + height as i64;
-        if y_max > i32::MAX as i64 {
-            Y_MAX_EXCEEDS_MAXIMUM.panic();
-        }
+        Y_MAX_EXCEEDS_MAXIMUM.panic_if(y_max > i32::MAX as i64);
         let z_max = offset.2 as i64 + depth as i64;
-        if z_max > i32::MAX as i64 {
-            Z_MAX_EXCEEDS_MAXIMUM.panic();
-        }
+        Z_MAX_EXCEEDS_MAXIMUM.panic_if(z_max > i32::MAX as i64);
         let volume = width
             .checked_mul(height)
             .expect(SIZE_TOO_LARGE.msg())
@@ -473,7 +463,7 @@ impl<T> std::ops::Index<usize> for FixedArray<T> {
     type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
         if let Some(ptr) = self.ptr {
-            assert!(index < self.capacity, "Index out of bounds.");
+            INDEX_OUT_OF_BOUNDS.assert(index < self.capacity);
             unsafe { ptr.add(index).as_ref() }
         } else {
             UNALLOCATED_BUFFER.panic();
@@ -484,7 +474,7 @@ impl<T> std::ops::Index<usize> for FixedArray<T> {
 impl<T> std::ops::IndexMut<usize> for FixedArray<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         if let Some(ptr) = self.ptr {
-            assert!(index < self.capacity, "Index out of bounds.");
+            INDEX_OUT_OF_BOUNDS.assert(index < self.capacity);
             unsafe { ptr.add(index).as_mut() }
         } else {
             UNALLOCATED_BUFFER.panic();
