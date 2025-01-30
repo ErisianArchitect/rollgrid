@@ -18,6 +18,12 @@ mod error_messages {
             panic!("{}", self.0);
         }
 
+        pub fn assert(self, condition: bool) {
+            if condition {
+                self.panic();
+            }
+        }
+
         pub fn msg(self) -> &'static str {
             self.0
         }
