@@ -126,13 +126,13 @@ impl<T> RollGrid2D<T> {
         let width = self
             .size
             .0
-            .checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW))
-            .expect(INFLATE_OVERFLOW);
+            .checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
+            .expect(INFLATE_OVERFLOW.msg());
         let height = self
             .size
             .1
-            .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW))
-            .expect(INFLATE_OVERFLOW);
+            .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
+            .expect(INFLATE_OVERFLOW.msg());
         self.resize_and_reposition(width, height, position, manage);
     }
 
@@ -189,13 +189,13 @@ impl<T> RollGrid2D<T> {
         let width = self
             .size
             .0
-            .checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW))
-            .expect(INFLATE_OVERFLOW);
+            .checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
+            .expect(INFLATE_OVERFLOW.msg());
         let height = self
             .size
             .1
-            .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW))
-            .expect(INFLATE_OVERFLOW);
+            .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
+            .expect(INFLATE_OVERFLOW.msg());
         self.try_resize_and_reposition(width, height, position, manage)
     }
 
@@ -250,13 +250,13 @@ impl<T> RollGrid2D<T> {
         let width = self
             .size
             .0
-            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW))
-            .expect(DEFLATE_OVERFLOW);
+            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
+            .expect(DEFLATE_OVERFLOW.msg());
         let height = self
             .size
             .0
-            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW))
-            .expect(DEFLATE_OVERFLOW);
+            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
+            .expect(DEFLATE_OVERFLOW.msg());
         self.resize_and_reposition(width, height, position, manage);
     }
 
@@ -313,13 +313,13 @@ impl<T> RollGrid2D<T> {
         let width = self
             .size
             .0
-            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW))
-            .expect(DEFLATE_OVERFLOW);
+            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
+            .expect(DEFLATE_OVERFLOW.msg());
         let height = self
             .size
             .0
-            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW))
-            .expect(DEFLATE_OVERFLOW);
+            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
+            .expect(DEFLATE_OVERFLOW.msg());
         self.try_resize_and_reposition(width, height, position, manage)
     }
 
@@ -438,7 +438,7 @@ impl<T> RollGrid2D<T> {
             return;
         }
         // FIXME: area should be usize, not u32.
-        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
+        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE.msg());
         if area == 0 {
             panic!("{AREA_IS_ZERO}");
         }
@@ -460,7 +460,7 @@ impl<T> RollGrid2D<T> {
                         Bounds2D::new(($xmin, $ymin), ($xmax, $ymax))
                             .iter()
                             .for_each(|pos| {
-                                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                                 unsafe {
                                     manage.unload(pos, self.cells.read(index));
                                 }
@@ -494,7 +494,7 @@ impl<T> RollGrid2D<T> {
             );
             let new_grid = FixedArray::new_2d((width, height), new_position, |pos| {
                 if old_bounds.contains(pos) {
-                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     unsafe { self.cells.read(index) }
                 } else {
                     manage.load(pos)
@@ -510,7 +510,7 @@ impl<T> RollGrid2D<T> {
         } else {
             // !old_bounds.intersects(new_bounds)
             old_bounds.iter().for_each(|pos| {
-                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                 unsafe {
                     manage.unload(pos, self.cells.read(index));
                 }
@@ -576,7 +576,7 @@ impl<T> RollGrid2D<T> {
         let width = width as usize;
         let height = height as usize;
         // FIXME: area should be usize, not u32.
-        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
+        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE.msg());
         if area == 0 {
             panic!("{AREA_IS_ZERO}");
         }
@@ -599,7 +599,7 @@ impl<T> RollGrid2D<T> {
                         Bounds2D::new(($xmin, $ymin), ($xmax, $ymax))
                             .iter()
                             .try_for_each(|pos| {
-                                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                                 unsafe {
                                     manage.try_unload(pos, self.cells.read(index))?;
                                 }
@@ -634,7 +634,7 @@ impl<T> RollGrid2D<T> {
             );
             let new_grid = FixedArray::try_new_2d(size, new_position, |pos| {
                 if old_bounds.contains(pos) {
-                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     unsafe { Ok(self.cells.read(index)) }
                 } else {
                     manage.try_load(pos)
@@ -650,7 +650,7 @@ impl<T> RollGrid2D<T> {
         } else {
             // !old_bounds.intersects(new_bounds)
             old_bounds.iter().try_for_each(|pos| {
-                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                 unsafe {
                     manage.try_unload(pos, self.cells.read(index))?;
                 }
@@ -808,7 +808,7 @@ impl<T> RollGrid2D<T> {
                         old_x + width + offset_x + xi as i32
                     };
                     let prior_y = y;
-                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS.msg());
                     reload((prior_x, prior_y), (x, y), &mut self.cells[index]);
                 }
             }
@@ -821,7 +821,7 @@ impl<T> RollGrid2D<T> {
                     } else {
                         old_y + height + offset_y + iy as i32
                     };
-                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS.msg());
                     reload((prior_x, prior_y), (x, y), &mut self.cells[index]);
                 }
             }
@@ -838,7 +838,7 @@ impl<T> RollGrid2D<T> {
                     } else {
                         old_y + height + offset_y + iy as i32
                     };
-                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS.msg());
                     reload((prior_x, prior_y), (x, y), &mut self.cells[index]);
                 }
             }
@@ -848,7 +848,7 @@ impl<T> RollGrid2D<T> {
                 for (xi, x) in (new_x..new_x + width).enumerate() {
                     let prior_x = old_x + xi as i32;
                     let prior_y = old_y + yi as i32;
-                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS.msg());
                     reload((prior_x, prior_y), (x, y), &mut self.cells[index]);
                 }
             }
@@ -932,7 +932,7 @@ impl<T> RollGrid2D<T> {
                         old_x + width + offset_x + xi as i32
                     };
                     let prior_y = y;
-                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS.msg());
                     reload((prior_x, prior_y), (x, y), &mut self.cells[index])?;
                 }
             }
@@ -945,7 +945,7 @@ impl<T> RollGrid2D<T> {
                     } else {
                         old_y + height + offset_y + iy as i32
                     };
-                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS.msg());
                     reload((prior_x, prior_y), (x, y), &mut self.cells[index])?;
                 }
             }
@@ -962,7 +962,7 @@ impl<T> RollGrid2D<T> {
                     } else {
                         old_y + height + offset_y + iy as i32
                     };
-                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS.msg());
                     reload((prior_x, prior_y), (x, y), &mut self.cells[index])?;
                 }
             }
@@ -972,7 +972,7 @@ impl<T> RollGrid2D<T> {
                 for (xi, x) in (new_x..new_x + width).enumerate() {
                     let prior_x = old_x + xi as i32;
                     let prior_y = old_y + yi as i32;
-                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS.msg());
                     reload((prior_x, prior_y), (x, y), &mut self.cells[index])?;
                 }
             }
@@ -1013,14 +1013,14 @@ impl<T> RollGrid2D<T> {
     /// input the old value and returns the new value. This will swap the
     /// value in-place.
     pub fn replace_with<F: FnOnce(T) -> T>(&mut self, coord: (i32, i32), replace: F) {
-        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS);
+        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS.msg());
         self.cells.replace_with(index, replace);
     }
 
     /// Replace item at `coord` using [std::mem::replace] and then returns
     /// the old value.
     pub fn replace(&mut self, coord: (i32, i32), value: T) -> T {
-        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS);
+        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS.msg());
         self.cells.replace(index, value)
     }
 
@@ -1038,7 +1038,7 @@ impl<T> RollGrid2D<T> {
     ///
     /// This is appropriate for initializing uninitialized cells, or overwriting memory that has previously been [read] from.
     pub unsafe fn write(&mut self, coord: (i32, i32), value: T) {
-        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS);
+        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS.msg());
         self.cells.write(index, value);
     }
 

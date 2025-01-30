@@ -117,18 +117,18 @@ impl<T> RollGrid3D<T> {
         let width = self
             .size
             .0
-            .checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW))
-            .expect(INFLATE_OVERFLOW);
+            .checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
+            .expect(INFLATE_OVERFLOW.msg());
         let height = self
             .size
             .1
-            .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW))
-            .expect(INFLATE_OVERFLOW);
+            .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
+            .expect(INFLATE_OVERFLOW.msg());
         let depth = self
             .size
             .2
-            .checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW))
-            .expect(INFLATE_OVERFLOW);
+            .checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
+            .expect(INFLATE_OVERFLOW.msg());
         self.resize_and_reposition(width, height, depth, position, manage);
     }
 
@@ -187,18 +187,18 @@ impl<T> RollGrid3D<T> {
         let width = self
             .size
             .0
-            .checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW))
-            .expect(INFLATE_OVERFLOW);
+            .checked_add(inflate.0.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
+            .expect(INFLATE_OVERFLOW.msg());
         let height = self
             .size
             .1
-            .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW))
-            .expect(INFLATE_OVERFLOW);
+            .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
+            .expect(INFLATE_OVERFLOW.msg());
         let depth = self
             .size
             .2
-            .checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW))
-            .expect(INFLATE_OVERFLOW);
+            .checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
+            .expect(INFLATE_OVERFLOW.msg());
         self.try_resize_and_reposition(width, height, depth, position, manage)
     }
 
@@ -250,23 +250,23 @@ impl<T> RollGrid3D<T> {
         let width = self
             .size
             .0
-            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW))
-            .expect(DEFLATE_OVERFLOW);
+            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
+            .expect(DEFLATE_OVERFLOW.msg());
         let height = self
             .size
             .1
-            .checked_sub(deflate.1.checked_mul(2).expect(DEFLATE_OVERFLOW))
-            .expect(DEFLATE_OVERFLOW);
+            .checked_sub(deflate.1.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
+            .expect(DEFLATE_OVERFLOW.msg());
         let depth = self
             .size
             .2
-            .checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW))
-            .expect(DEFLATE_OVERFLOW);
+            .checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
+            .expect(DEFLATE_OVERFLOW.msg());
         let volume = width
             .checked_mul(height)
-            .expect(SIZE_TOO_LARGE)
+            .expect(SIZE_TOO_LARGE.msg())
             .checked_mul(depth)
-            .expect(SIZE_TOO_LARGE);
+            .expect(SIZE_TOO_LARGE.msg());
         if volume == 0 {
             panic!("{VOLUME_IS_ZERO}");
         }
@@ -327,23 +327,23 @@ impl<T> RollGrid3D<T> {
         let width = self
             .size
             .0
-            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW))
-            .expect(DEFLATE_OVERFLOW);
+            .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
+            .expect(DEFLATE_OVERFLOW.msg());
         let height = self
             .size
             .1
-            .checked_sub(deflate.1.checked_mul(2).expect(DEFLATE_OVERFLOW))
-            .expect(DEFLATE_OVERFLOW);
+            .checked_sub(deflate.1.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
+            .expect(DEFLATE_OVERFLOW.msg());
         let depth = self
             .size
             .2
-            .checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW))
-            .expect(DEFLATE_OVERFLOW);
+            .checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
+            .expect(DEFLATE_OVERFLOW.msg());
         let volume = width
             .checked_mul(height)
-            .expect(SIZE_TOO_LARGE)
+            .expect(SIZE_TOO_LARGE.msg())
             .checked_mul(depth)
-            .expect(SIZE_TOO_LARGE);
+            .expect(SIZE_TOO_LARGE.msg());
         if volume == 0 {
             panic!("{VOLUME_IS_ZERO}");
         }
@@ -466,9 +466,9 @@ impl<T> RollGrid3D<T> {
         }
         let volume = width
             .checked_mul(height)
-            .expect(SIZE_TOO_LARGE)
+            .expect(SIZE_TOO_LARGE.msg())
             .checked_mul(depth)
-            .expect(SIZE_TOO_LARGE);
+            .expect(SIZE_TOO_LARGE.msg());
         if volume == 0 {
             panic!("{VOLUME_IS_ZERO}");
         };
@@ -491,7 +491,7 @@ impl<T> RollGrid3D<T> {
                         Bounds3D::new(($xmin, $ymin, $zmin), ($xmax, $ymax, $zmax))
                             .iter()
                             .for_each(|pos| {
-                                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                                 unsafe {
                                     manage.unload(pos, self.cells.read(index));
                                 }
@@ -555,7 +555,7 @@ impl<T> RollGrid3D<T> {
             );
             let new_grid = FixedArray::new_3d(size, new_position, |pos| {
                 if old_bounds.contains(pos) {
-                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     unsafe { self.cells.read(index) }
                 } else {
                     manage.load(pos)
@@ -571,7 +571,7 @@ impl<T> RollGrid3D<T> {
         } else {
             // !old_bounds.intersects(new_bounds)
             old_bounds.iter().for_each(|pos| {
-                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                 unsafe {
                     manage.unload(pos, self.cells.read(index));
                 }
@@ -638,9 +638,9 @@ impl<T> RollGrid3D<T> {
         }
         let volume = width
             .checked_mul(height)
-            .expect(SIZE_TOO_LARGE)
+            .expect(SIZE_TOO_LARGE.msg())
             .checked_mul(depth)
-            .expect(SIZE_TOO_LARGE);
+            .expect(SIZE_TOO_LARGE.msg());
         if volume == 0 {
             panic!("{VOLUME_IS_ZERO}");
         };
@@ -663,7 +663,7 @@ impl<T> RollGrid3D<T> {
                         Bounds3D::new(($xmin, $ymin, $zmin), ($xmax, $ymax, $zmax))
                             .iter()
                             .try_for_each(|pos| {
-                                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                                 unsafe { manage.try_unload(pos, self.cells.read(index))? }
                                 Ok(())
                             })?;
@@ -727,7 +727,7 @@ impl<T> RollGrid3D<T> {
             let size = (width, height, depth);
             let new_grid = FixedArray::try_new_3d(size, new_position, |pos| {
                 if old_bounds.contains(pos) {
-                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     unsafe { Ok(self.cells.read(index)) }
                 } else {
                     manage.try_load(pos)
@@ -743,7 +743,7 @@ impl<T> RollGrid3D<T> {
         } else {
             // !old_bounds.intersects(new_bounds)
             old_bounds.iter().try_for_each(|pos| {
-                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                 unsafe {
                     manage.try_unload(pos, self.cells.read(index))?;
                 }
@@ -1263,20 +1263,20 @@ impl<T> RollGrid3D<T> {
             // iterate regions and reload cells
             half_region.iter().for_each(|pos| {
                 let old_pos = fix.wrap(pos);
-                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                 reload(old_pos, pos, &mut self.cells[index]);
             });
             if let Some(quarter) = quarter_region {
                 quarter.iter().for_each(|pos| {
                     let old_pos = fix.wrap(pos);
-                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     reload(old_pos, pos, &mut self.cells[index]);
                 });
             }
             if let Some(eighth) = eighth_region {
                 eighth.iter().for_each(|pos| {
                     let old_pos = fix.wrap(pos);
-                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     reload(old_pos, pos, &mut self.cells[index]);
                 });
             }
@@ -1289,7 +1289,7 @@ impl<T> RollGrid3D<T> {
                         let prior_x = old_x + xi as i32;
                         let prior_y = old_y + yi as i32;
                         let prior_z = old_z + zi as i32;
-                        let index = self.offset_index((x, y, z)).expect(OUT_OF_BOUNDS);
+                        let index = self.offset_index((x, y, z)).expect(OUT_OF_BOUNDS.msg());
                         reload(
                             (prior_x, prior_y, prior_z),
                             (x, y, z),
@@ -1755,14 +1755,14 @@ impl<T> RollGrid3D<T> {
             // iterate regions and reload cells
             half_region.iter().try_for_each(|pos| {
                 let old_pos = fix.wrap(pos);
-                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                 reload(old_pos, pos, &mut self.cells[index])?;
                 Ok(())
             })?;
             if let Some(quarter) = quarter_region {
                 quarter.iter().try_for_each(|pos| {
                     let old_pos = fix.wrap(pos);
-                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     reload(old_pos, pos, &mut self.cells[index])?;
                     Ok(())
                 })?;
@@ -1770,7 +1770,7 @@ impl<T> RollGrid3D<T> {
             if let Some(eighth) = eighth_region {
                 eighth.iter().try_for_each(|pos| {
                     let old_pos = fix.wrap(pos);
-                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS);
+                    let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     reload(old_pos, pos, &mut self.cells[index])?;
                     Ok(())
                 })?;
@@ -1784,7 +1784,7 @@ impl<T> RollGrid3D<T> {
                         let prior_x = old_x + xi as i32;
                         let prior_y = old_y + yi as i32;
                         let prior_z = old_z + zi as i32;
-                        let index = self.offset_index((x, y, z)).expect(OUT_OF_BOUNDS);
+                        let index = self.offset_index((x, y, z)).expect(OUT_OF_BOUNDS.msg());
                         reload(
                             (prior_x, prior_y, prior_z),
                             (x, y, z),
@@ -1840,14 +1840,14 @@ impl<T> RollGrid3D<T> {
     /// input the old value and returns the new value. This will swap the
     /// value in-place.
     pub fn replace_with<F: FnOnce(T) -> T>(&mut self, coord: (i32, i32, i32), replace: F) {
-        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS);
+        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS.msg());
         self.cells.replace_with(index, replace);
     }
 
     /// Replace item at `coord` using [std::mem::replace] and then returns
     /// the old value.
     pub fn replace(&mut self, coord: (i32, i32, i32), value: T) -> T {
-        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS);
+        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS.msg());
         self.cells.replace(index, value)
     }
 
@@ -1865,7 +1865,7 @@ impl<T> RollGrid3D<T> {
     ///
     /// This is appropriate for initializing uninitialized cells, or overwriting memory that has previously been [read] from.
     pub unsafe fn write(&mut self, coord: (i32, i32, i32), value: T) {
-        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS);
+        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS.msg());
         self.cells.write(index, value);
     }
 
@@ -2230,15 +2230,15 @@ mod tests {
             offset: (-3, -1, -5),
             size: (23, 32, 18),
         };
-        let index = grid.offset_index(0, 0, 0).expect(OUT_OF_BOUNDS);
+        let index = grid.offset_index(0, 0, 0).expect(OUT_OF_BOUNDS.msg());
         assert_eq!(index, 532);
-        let (x, y, z) = grid.index_offset(index).expect(OUT_OF_BOUNDS);
+        let (x, y, z) = grid.index_offset(index).expect(OUT_OF_BOUNDS.msg());
         assert_eq!((x, y, z), (0, 0, 0));
         for y in grid.offset.1..grid.offset.1 + grid.size.1 {
             for z in grid.offset.2..grid.offset.2 + grid.size.2 {
                 for x in grid.offset.0..grid.offset.0 + grid.size.0 {
-                    let index = grid.offset_index(x, y, z).expect(OUT_OF_BOUNDS);
-                    let (rx, ry, rz) = grid.index_offset(index).expect(OUT_OF_BOUNDS);
+                    let index = grid.offset_index(x, y, z).expect(OUT_OF_BOUNDS.msg());
+                    let (rx, ry, rz) = grid.index_offset(index).expect(OUT_OF_BOUNDS.msg());
                     assert_eq!((rx, ry, rz), (x, y, z));
                 }
             }
