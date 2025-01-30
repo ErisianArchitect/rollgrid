@@ -10,17 +10,21 @@ pub mod grid3d;
 pub mod math;
 
 mod error_messages {
+    use std::error::Error;
+
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct PanicMsg(&'static str);
-
     impl PanicMsg {
+        // TODO: At some point, evaluate which methods are needed and which
+        //       Are unneccesary.
+        #[cold]
         pub fn panic(self) -> ! {
             panic!("{}", self.0);
         }
 
         pub fn panic_if(self, condition: bool) {
             if condition {
-                panic!("{}", self.0);
+                self.panic();
             }
         }
 
@@ -28,6 +32,13 @@ mod error_messages {
             if !condition {
                 self.panic();
             }
+        }
+
+        pub fn expect<T>(self, opt: Option<T>) -> T {
+            let Some(value) = opt else {
+                self.panic();
+            };
+            value
         }
 
         pub fn debug_assert(self, condition: bool) {
