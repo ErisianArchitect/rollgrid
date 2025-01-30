@@ -740,6 +740,8 @@ impl<T> RollGrid2D<T> {
         let (new_x, new_y) = position;
         // TODO: Change this to work directly with the new position rather than
         //       an offset.
+        // FIXME: This operation will overflow under certain conditions.
+        //        Use i64 for these overflowing operations.
         let offset = (new_x - old_x, new_y - old_y);
         // FIXME: Don't convert width and height to i32. keep them as u32.
         let width = self.size.0 as i32;
@@ -768,6 +770,7 @@ impl<T> RollGrid2D<T> {
             // Update the roll so that we reduce reloading.
             // Without using the roll functionality, this function would demand to reload
             // every single cell, even if it only needed to reload 8 out of 64 cells.
+            // TODO: Check for overflow.
             let new_rolled_x = (roll_x + wrapped_offset_x).rem_euclid(width);
             let new_rolled_y = (roll_y + wrapped_offset_y).rem_euclid(height);
             self.wrap_offset = (new_rolled_x, new_rolled_y);
@@ -778,6 +781,8 @@ impl<T> RollGrid2D<T> {
             // Calculate ranges
             // Combining new_x_range and new_y_range gets the corner.
             // The partition on either the left or right side
+            // FIXME: There are overflowing subtractions ahead.
+            //        Use i64 to prevent overflow.
             let new_x_range = if offset_x >= 0 {
                 (right - offset_x)..right
             } else {
@@ -802,6 +807,7 @@ impl<T> RollGrid2D<T> {
             // The left/right partition
             for y in new_x_range_y_range.clone() {
                 for (xi, x) in new_x_range.clone().enumerate() {
+                    // TODO: This smells bad. Take a closer look.
                     let prior_x = if offset_x >= 0 {
                         old_x + xi as i32
                     } else {
@@ -815,6 +821,7 @@ impl<T> RollGrid2D<T> {
             // The top/bottom partition
             for (iy, y) in new_y_range.clone().enumerate() {
                 for x in new_y_range_x_range.clone() {
+                    // TODO: This smells bad. Take a closer look.
                     let prior_x = x;
                     let prior_y = if offset_y >= 0 {
                         old_y + iy as i32
@@ -828,6 +835,7 @@ impl<T> RollGrid2D<T> {
             // The corner partition
             for (iy, y) in new_y_range.enumerate() {
                 for (ix, x) in new_x_range.clone().enumerate() {
+                    // TODO: This smells bad. Take a closer look.
                     let prior_x = if offset_x >= 0 {
                         old_x + ix as i32
                     } else {
@@ -846,6 +854,7 @@ impl<T> RollGrid2D<T> {
             // Reload everything
             for (yi, y) in (new_y..new_y + height).enumerate() {
                 for (xi, x) in (new_x..new_x + width).enumerate() {
+                    // TODO: This smells bad. Take a closer look.
                     let prior_x = old_x + xi as i32;
                     let prior_y = old_y + yi as i32;
                     let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS.msg());
@@ -877,31 +886,52 @@ impl<T> RollGrid2D<T> {
         }
         let (old_x, old_y) = self.grid_offset;
         let (new_x, new_y) = position;
+        // TODO: Change this to work directly with the new position rather than
+        //       an offset.
+        // FIXME: This operation will overflow under certain conditions.
+        //        Use i64 for these overflowing operations.
         let offset = (new_x - old_x, new_y - old_y);
         let mut reload = reload;
+        // FIXME: Don't convert width and height to i32. keep them as u32.
         let width = self.size.0 as i32;
         let height = self.size.1 as i32;
         let (offset_x, offset_y) = offset;
+        // FIXME: grid_offset is assigned too early.
+        //        also, wtf? How does this function work if grid_offset is
+        //        assigned early? I believe this function relies on
+        //        grid_offset remaining the same until after the reposition
+        //        operation completes.
+        //        Update: This function DOES NOT work. Changing the grid
+        //        offset prematurely seems to break it. I don't know how
+        //        I missed this before. I used this crate without problems...
+        //        THIS IS A MAJOR BUG! FIX ASAP.
         self.grid_offset = (new_x, new_y);
         // Offset is within bounds, so that means that the grid will be rolled.
         // This allows for bounded reloading of the grid elements.
         // If rolling causes a section to remain on the grid, that section will not be reloaded.
         // Only the elements that are considered new will be reloaded.
         if offset_x.abs() < width && offset_y.abs() < height {
+            // TODO: Work out how this works again so I can document it, and
+            //       figure out edge cases.
             let (roll_x, roll_y) = (self.wrap_offset.0 as i32, self.wrap_offset.1 as i32);
             let (wrapped_offset_x, wrapped_offset_y) =
                 (offset_x.rem_euclid(width), offset_y.rem_euclid(height));
             // Update the roll so that we reduce reloading.
             // Without using the roll functionality, this function would demand to reload
             // every single cell, even if it only needed to reload 8 out of 64 cells.
+            // TODO: Check for overflow.
             let new_rolled_x = (roll_x + wrapped_offset_x).rem_euclid(width);
             let new_rolled_y = (roll_y + wrapped_offset_y).rem_euclid(height);
             self.wrap_offset = (new_rolled_x, new_rolled_y);
+            // FIXME: Use checked addition with i32 + u32. (width will be changed
+            //        back to u32)
             let right = new_x + width;
             let bottom = new_y + height;
             // Calculate ranges
             // Combining new_x_range and new_y_range gets the corner.
             // The partition on either the left or right side
+            // FIXME: There are overflowing subtractions ahead.
+            //        Use i64 to prevent overflow.
             let new_x_range = if offset_x >= 0 {
                 (right - offset_x)..right
             } else {
@@ -926,6 +956,7 @@ impl<T> RollGrid2D<T> {
             // The left/right partition
             for y in new_x_range_y_range.clone() {
                 for (xi, x) in new_x_range.clone().enumerate() {
+                    // TODO: This smells bad. Take a closer look.
                     let prior_x = if offset_x >= 0 {
                         old_x + xi as i32
                     } else {
@@ -939,6 +970,7 @@ impl<T> RollGrid2D<T> {
             // The top/bottom partition
             for (iy, y) in new_y_range.clone().enumerate() {
                 for x in new_y_range_x_range.clone() {
+                    // TODO: This smells bad. Take a closer look.
                     let prior_x = x;
                     let prior_y = if offset_y >= 0 {
                         old_y + iy as i32
@@ -952,6 +984,7 @@ impl<T> RollGrid2D<T> {
             // The corner partition
             for (iy, y) in new_y_range.enumerate() {
                 for (ix, x) in new_x_range.clone().enumerate() {
+                    // TODO: This smells bad. Take a closer look.
                     let prior_x = if offset_x >= 0 {
                         old_x + ix as i32
                     } else {
@@ -970,6 +1003,7 @@ impl<T> RollGrid2D<T> {
             // Reload everything
             for (yi, y) in (new_y..new_y + height).enumerate() {
                 for (xi, x) in (new_x..new_x + width).enumerate() {
+                    // TODO: This smells bad. Take a closer look.
                     let prior_x = old_x + xi as i32;
                     let prior_y = old_y + yi as i32;
                     let index = self.offset_index((x, y)).expect(OUT_OF_BOUNDS.msg());
@@ -980,9 +1014,13 @@ impl<T> RollGrid2D<T> {
         Ok(())
     }
 
+    // TODO: This function should return (i64, i64), because subtraction
+    //       with i32 can overflow. Convert i32s into i64s then perform
+    //       calculation.
     /// Get the offset relative to the grid's offset.
     pub fn relative_offset(&self, coord: (i32, i32)) -> (i32, i32) {
         let (x, y) = coord;
+        // FIXME: Overflow is possible here. 
         (x - self.grid_offset.0, y - self.grid_offset.1)
     }
 
@@ -1006,9 +1044,11 @@ impl<T> RollGrid2D<T> {
         let (wrap_x, wrap_y) = (self.wrap_offset.0 as i64, self.wrap_offset.1 as i64);
         let wx = (nx + wrap_x).rem_euclid(width);
         let wy = (ny + wrap_y).rem_euclid(height);
+        // TODO: Code smell
         Some((wy as usize * self.size.0 as usize) + wx as usize)
     }
 
+    // TODO: This can fail, so either explain that or return Option<()>.
     /// Replace item at `coord` using `replace` function that takes as
     /// input the old value and returns the new value. This will swap the
     /// value in-place.
@@ -1017,6 +1057,7 @@ impl<T> RollGrid2D<T> {
         self.cells.replace_with(index, replace);
     }
 
+    // TODO: This can fail, so either explain that or return Option<T>.
     /// Replace item at `coord` using [std::mem::replace] and then returns
     /// the old value.
     pub fn replace(&mut self, coord: (i32, i32), value: T) -> T {
@@ -1087,6 +1128,7 @@ impl<T> RollGrid2D<T> {
     }
     /// Get the maximum bound on the `X` axis.
     pub fn x_max(&self) -> i32 {
+        // FIXME: This might overflow.
         self.grid_offset.0 + self.size.0 as i32
     }
 
@@ -1097,6 +1139,7 @@ impl<T> RollGrid2D<T> {
 
     /// Get the maximum bound on the `Y` axis.
     pub fn y_max(&self) -> i32 {
+        // FIXME: This might overflow.
         self.grid_offset.1 + self.size.1 as i32
     }
 
@@ -1193,6 +1236,12 @@ impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // TODO: Write more comprehensive tests.
+    //       In previous versions, I missed a huge bug because the tests
+    //       weren't comprehensive enough and I missed tons of edge cases.
+    //       This time, think more about the edge cases.
+    //       Think about overflows, repeated actions, etc.
 
     fn print_grid(grid: &RollGrid2D<(i32, i32)>) {
         println!("[");
