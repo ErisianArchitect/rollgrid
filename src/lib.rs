@@ -66,7 +66,7 @@ mod error_messages {
     msg!(Z_MAX_EXCEEDS_MAXIMUM = "Z max bound exceeds maximum.");
     msg!(NOT_ALLOCATED = "Not allocated.");
     msg!(SIZE_TOO_LARGE = "Size is too large");
-    msg!(OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound");
+    // msg!(OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound");
     msg!(OUT_OF_BOUNDS = "Out of bounds");
     msg!(INDEX_OUT_OF_BOUNDS = "Index is out of bounds.");
     msg!(AREA_IS_ZERO = "Width/Height cannot be 0");
