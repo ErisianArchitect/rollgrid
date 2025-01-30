@@ -24,6 +24,13 @@ mod error_messages {
             }
         }
 
+        pub fn debug_assert(self, condition: bool) {
+            #[cfg(debug_assertions)]
+            if condition {
+                self.panic();
+            }
+        }
+
         pub fn msg(self) -> &'static str {
             self.0
         }
@@ -55,6 +62,7 @@ mod error_messages {
     msg!(SIZE_TOO_LARGE = "Size is too large");
     msg!(OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound");
     msg!(OUT_OF_BOUNDS = "Out of bounds");
+    msg!(INDEX_OUT_OF_BOUNDS = "Index is out of bounds.");
     msg!(AREA_IS_ZERO = "Width/Height cannot be 0");
     msg!(VOLUME_IS_ZERO = "Width/Height/Depth cannot be 0");
     msg!(INFLATE_PAST_I32_MAX = "Cannot inflate more than i32::MAX");
