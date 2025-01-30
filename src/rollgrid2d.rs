@@ -111,12 +111,8 @@ impl<T> RollGrid2D<T> {
     {
         // Since inflate is doubled, you can only inflate up to 2^31 at the
         // upper bound. That happens when the grid offset is centered.
-        if inflate.0 > i32::MAX as u32 {
-            panic!("{}", INFLATE_PAST_I32_MAX);
-        }
-        if inflate.1 > i32::MAX as u32 {
-            panic!("{}", INFLATE_PAST_I32_MAX);
-        }
+        INFLATE_PAST_I32_MAX.panic_if(inflate.0 > i32::MAX as u32);
+        INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
         // FIXME: Ensure that grid_offset does not exceed min/max, and panic
         //        if it does.
         let position = (
@@ -174,12 +170,8 @@ impl<T> RollGrid2D<T> {
     {
         // Since inflate is doubled, you can only inflate up to 2^31 at the
         // upper bound. That happens when the grid offset is centered.
-        if inflate.0 > i32::MAX as u32 {
-            panic!("{}", INFLATE_PAST_I32_MAX);
-        }
-        if inflate.1 > i32::MAX as u32 {
-            panic!("{}", INFLATE_PAST_I32_MAX);
-        }
+        INFLATE_PAST_I32_MAX.panic_if(inflate.0 > i32::MAX as u32);
+        INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
         // FIXME: Ensure that grid_offset does not exceed min/max, and panic
         //        if it does.
         let position = (
@@ -235,12 +227,8 @@ impl<T> RollGrid2D<T> {
     {
         // Since deflate is doubled, you can only deflate up to 2^31 at the
         // upper bound. That happens when the grid offset is centered.
-        if deflate.0 > i32::MAX as u32 {
-            panic!("{DEFLATE_PAST_I32_MAX}");
-        }
-        if deflate.1 > i32::MAX as u32 {
-            panic!("{DEFLATE_PAST_I32_MAX}");
-        }
+        DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
+        DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
         // FIXME: Ensure that grid_offset does not exceed min/max, and panic
         //        if it does.
         let position = (
@@ -298,12 +286,8 @@ impl<T> RollGrid2D<T> {
     {
         // Since deflate is doubled, you can only deflate up to 2^31 at the
         // upper bound. That happens when the grid offset is centered.
-        if deflate.0 > i32::MAX as u32 {
-            panic!("{DEFLATE_PAST_I32_MAX}");
-        }
-        if deflate.1 > i32::MAX as u32 {
-            panic!("{DEFLATE_PAST_I32_MAX}");
-        }
+        DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
+        DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
         // FIXME: Ensure that grid_offset does not exceed min/max, and panic
         //        if it does.
         let position = (
@@ -439,12 +423,8 @@ impl<T> RollGrid2D<T> {
         }
         // FIXME: area should be usize, not u32.
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE.msg());
-        if area == 0 {
-            panic!("{AREA_IS_ZERO}");
-        }
-        if area > i32::MAX as u32 {
-            panic!("{SIZE_TOO_LARGE}");
-        }
+        AREA_IS_ZERO.panic_if(area == 0);
+        SIZE_TOO_LARGE.panic_if(area > i32::MAX as u32);
         let (new_x, new_y) = new_position;
         // FIXME: Rather than converting width and height to i32, keep them
         //        as u32 and use fallible addition to create Bounds2D (new_x/y + nw/h).
@@ -577,12 +557,8 @@ impl<T> RollGrid2D<T> {
         let height = height as usize;
         // FIXME: area should be usize, not u32.
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE.msg());
-        if area == 0 {
-            panic!("{AREA_IS_ZERO}");
-        }
-        if area > i32::MAX as usize {
-            panic!("{SIZE_TOO_LARGE}");
-        }
+        AREA_IS_ZERO.panic_if(area == 0);
+        SIZE_TOO_LARGE.panic_if(area > i32::MAX as usize);
         let (new_x, new_y) = new_position;
         // FIXME: Rather than converting width and height to i32, keep them
         //        as u32 and use fallible addition to create Bounds2D (new_x/y + nw/h).
@@ -1065,6 +1041,7 @@ impl<T> RollGrid2D<T> {
         self.cells.replace(index, value)
     }
 
+    // TODO: Explain the return value.
     /// Reads the value from the cell without moving it. This leaves the memory in the cell unchanged.
     pub unsafe fn read(&self, coord: (i32, i32)) -> Option<T> {
         let index = self.offset_index(coord)?;
@@ -1079,7 +1056,7 @@ impl<T> RollGrid2D<T> {
     ///
     /// This is appropriate for initializing uninitialized cells, or overwriting memory that has previously been [read] from.
     pub unsafe fn write(&mut self, coord: (i32, i32), value: T) {
-        let index = self.offset_index(coord).expect(OUT_OF_BOUNDS.msg());
+        let index = OUT_OF_BOUNDS.expect(self.offset_index(coord));
         self.cells.write(index, value);
     }
 
