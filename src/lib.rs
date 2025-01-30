@@ -41,7 +41,7 @@ mod error_messages {
             pub const $name: PanicMsg = PanicMsg($msg);
         };
     }
-
+    msg!(UNALLOCATED_BUFFER = "Buffer was not allocated.");
     msg!(X_MAX_EXCEEDS_MAXIMUM = "X max bound exceeds maximum.");
     msg!(Y_MAX_EXCEEDS_MAXIMUM = "Y max bound exceeds maximum.");
     msg!(Z_MAX_EXCEEDS_MAXIMUM = "Z max bound exceeds maximum.");
