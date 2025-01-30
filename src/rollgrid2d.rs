@@ -109,12 +109,16 @@ impl<T> RollGrid2D<T> {
     where
         M: CellManage<(i32, i32), T>,
     {
+        // Since inflate is doubled, you can only inflate up to 2^31 at the
+        // upper bound. That happens when the grid offset is centered.
         if inflate.0 > i32::MAX as u32 {
             panic!("{}", INFLATE_PAST_I32_MAX);
         }
         if inflate.1 > i32::MAX as u32 {
             panic!("{}", INFLATE_PAST_I32_MAX);
         }
+        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
+        //        if it does.
         let position = (
             self.grid_offset.0 - inflate.0 as i32,
             self.grid_offset.1 - inflate.1 as i32,
@@ -168,12 +172,16 @@ impl<T> RollGrid2D<T> {
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
+        // Since inflate is doubled, you can only inflate up to 2^31 at the
+        // upper bound. That happens when the grid offset is centered.
         if inflate.0 > i32::MAX as u32 {
             panic!("{}", INFLATE_PAST_I32_MAX);
         }
         if inflate.1 > i32::MAX as u32 {
             panic!("{}", INFLATE_PAST_I32_MAX);
         }
+        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
+        //        if it does.
         let position = (
             self.grid_offset.0 - inflate.0 as i32,
             self.grid_offset.1 - inflate.1 as i32,
@@ -225,12 +233,16 @@ impl<T> RollGrid2D<T> {
     where
         M: CellManage<(i32, i32), T>,
     {
+        // Since deflate is doubled, you can only deflate up to 2^31 at the
+        // upper bound. That happens when the grid offset is centered.
         if deflate.0 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
         if deflate.1 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
+        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
+        //        if it does.
         let position = (
             self.grid_offset.0 + deflate.0 as i32,
             self.grid_offset.1 + deflate.1 as i32,
@@ -284,12 +296,16 @@ impl<T> RollGrid2D<T> {
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
+        // Since deflate is doubled, you can only deflate up to 2^31 at the
+        // upper bound. That happens when the grid offset is centered.
         if deflate.0 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
         if deflate.1 > i32::MAX as u32 {
             panic!("{DEFLATE_PAST_I32_MAX}");
         }
+        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
+        //        if it does.
         let position = (
             self.grid_offset.0 + deflate.0 as i32,
             self.grid_offset.1 + deflate.1 as i32,
@@ -421,6 +437,7 @@ impl<T> RollGrid2D<T> {
             }
             return;
         }
+        // FIXME: area should be usize, not u32.
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
         if area == 0 {
             panic!("{AREA_IS_ZERO}");
@@ -429,6 +446,8 @@ impl<T> RollGrid2D<T> {
             panic!("{SIZE_TOO_LARGE}");
         }
         let (new_x, new_y) = new_position;
+        // FIXME: Rather than converting width and height to i32, keep them
+        //        as u32 and use fallible addition to create Bounds2D (new_x/y + nw/h).
         let nw = width as i32;
         let nh = height as i32;
         // Determine what needs to be unloaded
@@ -553,8 +572,10 @@ impl<T> RollGrid2D<T> {
             }
             return Ok(());
         }
+        // FIXME: width and height should remain as u32.
         let width = width as usize;
         let height = height as usize;
+        // FIXME: area should be usize, not u32.
         let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
         if area == 0 {
             panic!("{AREA_IS_ZERO}");
@@ -563,6 +584,8 @@ impl<T> RollGrid2D<T> {
             panic!("{SIZE_TOO_LARGE}");
         }
         let (new_x, new_y) = new_position;
+        // FIXME: Rather than converting width and height to i32, keep them
+        //        as u32 and use fallible addition to create Bounds2D (new_x/y + nw/h).
         let nw = width as i32;
         let nh = height as i32;
         // Determine what needs to be unloaded
@@ -664,6 +687,7 @@ impl<T> RollGrid2D<T> {
     {
         let (curx, cury) = self.grid_offset;
         let (ox, oy) = offset;
+        // FIXME: Check for overflow.
         self.reposition((curx + ox, cury + oy), reload);
     }
 
@@ -687,6 +711,7 @@ impl<T> RollGrid2D<T> {
     {
         let (curx, cury) = self.grid_offset;
         let (ox, oy) = offset;
+        // FIXME: Check for overflow.
         self.try_reposition((curx + ox, cury + oy), reload)
     }
 
@@ -713,16 +738,30 @@ impl<T> RollGrid2D<T> {
         }
         let (old_x, old_y) = self.grid_offset;
         let (new_x, new_y) = position;
+        // TODO: Change this to work directly with the new position rather than
+        //       an offset.
         let offset = (new_x - old_x, new_y - old_y);
+        // FIXME: Don't convert width and height to i32. keep them as u32.
         let width = self.size.0 as i32;
         let height = self.size.1 as i32;
         let (offset_x, offset_y) = offset;
+        // FIXME: grid_offset is assigned too early.
+        //        also, wtf? How does this function work if grid_offset is
+        //        assigned early? I believe this function relies on
+        //        grid_offset remaining the same until after the reposition
+        //        operation completes.
+        //        Update: This function DOES NOT work. Changing the grid
+        //        offset prematurely seems to break it. I don't know how
+        //        I missed this before. I used this crate without problems...
+        //        THIS IS A MAJOR BUG! FIX ASAP.
         self.grid_offset = (new_x, new_y);
         // Offset is within bounds, so that means that the grid will be rolled.
         // This allows for bounded reloading of the grid elements.
         // If rolling causes a section to remain on the grid, that section will not be reloaded.
         // Only the elements that are considered new will be reloaded.
         if offset_x.abs() < width && offset_y.abs() < height {
+            // TODO: Work out how this works again so I can document it, and
+            //       figure out edge cases.
             let (roll_x, roll_y) = (self.wrap_offset.0 as i32, self.wrap_offset.1 as i32);
             let (wrapped_offset_x, wrapped_offset_y) =
                 (offset_x.rem_euclid(width), offset_y.rem_euclid(height));
@@ -732,6 +771,8 @@ impl<T> RollGrid2D<T> {
             let new_rolled_x = (roll_x + wrapped_offset_x).rem_euclid(width);
             let new_rolled_y = (roll_y + wrapped_offset_y).rem_euclid(height);
             self.wrap_offset = (new_rolled_x, new_rolled_y);
+            // FIXME: Use checked addition with i32 + u32. (width will be changed
+            //        back to u32)
             let right = new_x + width;
             let bottom = new_y + height;
             // Calculate ranges
