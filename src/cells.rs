@@ -24,7 +24,7 @@ impl<T> FixedArray<T> {
         if y_max > i32::MAX as i64 {
             panic!("{}", Y_MAX_EXCEEDS_MAXIMUM);
         }
-        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE);
+        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE.msg());
         if area == 0 {
             panic!("{}", AREA_IS_ZERO);
         }
@@ -64,9 +64,9 @@ impl<T> FixedArray<T> {
         }
         let volume = width
             .checked_mul(height)
-            .expect(SIZE_TOO_LARGE)
+            .expect(SIZE_TOO_LARGE.msg())
             .checked_mul(depth)
-            .expect(SIZE_TOO_LARGE);
+            .expect(SIZE_TOO_LARGE.msg());
         if volume == 0 {
             panic!("{}", VOLUME_IS_ZERO);
         }
