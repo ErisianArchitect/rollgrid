@@ -3,6 +3,12 @@
 version = 4
 
 [[package]]
+name = "panicmsg"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3c4e1c17a86fc36044421030fa77a7c96cacc09cab551ad0fb3bd4ab5a91c02"
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -24,6 +30,7 @@ dependencies = [
 name = "rollgrid"
 version = "3.0.0-alpha1"
 dependencies = [
+ "panicmsg",
  "serde",
 ]
 

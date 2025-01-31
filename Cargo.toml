@@ -9,6 +9,7 @@ documentation = "https://docs.rs/rollgrid"
 license = "MIT"
 
 [dependencies]
+panicmsg = "1.0.0"
 serde = { version = "1.0.215", optional = true, features = ["derive"]}
 
 [features]
