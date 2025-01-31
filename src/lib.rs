@@ -10,82 +10,44 @@ pub mod grid3d;
 pub mod math;
 
 mod error_messages {
-    use std::error::Error;
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-    pub struct PanicMsg(&'static str);
-    impl PanicMsg {
-        // TODO: At some point, evaluate which methods are needed and which
-        //       Are unneccesary.
-        #[cold]
-        pub fn panic(self) -> ! {
-            panic!("{}", self.0);
-        }
-
-        pub fn panic_if(self, condition: bool) {
-            if condition {
-                self.panic();
-            }
-        }
-
-        pub fn assert(self, condition: bool) {
-            if !condition {
-                self.panic();
-            }
-        }
-
-        pub fn expect<T>(self, opt: Option<T>) -> T {
-            let Some(value) = opt else {
-                self.panic();
-            };
-            value
-        }
-
-        pub fn debug_assert(self, condition: bool) {
-            #[cfg(debug_assertions)]
-            if !condition {
-                self.panic();
-            }
-        }
-
-        pub fn msg(self) -> &'static str {
-            self.0
-        }
-    }
-
-    impl std::fmt::Display for PanicMsg {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{}", self.0)
-        }
-    }
-
-    impl std::ops::Deref for PanicMsg {
-        type Target = str;
-        fn deref(&self) -> &Self::Target {
-            self.0
-        }
-    }
-
-    macro_rules! msg {
-        ($name:ident = $msg:literal) => {
-            pub const $name: PanicMsg = PanicMsg($msg);
+    // msg!(UNALLOCATED_BUFFER = "Buffer was not allocated.");
+    // msg!(X_MAX_EXCEEDS_MAXIMUM = "X max bound exceeds maximum.");
+    // msg!(Y_MAX_EXCEEDS_MAXIMUM = "Y max bound exceeds maximum.");
+    // msg!(Z_MAX_EXCEEDS_MAXIMUM = "Z max bound exceeds maximum.");
+    // msg!(NOT_ALLOCATED = "Not allocated.");
+    // msg!(SIZE_TOO_LARGE = "Size is too large");
+    // // msg!(OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound");
+    // msg!(OUT_OF_BOUNDS = "Out of bounds");
+    // msg!(INDEX_OUT_OF_BOUNDS = "Index is out of bounds.");
+    // msg!(AREA_IS_ZERO = "Width/Height cannot be 0");
+    // msg!(VOLUME_IS_ZERO = "Width/Height/Depth cannot be 0");
+    // msg!(INFLATE_PAST_I32_MAX = "Cannot inflate more than i32::MAX");
+    // msg!(INFLATE_OVERFLOW = "Inflate operation results in integer overflow");
+    // msg!(DEFLATE_PAST_I32_MAX = "Cannot deflate more than i32::MAX");
+    // msg!(DEFLATE_OVERFLOW = "Deflate operation results in integer overflow");
+    macro_rules! error_messages {
+        ($($name:ident = $message:literal;)*) => {
+            $(
+                pub const $name: panicmsg::PanicMsg = panicmsg::PanicMsg::new($message);
+            )*
         };
     }
-    msg!(UNALLOCATED_BUFFER = "Buffer was not allocated.");
-    msg!(X_MAX_EXCEEDS_MAXIMUM = "X max bound exceeds maximum.");
-    msg!(Y_MAX_EXCEEDS_MAXIMUM = "Y max bound exceeds maximum.");
-    msg!(Z_MAX_EXCEEDS_MAXIMUM = "Z max bound exceeds maximum.");
-    msg!(NOT_ALLOCATED = "Not allocated.");
-    msg!(SIZE_TOO_LARGE = "Size is too large");
-    // msg!(OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound");
-    msg!(OUT_OF_BOUNDS = "Out of bounds");
-    msg!(INDEX_OUT_OF_BOUNDS = "Index is out of bounds.");
-    msg!(AREA_IS_ZERO = "Width/Height cannot be 0");
-    msg!(VOLUME_IS_ZERO = "Width/Height/Depth cannot be 0");
-    msg!(INFLATE_PAST_I32_MAX = "Cannot inflate more than i32::MAX");
-    msg!(INFLATE_OVERFLOW = "Inflate operation results in integer overflow");
-    msg!(DEFLATE_PAST_I32_MAX = "Cannot deflate more than i32::MAX");
-    msg!(DEFLATE_OVERFLOW = "Deflate operation results in integer overflow");
+    error_messages!(
+        UNALLOCATED_BUFFER      = "Buffer was not allocated.";
+        X_MAX_EXCEEDS_MAXIMUM   = "X max bound exceeds maximum.";
+        Y_MAX_EXCEEDS_MAXIMUM   = "Y max bound exceeds maximum.";
+        Z_MAX_EXCEEDS_MAXIMUM   = "Z max bound exceeds maximum.";
+        NOT_ALLOCATED           = "Not allocated.";
+        SIZE_TOO_LARGE          = "Size is too large";
+        OUT_OF_BOUNDS           = "Out of bounds";
+        INDEX_OUT_OF_BOUNDS     = "Index is out of bounds.";
+        AREA_IS_ZERO            = "Width/Height cannot be 0";
+        VOLUME_IS_ZERO          = "Width/Height/Depth cannot be 0";
+        INFLATE_PAST_I32_MAX    = "Cannot inflate more than i32::MAX";
+        INFLATE_OVERFLOW        = "Inflate operation results in integer overflow";
+        DEFLATE_PAST_I32_MAX    = "Cannot deflate more than i32::MAX";
+        DEFLATE_OVERFLOW        = "Deflate operation results in integer overflow";
+    );
 }
 
 /// A trait for managing cells during resize operations on grids.
