@@ -23,15 +23,15 @@ mod error_messages {
         Y_MAX_EXCEEDS_MAXIMUM   = "Y max bound exceeds maximum.";
         Z_MAX_EXCEEDS_MAXIMUM   = "Z max bound exceeds maximum.";
         NOT_ALLOCATED           = "Not allocated.";
-        SIZE_TOO_LARGE          = "Size is too large";
-        OUT_OF_BOUNDS           = "Out of bounds";
+        SIZE_TOO_LARGE          = "Size is too large.";
+        OUT_OF_BOUNDS           = "Out of bounds.";
         INDEX_OUT_OF_BOUNDS     = "Index is out of bounds.";
-        AREA_IS_ZERO            = "Width/Height cannot be 0";
-        VOLUME_IS_ZERO          = "Width/Height/Depth cannot be 0";
-        INFLATE_PAST_I32_MAX    = "Cannot inflate more than i32::MAX";
-        INFLATE_OVERFLOW        = "Inflate operation results in integer overflow";
-        DEFLATE_PAST_I32_MAX    = "Cannot deflate more than i32::MAX";
-        DEFLATE_OVERFLOW        = "Deflate operation results in integer overflow";
+        AREA_IS_ZERO            = "Width/Height cannot be 0.";
+        VOLUME_IS_ZERO          = "Width/Height/Depth cannot be 0.";
+        INFLATE_PAST_I32_MAX    = "Cannot inflate more than i32::MAX.";
+        INFLATE_OVERFLOW        = "Inflate operation results in integer overflow.";
+        DEFLATE_PAST_I32_MAX    = "Cannot deflate more than i32::MAX.";
+        DEFLATE_OVERFLOW        = "Deflate operation results in integer overflow.";
         /* I don't know if I'll need this, so I'm just going to comment it out for now.
         OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound"; */
     );
