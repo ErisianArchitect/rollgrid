@@ -8,6 +8,10 @@ use crate::{bounds2d::*, cells::FixedArray, error_messages::*, math::*, *};
 pub struct RollGrid2D<T: Sized> {
     cells: FixedArray<T>,
     size: (u32, u32),
+    // TODO: I think that wrap_offset can (and should) be (u32, u32).
+    //       Determine if wrap_offset could become negative. If it
+    //       can become negative, determine if it can be done without
+    //       it becoming negative.
     wrap_offset: (i32, i32),
     grid_offset: (i32, i32),
 }
@@ -422,7 +426,8 @@ impl<T> RollGrid2D<T> {
             return;
         }
         // FIXME: area should be usize, not u32.
-        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE.msg());
+        //        Convert width and height to usize for this operation.
+        let area = SIZE_TOO_LARGE.expect(width.checked_mul(height));
         AREA_IS_ZERO.panic_if(area == 0);
         SIZE_TOO_LARGE.panic_if(area > i32::MAX as u32);
         let (new_x, new_y) = new_position;
@@ -556,7 +561,7 @@ impl<T> RollGrid2D<T> {
         let width = width as usize;
         let height = height as usize;
         // FIXME: area should be usize, not u32.
-        let area = width.checked_mul(height).expect(SIZE_TOO_LARGE.msg());
+        let area = SIZE_TOO_LARGE.expect(width.checked_mul(height));
         AREA_IS_ZERO.panic_if(area == 0);
         SIZE_TOO_LARGE.panic_if(area > i32::MAX as usize);
         let (new_x, new_y) = new_position;
@@ -567,6 +572,8 @@ impl<T> RollGrid2D<T> {
         // Determine what needs to be unloaded
         let old_bounds: Bounds2D = self.bounds();
         let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
+        // TODO: When width and height are returned to u32, remove conversions.
+        // FIXME: Operation is performed too early.
         let size = (width as u32, height as u32);
         if old_bounds.intersects(new_bounds) {
             macro_rules! unload_bounds {
@@ -1005,6 +1012,7 @@ impl<T> RollGrid2D<T> {
     /// Offsets are relative to the world origin `(0, 0, 0)`, and must account for
     /// the grid offset.
     fn offset_index(&self, (x, y): (i32, i32)) -> Option<usize> {
+        // FIXME: Variables here have terrible names.
         let (x, y) = (x as i64, y as i64);
         let (mx, my) = self.grid_offset;
         let (mx, my) = (mx as i64, my as i64);
@@ -1130,6 +1138,7 @@ impl<T> RollGrid2D<T> {
 
     /// This is equivalent to the area (width * height).
     pub fn len(&self) -> usize {
+        // FIXME: This could overflow on 32-bit systems.
         self.size.0 as usize * self.size.1 as usize
     }
 
@@ -1302,6 +1311,8 @@ mod tests {
                             RollGrid2D::new(4, 4, (0, 0), |pos: (i32, i32)| DropCoord::from(pos));
                         // reposition to half point to ensure that wrapping does not cause lookup invalidation.
                         grid.reposition((2, 2), |old_pos, new_pos, cell| {
+                            assert_eq!(new_pos.0 - old_pos.0, 2, "x");
+                            assert_eq!(new_pos.1 - old_pos.1, 2, "y");
                             assert_eq!(old_pos, cell.coord);
                             cell.coord = new_pos;
                         });
