@@ -10,21 +10,6 @@ pub mod grid3d;
 pub mod math;
 
 mod error_messages {
-    // msg!(UNALLOCATED_BUFFER = "Buffer was not allocated.");
-    // msg!(X_MAX_EXCEEDS_MAXIMUM = "X max bound exceeds maximum.");
-    // msg!(Y_MAX_EXCEEDS_MAXIMUM = "Y max bound exceeds maximum.");
-    // msg!(Z_MAX_EXCEEDS_MAXIMUM = "Z max bound exceeds maximum.");
-    // msg!(NOT_ALLOCATED = "Not allocated.");
-    // msg!(SIZE_TOO_LARGE = "Size is too large");
-    // // msg!(OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound");
-    // msg!(OUT_OF_BOUNDS = "Out of bounds");
-    // msg!(INDEX_OUT_OF_BOUNDS = "Index is out of bounds.");
-    // msg!(AREA_IS_ZERO = "Width/Height cannot be 0");
-    // msg!(VOLUME_IS_ZERO = "Width/Height/Depth cannot be 0");
-    // msg!(INFLATE_PAST_I32_MAX = "Cannot inflate more than i32::MAX");
-    // msg!(INFLATE_OVERFLOW = "Inflate operation results in integer overflow");
-    // msg!(DEFLATE_PAST_I32_MAX = "Cannot deflate more than i32::MAX");
-    // msg!(DEFLATE_OVERFLOW = "Deflate operation results in integer overflow");
     macro_rules! error_messages {
         ($($name:ident = $message:literal;)*) => {
             $(
@@ -47,6 +32,8 @@ mod error_messages {
         INFLATE_OVERFLOW        = "Inflate operation results in integer overflow";
         DEFLATE_PAST_I32_MAX    = "Cannot deflate more than i32::MAX";
         DEFLATE_OVERFLOW        = "Deflate operation results in integer overflow";
+        /* I don't know if I'll need this, so I'm just going to comment it out for now.
+        OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound"; */
     );
 }
 
