@@ -1,4 +1,4 @@
-use crate::cells::FixedArray;
+use crate::fixedarray::FixedArray;
 use crate::math::*;
 
 

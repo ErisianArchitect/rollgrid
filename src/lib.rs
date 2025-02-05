@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 pub mod bounds2d;
 pub mod bounds3d;
-pub(crate) mod cells;
+pub(crate) mod fixedarray;
 pub mod rollgrid2d;
 pub mod rollgrid3d;
 pub mod grid2d;

@@ -1,4 +1,4 @@
-use crate::{bounds2d::*, cells::FixedArray, error_messages::*, math::*, *};
+use crate::{bounds2d::*, fixedarray::FixedArray, error_messages::*, math::*, *};
 
 /// A 2D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.

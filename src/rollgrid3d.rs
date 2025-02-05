@@ -1,4 +1,4 @@
-use crate::{bounds3d::*, cells::FixedArray, error_messages::*, *};
+use crate::{bounds3d::*, fixedarray::FixedArray, error_messages::*, *};
 
 /// A 3D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
