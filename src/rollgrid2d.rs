@@ -1182,6 +1182,17 @@ impl<T: Clone> RollGrid2D<T> {
     }
 }
 
+impl<T: Clone> Clone for RollGrid2D<T> {
+    fn clone(&self) -> Self {
+        Self {
+            cells: self.cells.clone(),
+            size: self.size,
+            wrap_offset: self.wrap_offset,
+            grid_offset: self.grid_offset,
+        }
+    }
+}
+
 /// Iterator over all cells in a [RollGrid2D].
 pub struct RollGrid2DIterator<'a, T> {
     grid: &'a RollGrid2D<T>,
