@@ -125,7 +125,7 @@ You can modify this code to fit your purpose.
 - Added `math` module, for some useful math functionality that this crate uses.
 - Added `new_zst` constructor to `RollGrid2D<()>` and `RollGrid3D<()>`.
 - Added `new_1d` and `try_new_1d` functions to `FixedArray`.
-- Added `into_raw
+- Added `into_raw` and `from_raw` to `FixedArray`.
 - Implemented `Send` for `RollGrid2D<T>` where `T: Send`.
 - Implemented `Send` for `RollGrid3D<T>` where `T: Send`.
 - Implemented `Sync` for `RollGrid2D<T>` where `T: Sync`.
