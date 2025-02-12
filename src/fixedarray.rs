@@ -16,6 +16,15 @@ unsafe impl<T: Send> Send for FixedArray<T> {}
 unsafe impl<T: Sync> Sync for FixedArray<T> {}
 
 impl<T> FixedArray<T> {
+
+    #[inline(always)]
+    unsafe fn prealloc(capacity: usize) -> NonNull<T> {
+        unsafe {
+            let layout = Self::make_layout(capacity).expect("Failed to create layout.");
+            NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer.")
+        }
+    }
+
     #[inline(always)]
     fn prealloc_2d(size: (u32, u32), offset: (i32, i32)) -> (NonNull<T>, Bounds2D, usize) {
         let (width, height) = (size.0 as usize, size.1 as usize);
