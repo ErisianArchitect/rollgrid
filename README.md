@@ -118,7 +118,7 @@ You can modify this code to fit your purpose.
 # Changelog
 
 ### 3.0.0-alpha1
-##### Big Fixes
+##### Bug Fixes
 
 ##### Additions
 - Added `Grid2D` and `Grid3D`.
