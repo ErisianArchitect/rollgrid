@@ -1,4 +1,4 @@
-use crate::{bounds2d::*, fixedarray::FixedArray, error_messages::*, math::*, *};
+use crate::{bounds2d::*, error_messages::*, fixedarray::FixedArray, math::*, *};
 
 /// A 2D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -30,11 +30,7 @@ impl<T: Default> RollGrid2D<T> {
 
 impl RollGrid2D<()> {
     /// Creates a new grid of unit types.
-    pub fn new_zst(
-        width: u32,
-        height: u32,
-        grid_offset: (i32, i32),
-    ) -> Self {
+    pub fn new_zst(width: u32, height: u32, grid_offset: (i32, i32)) -> Self {
         let size = (width, height);
         RollGrid2D {
             cells: FixedArray::new_2d(size, grid_offset, |_| ()),
@@ -140,7 +136,7 @@ impl<T> RollGrid2D<T> {
     ///
     /// If the size is `(2, 2)` with an offset of `(1, 1)`, and you want to inflate by `(1, 1)`.
     /// The result of that operation would have a size of `(4, 4)` and an offset of `(0, 0)`.
-    /// 
+    ///
     /// # Panics
     /// - If either dimension of `inflate` exceeds `i32::MAX`.
     /// - If either dimension of the inflated size exceeds `u32::MAX`
@@ -373,12 +369,7 @@ impl<T> RollGrid2D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_resize<E, M>(
-        &mut self,
-        new_width: u32,
-        new_height: u32,
-        manage: M,
-    ) -> Result<(), E>
+    pub fn try_resize<E, M>(&mut self, new_width: u32, new_height: u32, manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
@@ -1007,7 +998,7 @@ impl<T> RollGrid2D<T> {
     /// Get the offset relative to the grid's offset.
     pub fn relative_offset(&self, coord: (i32, i32)) -> (i32, i32) {
         let (x, y) = coord;
-        // FIXME: Overflow is possible here. 
+        // FIXME: Overflow is possible here.
         (x - self.grid_offset.0, y - self.grid_offset.1)
     }
 

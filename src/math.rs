@@ -1,4 +1,3 @@
-
 pub struct TupleConverter;
 
 pub trait DimensionsType: Sized {}
@@ -10,8 +9,8 @@ pub trait ConvertTuple<A: DimensionsType, B: DimensionsType> {
 pub trait Convert: DimensionsType {
     fn convert<T>(self) -> T
     where
-    T: DimensionsType,
-    TupleConverter: ConvertTuple<Self, T>;
+        T: DimensionsType,
+        TupleConverter: ConvertTuple<Self, T>;
 }
 
 pub trait AddCoord<Rhs> {
@@ -52,28 +51,19 @@ impl DimensionsType for (usize, usize, usize) {}
 
 impl ConvertTuple<(i32, i32), (i64, i64)> for TupleConverter {
     fn convert(input: (i32, i32)) -> (i64, i64) {
-        (
-            input.0 as i64,
-            input.1 as i64,
-        )
+        (input.0 as i64, input.1 as i64)
     }
 }
 
 impl ConvertTuple<(u32, u32), (i64, i64)> for TupleConverter {
     fn convert(input: (u32, u32)) -> (i64, i64) {
-        (
-            input.0 as i64,
-            input.1 as i64,
-        )
+        (input.0 as i64, input.1 as i64)
     }
 }
 
 impl ConvertTuple<(u32, u32), (usize, usize)> for TupleConverter {
     fn convert(input: (u32, u32)) -> (usize, usize) {
-        (
-            input.0 as usize,
-            input.1 as usize,
-        )
+        (input.0 as usize, input.1 as usize)
     }
 }
 
@@ -81,7 +71,7 @@ impl<A: DimensionsType> Convert for A {
     fn convert<T>(self) -> T
     where
         T: DimensionsType,
-        TupleConverter: ConvertTuple<Self, T>
+        TupleConverter: ConvertTuple<Self, T>,
     {
         TupleConverter::convert(self)
     }
@@ -91,10 +81,7 @@ impl AddCoord<(i32, i32)> for (i32, i32) {
     type Output = (i32, i32);
     #[inline(always)]
     fn add_coord(self, rhs: (i32, i32)) -> Self::Output {
-        (
-            self.0 + rhs.0,
-            self.1 + rhs.1,
-        )
+        (self.0 + rhs.0, self.1 + rhs.1)
     }
 }
 
@@ -102,10 +89,7 @@ impl SubCoord<(i32, i32)> for (i32, i32) {
     type Output = (i32, i32);
     #[inline(always)]
     fn sub_coord(self, rhs: (i32, i32)) -> Self::Output {
-        (
-            self.0 - rhs.0,
-            self.1 - rhs.1,
-        )
+        (self.0 - rhs.0, self.1 - rhs.1)
     }
 }
 
@@ -113,10 +97,7 @@ impl MulCoord<(i32, i32)> for (i32, i32) {
     type Output = (i32, i32);
     #[inline(always)]
     fn mul_coord(self, rhs: (i32, i32)) -> Self::Output {
-        (
-            self.0 * rhs.0,
-            self.1 * rhs.1,
-        )
+        (self.0 * rhs.0, self.1 * rhs.1)
     }
 }
 
@@ -124,10 +105,7 @@ impl DivCoord<(i32, i32)> for (i32, i32) {
     type Output = (i32, i32);
     #[inline(always)]
     fn div_coord(self, rhs: (i32, i32)) -> Self::Output {
-        (
-            self.0 / rhs.0,
-            self.1 / rhs.1,
-        )
+        (self.0 / rhs.0, self.1 / rhs.1)
     }
 }
 
@@ -135,10 +113,7 @@ impl RemCoord<(i32, i32)> for (i32, i32) {
     type Output = (i32, i32);
     #[inline(always)]
     fn rem_coord(self, rhs: (i32, i32)) -> Self::Output {
-        (
-            self.0 % rhs.0,
-            self.1 % rhs.1,
-        )
+        (self.0 % rhs.0, self.1 % rhs.1)
     }
 }
 
@@ -148,11 +123,7 @@ impl AddCoord<(i32, i32, i32)> for (i32, i32, i32) {
     type Output = (i32, i32, i32);
     #[inline(always)]
     fn add_coord(self, rhs: (i32, i32, i32)) -> Self::Output {
-        (
-            self.0 + rhs.0,
-            self.1 + rhs.1,
-            self.2 + rhs.2,
-        )
+        (self.0 + rhs.0, self.1 + rhs.1, self.2 + rhs.2)
     }
 }
 
@@ -160,11 +131,7 @@ impl SubCoord<(i32, i32, i32)> for (i32, i32, i32) {
     type Output = (i32, i32, i32);
     #[inline(always)]
     fn sub_coord(self, rhs: (i32, i32, i32)) -> Self::Output {
-        (
-            self.0 - rhs.0,
-            self.1 - rhs.1,
-            self.2 - rhs.2,
-        )
+        (self.0 - rhs.0, self.1 - rhs.1, self.2 - rhs.2)
     }
 }
 
@@ -172,11 +139,7 @@ impl MulCoord<(i32, i32, i32)> for (i32, i32, i32) {
     type Output = (i32, i32, i32);
     #[inline(always)]
     fn mul_coord(self, rhs: (i32, i32, i32)) -> Self::Output {
-        (
-            self.0 * rhs.0,
-            self.1 * rhs.1,
-            self.2 * rhs.2,
-        )
+        (self.0 * rhs.0, self.1 * rhs.1, self.2 * rhs.2)
     }
 }
 
@@ -184,11 +147,7 @@ impl DivCoord<(i32, i32, i32)> for (i32, i32, i32) {
     type Output = (i32, i32, i32);
     #[inline(always)]
     fn div_coord(self, rhs: (i32, i32, i32)) -> Self::Output {
-        (
-            self.0 / rhs.0,
-            self.1 / rhs.1,
-            self.2 / rhs.2,
-        )
+        (self.0 / rhs.0, self.1 / rhs.1, self.2 / rhs.2)
     }
 }
 
@@ -196,11 +155,7 @@ impl RemCoord<(i32, i32, i32)> for (i32, i32, i32) {
     type Output = (i32, i32, i32);
     #[inline(always)]
     fn rem_coord(self, rhs: (i32, i32, i32)) -> Self::Output {
-        (
-            self.0 % rhs.0,
-            self.1 % rhs.1,
-            self.2 % rhs.2,
-        )
+        (self.0 % rhs.0, self.1 % rhs.1, self.2 % rhs.2)
     }
 }
 
@@ -208,10 +163,7 @@ impl AddCoord<i32> for (i32, i32) {
     type Output = (i32, i32);
     #[inline(always)]
     fn add_coord(self, rhs: i32) -> Self::Output {
-        (
-            self.0 + rhs,
-            self.1 + rhs,
-        )
+        (self.0 + rhs, self.1 + rhs)
     }
 }
 
@@ -219,10 +171,7 @@ impl SubCoord<i32> for (i32, i32) {
     type Output = (i32, i32);
     #[inline(always)]
     fn sub_coord(self, rhs: i32) -> Self::Output {
-        (
-            self.0 - rhs,
-            self.1 - rhs,
-        )
+        (self.0 - rhs, self.1 - rhs)
     }
 }
 
@@ -230,10 +179,7 @@ impl MulCoord<i32> for (i32, i32) {
     type Output = (i32, i32);
     #[inline(always)]
     fn mul_coord(self, rhs: i32) -> Self::Output {
-        (
-            self.0 * rhs,
-            self.1 * rhs,
-        )
+        (self.0 * rhs, self.1 * rhs)
     }
 }
 
@@ -241,10 +187,7 @@ impl DivCoord<i32> for (i32, i32) {
     type Output = (i32, i32);
     #[inline(always)]
     fn div_coord(self, rhs: i32) -> Self::Output {
-        (
-            self.0 / rhs,
-            self.1 / rhs,
-        )
+        (self.0 / rhs, self.1 / rhs)
     }
 }
 
@@ -252,10 +195,7 @@ impl RemCoord<i32> for (i32, i32) {
     type Output = (i32, i32);
     #[inline(always)]
     fn rem_coord(self, rhs: i32) -> Self::Output {
-        (
-            self.0 % rhs,
-            self.1 % rhs,
-        )
+        (self.0 % rhs, self.1 % rhs)
     }
 }
 
@@ -263,11 +203,7 @@ impl AddCoord<i32> for (i32, i32, i32) {
     type Output = (i32, i32, i32);
     #[inline(always)]
     fn add_coord(self, rhs: i32) -> Self::Output {
-        (
-            self.0 + rhs,
-            self.1 + rhs,
-            self.2 + rhs,
-        )
+        (self.0 + rhs, self.1 + rhs, self.2 + rhs)
     }
 }
 
@@ -275,11 +211,7 @@ impl SubCoord<i32> for (i32, i32, i32) {
     type Output = (i32, i32, i32);
     #[inline(always)]
     fn sub_coord(self, rhs: i32) -> Self::Output {
-        (
-            self.0 - rhs,
-            self.1 - rhs,
-            self.2 - rhs,
-        )
+        (self.0 - rhs, self.1 - rhs, self.2 - rhs)
     }
 }
 
@@ -287,11 +219,7 @@ impl MulCoord<i32> for (i32, i32, i32) {
     type Output = (i32, i32, i32);
     #[inline(always)]
     fn mul_coord(self, rhs: i32) -> Self::Output {
-        (
-            self.0 * rhs,
-            self.1 * rhs,
-            self.2 * rhs,
-        )
+        (self.0 * rhs, self.1 * rhs, self.2 * rhs)
     }
 }
 
@@ -299,11 +227,7 @@ impl DivCoord<i32> for (i32, i32, i32) {
     type Output = (i32, i32, i32);
     #[inline(always)]
     fn div_coord(self, rhs: i32) -> Self::Output {
-        (
-            self.0 / rhs,
-            self.1 / rhs,
-            self.2 / rhs,
-        )
+        (self.0 / rhs, self.1 / rhs, self.2 / rhs)
     }
 }
 
@@ -311,11 +235,7 @@ impl RemCoord<i32> for (i32, i32, i32) {
     type Output = (i32, i32, i32);
     #[inline(always)]
     fn rem_coord(self, rhs: i32) -> Self::Output {
-        (
-            self.0 % rhs,
-            self.1 % rhs,
-            self.2 % rhs,
-        )
+        (self.0 % rhs, self.1 % rhs, self.2 % rhs)
     }
 }
 
@@ -335,7 +255,7 @@ pub const fn checked_sub_i32_into_u32(lhs: i32, rhs: i32) -> Option<u32> {
 /// Since `i32::MAX - i32::MIN == u32::MAX`, it's possible to subtract
 /// an i32 from an i32 where the result can fit into a u32 so long as the left-hand side is greater or equal
 /// to the right-hand side.
-/// 
+///
 /// In debug mode, this function will panic if `rhs > lhs`.
 pub(crate) const fn sub_i32_into_u32(lhs: i32, rhs: i32) -> u32 {
     debug_assert!(rhs <= lhs);

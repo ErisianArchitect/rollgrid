@@ -1,8 +1,6 @@
 use crate::fixedarray::FixedArray;
 use crate::math::*;
 
-
-
 /// A 2-Dimensional matrix of values.
 pub struct Grid2D<T: Sized> {
     cells: FixedArray<T>,

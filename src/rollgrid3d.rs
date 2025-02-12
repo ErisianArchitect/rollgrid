@@ -1,4 +1,4 @@
-use crate::{bounds3d::*, fixedarray::FixedArray, error_messages::*, *};
+use crate::{bounds3d::*, error_messages::*, fixedarray::FixedArray, *};
 
 /// A 3D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -18,12 +18,7 @@ unsafe impl<T: Sync> Sync for RollGrid3D<T> {}
 
 impl<T: Default> RollGrid3D<T> {
     /// Create a new [RollGrid3D] with all the cells set to the default for `T`.
-    pub fn new_default(
-        width: u32,
-        height: u32,
-        depth: u32,
-        grid_offset: (i32, i32, i32),
-    ) -> Self {
+    pub fn new_default(width: u32, height: u32, depth: u32, grid_offset: (i32, i32, i32)) -> Self {
         Self {
             cells: FixedArray::new_3d((width, height, depth), grid_offset, |_| T::default()),
             size: (width, height, depth),
@@ -34,12 +29,7 @@ impl<T: Default> RollGrid3D<T> {
 }
 
 impl RollGrid3D<()> {
-    pub fn new_zst(
-        width: u32,
-        height: u32,
-        depth: u32,
-        grid_offset: (i32, i32, i32),
-    ) -> Self {
+    pub fn new_zst(width: u32, height: u32, depth: u32, grid_offset: (i32, i32, i32)) -> Self {
         let size = (width, height, depth);
         RollGrid3D {
             cells: FixedArray::new_3d(size, grid_offset, |_| ()),
@@ -178,11 +168,7 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_inflate_size<E, M>(
-        &mut self,
-        inflate: (u32, u32, u32),
-        manage: M,
-    ) -> Result<(), E>
+    pub fn try_inflate_size<E, M>(&mut self, inflate: (u32, u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
@@ -304,11 +290,7 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_deflate_size<E, M>(
-        &mut self,
-        deflate: (u32, u32, u32),
-        manage: M,
-    ) -> Result<(), E>
+    pub fn try_deflate_size<E, M>(&mut self, deflate: (u32, u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {

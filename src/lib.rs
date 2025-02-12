@@ -3,11 +3,11 @@ use std::marker::PhantomData;
 pub mod bounds2d;
 pub mod bounds3d;
 pub(crate) mod fixedarray;
-pub mod rollgrid2d;
-pub mod rollgrid3d;
 pub mod grid2d;
 pub mod grid3d;
 pub mod math;
+pub mod rollgrid2d;
+pub mod rollgrid3d;
 
 mod error_messages {
     macro_rules! error_messages {

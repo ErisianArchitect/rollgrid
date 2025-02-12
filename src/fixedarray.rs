@@ -14,7 +14,6 @@ pub struct FixedArray<T> {
 }
 
 impl<T> FixedArray<T> {
-
     #[inline(always)]
     unsafe fn prealloc(capacity: usize) -> NonNull<T> {
         unsafe {
@@ -37,13 +36,7 @@ impl<T> FixedArray<T> {
         unsafe {
             (
                 Self::prealloc(area),
-                Bounds2D::new(
-                    offset,
-                    (
-                        x_max as i32,
-                        y_max as i32,
-                    )
-                ),
+                Bounds2D::new(offset, (x_max as i32, y_max as i32)),
                 area,
             )
         }
@@ -72,14 +65,7 @@ impl<T> FixedArray<T> {
         unsafe {
             (
                 Self::prealloc(volume),
-                Bounds3D::new(
-                    offset,
-                    (
-                        x_max as i32,
-                        y_max as i32,
-                        z_max as i32,
-                    ),
-                ),
+                Bounds3D::new(offset, (x_max as i32, y_max as i32, z_max as i32)),
                 volume,
             )
         }
@@ -246,7 +232,6 @@ impl<T> FixedArray<T> {
     /// Deallocates the internal buffer in this [FixedArray].
     pub unsafe fn dealloc(&mut self) {
         self.internal_dealloc(true);
-        
     }
 
     /// Deallocates the buffer and forgets about the contained items (does not drop them).
@@ -369,10 +354,7 @@ impl<T> FixedArray<T> {
             .map(|ptr| ptr.as_ptr())
             .unwrap_or_else(|| std::ptr::null_mut());
         let capacity = self.capacity;
-        (
-            ptr,
-            capacity
-        )
+        (ptr, capacity)
     }
 
     /// Creates a new FixedArray from a raw pointer and a capacity.
@@ -418,7 +400,10 @@ impl<T: Clone> Clone for FixedArray<T> {
                 }
             }
         } else {
-            Self { ptr: None, capacity: self.capacity }
+            Self {
+                ptr: None,
+                capacity: self.capacity,
+            }
         }
     }
 }
@@ -569,7 +554,10 @@ impl<'a, T> Iterator for FixedArrayRefIterator<'a, T> {
     type Item = &'a T;
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.array.capacity - self.index, Some(self.array.capacity - self.index))
+        (
+            self.array.capacity - self.index,
+            Some(self.array.capacity - self.index),
+        )
     }
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -603,7 +591,10 @@ impl<T> Iterator for FixedArrayIterator<T> {
     type Item = T;
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.array.capacity - self.index, Some(self.array.capacity - self.index))
+        (
+            self.array.capacity - self.index,
+            Some(self.array.capacity - self.index),
+        )
     }
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -651,7 +642,8 @@ impl<FT> FromIterator<FT> for FixedArray<FT> {
                 // ensure capacity
                 if index == capacity {
                     let new_capacity = capacity.checked_mul(2).unwrap_or_else(|| usize::MAX);
-                    let layout = std::alloc::Layout::array::<T>(capacity).expect("Failed to create layout.");
+                    let layout =
+                        std::alloc::Layout::array::<T>(capacity).expect("Failed to create layout.");
                     let new_ptr = std::alloc::realloc(buffer.as_ptr().cast(), layout, new_capacity);
                     buffer = NonNull::new(new_ptr.cast::<FT>()).expect(NOT_ALLOCATED.msg());
                     capacity = new_capacity;
@@ -659,7 +651,8 @@ impl<FT> FromIterator<FT> for FixedArray<FT> {
                 buffer.add(index).write(item);
                 index += 1;
             }
-            let layout = std::alloc::Layout::array::<T>(capacity).expect("Failed to create layout.");
+            let layout =
+                std::alloc::Layout::array::<T>(capacity).expect("Failed to create layout.");
             if index < capacity {
                 let new_ptr = std::alloc::realloc(buffer.as_ptr().cast(), layout, index);
                 buffer = NonNull::new(new_ptr.cast::<FT>()).expect(NOT_ALLOCATED.msg());
