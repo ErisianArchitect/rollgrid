@@ -104,6 +104,8 @@ impl<T> RollGrid3D<T> {
         INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
         INFLATE_PAST_I32_MAX.panic_if(inflate.2 > i32::MAX as u32);
         // let inf = inflate as i32;
+        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
+        //        if it does.
         let position = (
             self.grid_offset.0 - inflate.0 as i32,
             self.grid_offset.1 - inflate.1 as i32,
@@ -168,6 +170,8 @@ impl<T> RollGrid3D<T> {
         INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
         INFLATE_PAST_I32_MAX.panic_if(inflate.2 > i32::MAX as u32);
         // let inf = inflate as i32;
+        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
+        //        if it does.
         let position = (
             self.grid_offset.0 - inflate.0 as i32,
             self.grid_offset.1 - inflate.1 as i32,
@@ -225,6 +229,8 @@ impl<T> RollGrid3D<T> {
         DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
         DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
         DEFLATE_PAST_I32_MAX.panic_if(deflate.2 > i32::MAX as u32);
+        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
+        //        if it does.
         let position = (
             self.grid_offset.0 + deflate.0 as i32,
             self.grid_offset.1 + deflate.1 as i32,
@@ -289,6 +295,8 @@ impl<T> RollGrid3D<T> {
         DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
         DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
         DEFLATE_PAST_I32_MAX.panic_if(deflate.2 > i32::MAX as u32);
+        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
+        //        if it does.
         let position = (
             self.grid_offset.0 + deflate.0 as i32,
             self.grid_offset.1 + deflate.1 as i32,
@@ -427,13 +435,18 @@ impl<T> RollGrid3D<T> {
             }
             return;
         }
+        // FIXME: volume should be usize, not u32.
+        //        Convert width, height, and depth to usize for this operation.
         let volume = width
             .checked_mul(height)
             .expect(SIZE_TOO_LARGE.msg())
             .checked_mul(depth)
             .expect(SIZE_TOO_LARGE.msg());
         VOLUME_IS_ZERO.panic_if(volume == 0);
+        // FIXME: volume should not exceed usize::MAX.
         SIZE_TOO_LARGE.panic_if(volume > i32::MAX as u32);
+        // FIXME: Rather than converting width, height, and depth to i32, keep them
+        //        as u32 and use fallible addition to create Bounds3D (new_x/y/z + nw/h/d).
         let (new_x, new_y, new_z) = new_position;
         let new_width = width as i32;
         let new_height = height as i32;
