@@ -12,6 +12,9 @@ pub struct FixedArray<T> {
     pub(crate) capacity: usize,
 }
 
+unsafe impl<T: Send> Send for FixedArray<T> {}
+unsafe impl<T: Sync> Sync for FixedArray<T> {}
+
 impl<T> FixedArray<T> {
     #[inline(always)]
     fn prealloc_2d(size: (u32, u32), offset: (i32, i32)) -> (NonNull<T>, Bounds2D, usize) {
