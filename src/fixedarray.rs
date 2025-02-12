@@ -37,9 +37,8 @@ impl<T> FixedArray<T> {
             AREA_IS_ZERO.panic();
         }
         unsafe {
-            let layout = Self::make_layout(area).expect("Failed to create layout.");
             (
-                NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
+                Self::prealloc(area),
                 Bounds2D::new(
                     offset,
                     (
@@ -73,9 +72,8 @@ impl<T> FixedArray<T> {
             VOLUME_IS_ZERO.panic();
         }
         unsafe {
-            let layout = Self::make_layout(volume).expect("Failed to create layout.");
             (
-                NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer."),
+                Self::prealloc(volume),
                 Bounds3D::new(
                     offset,
                     (
