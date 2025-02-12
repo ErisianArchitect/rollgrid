@@ -1,6 +1,10 @@
 use crate::fixedarray::FixedArray;
 use crate::math::*;
 
+// TODO: There's a lot of work to be done here.
+//       Ideally, `Grid2D` can be used to represent a slice of
+//       a `RollGrid2D`.
+
 /// A 2-Dimensional matrix of values.
 pub struct Grid2D<T: Sized> {
     cells: FixedArray<T>,
