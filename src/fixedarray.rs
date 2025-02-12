@@ -109,7 +109,7 @@ impl<T> FixedArray<T> {
         if std::mem::size_of::<T>() != 0 {
             bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
                 let item = ptr.add(i);
-                std::ptr::write(item.as_ptr(), init(pos));
+                item.write(init(pos));
             });
         }
         Self {
@@ -137,7 +137,7 @@ impl<T> FixedArray<T> {
             bounds.iter().enumerate().try_for_each(move |(i, pos)| {
                 unsafe {
                     let item = ptr.add(i);
-                    std::ptr::write(item.as_ptr(), init(pos)?);
+                    item.write(init(pos)?);
                 }
                 Ok(())
             })?;
@@ -170,7 +170,7 @@ impl<T> FixedArray<T> {
         if std::mem::size_of::<T>() != 0 {
             bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
                 let item = ptr.add(i);
-                std::ptr::write(item.as_ptr(), init(pos));
+                item.write(init(pos));
             });
         }
         Self {
@@ -202,7 +202,7 @@ impl<T> FixedArray<T> {
             bounds.iter().enumerate().try_for_each(move |(i, pos)| {
                 unsafe {
                     let item = ptr.add(i);
-                    std::ptr::write(item.as_ptr(), init(pos)?);
+                    item.write(init(pos)?);
                 }
                 Ok(())
             })?;
