@@ -471,6 +471,45 @@ impl<T> From<FixedArray<T>> for Box<[T]> {
     }
 }
 
+impl<T> From<Vec<T>> for FixedArray<T> {
+    fn from(mut value: Vec<T>) -> Self {
+        if value.len() == 0 {
+            return Self {
+                ptr: None,
+                capacity: 0,
+            };
+        }
+        unsafe {
+            let ptr = value.as_mut_ptr();
+            let ptr = if value.capacity() > value.len() {
+                let layout = Self::make_layout(value.capacity()).expect("Failed to create layout.");
+                std::alloc::realloc(ptr.cast(), layout, value.len()).cast()
+            } else {
+                ptr
+            };
+            let non_null = NonNull::new(ptr).expect(NOT_ALLOCATED.msg());
+            let capacity = value.len();
+            std::mem::forget(value);
+            Self {
+                ptr: Some(non_null),
+                capacity,
+            }
+        }
+    }
+}
+
+impl<T> From<Box<[T]>> for FixedArray<T> {
+    fn from(value: Box<[T]>) -> Self {
+        let capacity = value.len();
+        let ptr = Box::into_raw(value);
+        let non_null = NonNull::new(ptr.cast()).expect(NOT_ALLOCATED.msg());
+        Self {
+            ptr: Some(non_null),
+            capacity,
+        }
+    }
+}
+
 impl<T> std::ops::Deref for FixedArray<T> {
     type Target = [T];
     fn deref(&self) -> &Self::Target {
