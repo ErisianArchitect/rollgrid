@@ -353,12 +353,13 @@ pub const fn add_u32_to_i32(lhs: i32, rhs: u32) -> i32 {
     result as i32
 }
 
-
-const fn i32_range_to_u32(i32_value: i32) -> u32 {
+#[inline]
+const fn i32_to_u32(i32_value: i32) -> u32 {
     (i32_value as u32) ^ 0x8000_0000
 }
 
-const fn u32_to_i32_range(u32_value: u32) -> i32 {
+#[inline]
+const fn u32_to_i32(u32_value: u32) -> i32 {
     (u32_value ^ 0x8000_0000) as i32
 }
 
