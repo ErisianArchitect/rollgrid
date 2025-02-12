@@ -557,6 +557,10 @@ pub struct FixedArrayIterator<T> {
 impl<T> Iterator for FixedArrayIterator<T> {
     type Item = T;
 
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.array.capacity - self.index, Some(self.array.capacity - self.index))
+    }
+
     fn next(&mut self) -> Option<Self::Item> {
         if self.index == self.array.capacity {
             return None;
@@ -580,6 +584,45 @@ impl<T> Drop for FixedArrayIterator<T> {
         }
         unsafe {
             self.array.internal_dealloc(false);
+        }
+    }
+}
+
+impl<FT> FromIterator<FT> for FixedArray<FT> {
+    fn from_iter<T: IntoIterator<Item = FT>>(iter: T) -> Self {
+        let mut capacity;
+        let mut index = 0usize;
+        let iterator = iter.into_iter();
+        let (lower, upper) = iterator.size_hint();
+        unsafe {
+            let mut buffer = if let Some(upper) = upper {
+                capacity = upper;
+                Self::prealloc(capacity)
+            } else {
+                capacity = lower.max(4);
+                Self::prealloc(capacity)
+            };
+            for item in iterator {
+                // ensure capacity
+                if index == capacity {
+                    let new_capacity = capacity.checked_mul(2).unwrap_or_else(|| usize::MAX);
+                    let layout = std::alloc::Layout::array::<T>(capacity).expect("Failed to create layout.");
+                    let new_ptr = std::alloc::realloc(buffer.as_ptr().cast(), layout, new_capacity);
+                    buffer = NonNull::new(new_ptr.cast::<FT>()).expect(NOT_ALLOCATED.msg());
+                    capacity = new_capacity;
+                }
+                buffer.add(index).write(item);
+                index += 1;
+            }
+            let layout = std::alloc::Layout::array::<T>(capacity).expect("Failed to create layout.");
+            if index < capacity {
+                let new_ptr = std::alloc::realloc(buffer.as_ptr().cast(), layout, index);
+                buffer = NonNull::new(new_ptr.cast::<FT>()).expect(NOT_ALLOCATED.msg());
+            }
+            Self {
+                ptr: Some(buffer),
+                capacity: index,
+            }
         }
     }
 }
