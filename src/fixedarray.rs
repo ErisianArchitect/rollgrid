@@ -368,12 +368,12 @@ impl<T> FixedArray<T> {
     }
 
     /// Returns the raw pointer and capacity.
-    pub unsafe fn into_raw(self) -> (*mut T, usize) {
-        let ptr = self
+    pub unsafe fn into_raw(value: Self) -> (*mut T, usize) {
+        let ptr = value
             .ptr
             .map(|ptr| ptr.as_ptr())
             .unwrap_or_else(|| std::ptr::null_mut());
-        let capacity = self.capacity;
+        let capacity = value.capacity;
         (ptr, capacity)
     }
 
