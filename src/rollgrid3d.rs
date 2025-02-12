@@ -753,6 +753,7 @@ impl<T> RollGrid3D<T> {
         F: FnMut((i32, i32, i32), (i32, i32, i32), &mut T),
     {
         let (off_x, off_y, off_z) = offset;
+        // FIXME: Overflow
         let new_pos = (
             self.grid_offset.0 + off_x,
             self.grid_offset.1 + off_y,
@@ -775,6 +776,7 @@ impl<T> RollGrid3D<T> {
         F: FnMut((i32, i32, i32), (i32, i32, i32), &mut T) -> Result<(), E>,
     {
         let (off_x, off_y, off_z) = offset;
+        // FIXME: Overflow
         let new_pos = (
             self.grid_offset.0 + off_x,
             self.grid_offset.1 + off_y,
@@ -806,12 +808,16 @@ impl<T> RollGrid3D<T> {
         }
         let (old_x, old_y, old_z) = self.grid_offset;
         let (new_x, new_y, new_z) = position;
+        // FIXME: This will overflow, use i64 instead.
         let offset = (new_x - old_x, new_y - old_y, new_z - old_z);
+        // FIXME: Don't convert width/height/depth to i32, keep them as u32.
         let width = self.size.0 as i32;
         let height = self.size.1 as i32;
         let depth = self.size.2 as i32;
+        // FIXME: use i64 for offset
         let (offset_x, offset_y, offset_z) = offset;
         let old_bounds = self.bounds();
+        // FIXME: overflow
         let new_bounds = Bounds3D::new(
             (new_x, new_y, new_z),
             (new_x + width, new_y + height, new_z + depth),
@@ -1202,6 +1208,7 @@ impl<T> RollGrid3D<T> {
                 (half_region, quarter_region, None)
             };
             // Calculate new wrap_offset
+            // FIXME: overflow
             let (wrap_x, wrap_y, wrap_z) =
                 (self.wrap_offset.0, self.wrap_offset.1, self.wrap_offset.2);
             let (wrapped_offset_x, wrapped_offset_y, wrapped_offset_z) = (
@@ -1212,6 +1219,7 @@ impl<T> RollGrid3D<T> {
             let new_wrap_x = (wrap_x + wrapped_offset_x).rem_euclid(width);
             let new_wrap_y = (wrap_y + wrapped_offset_y).rem_euclid(height);
             let new_wrap_z = (wrap_z + wrapped_offset_z).rem_euclid(depth);
+            // FIXME: This should use i64 instead.
             struct OffsetFix {
                 /// the old grid offset that we can use to
                 /// create a relational offset
@@ -1256,9 +1264,12 @@ impl<T> RollGrid3D<T> {
         } else {
             // translation out of bounds, reload everything
             self.grid_offset = (new_x, new_y, new_z);
+            // FIXME: overflow (new_y + height, etc.)
+            //   Fix: i32_add_u32 function
             for (yi, y) in (new_y..new_y + height).enumerate() {
                 for (zi, z) in (new_z..new_z + depth).enumerate() {
                     for (xi, x) in (new_x..new_x + width).enumerate() {
+                        // FIXME: overflow
                         let prior_x = old_x + xi as i32;
                         let prior_y = old_y + yi as i32;
                         let prior_z = old_z + zi as i32;
@@ -1298,7 +1309,9 @@ impl<T> RollGrid3D<T> {
         }
         let (old_x, old_y, old_z) = self.grid_offset;
         let (new_x, new_y, new_z) = position;
+        // FIXME: Overflow
         let offset = (new_x - old_x, new_y - old_y, new_z - old_z);
+        // FIXME: Don't convert dimensions to i32, keep them as u32.
         let width = self.size.0 as i32;
         let height = self.size.1 as i32;
         let depth = self.size.2 as i32;
@@ -1694,6 +1707,7 @@ impl<T> RollGrid3D<T> {
                 (half_region, quarter_region, None)
             };
             // Calculate new wrap_offset
+            // TODO: overflow.
             let (wrap_x, wrap_y, wrap_z) =
                 (self.wrap_offset.0, self.wrap_offset.1, self.wrap_offset.2);
             let (wrapped_offset_x, wrapped_offset_y, wrapped_offset_z) = (
@@ -1704,6 +1718,7 @@ impl<T> RollGrid3D<T> {
             let new_wrap_x = (wrap_x + wrapped_offset_x).rem_euclid(width);
             let new_wrap_y = (wrap_y + wrapped_offset_y).rem_euclid(height);
             let new_wrap_z = (wrap_z + wrapped_offset_z).rem_euclid(depth);
+            // FIXME: this should use i64 instead.
             struct OffsetFix {
                 /// the old grid offset that we can use to
                 /// create a relational offset
