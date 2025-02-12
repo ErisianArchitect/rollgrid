@@ -432,12 +432,8 @@ impl<T> RollGrid3D<T> {
             .expect(SIZE_TOO_LARGE.msg())
             .checked_mul(depth)
             .expect(SIZE_TOO_LARGE.msg());
-        if volume == 0 {
-            panic!("{VOLUME_IS_ZERO}");
-        };
-        if volume > i32::MAX as u32 {
-            panic!("{SIZE_TOO_LARGE}");
-        }
+        VOLUME_IS_ZERO.panic_if(volume == 0);
+        SIZE_TOO_LARGE.panic_if(volume > i32::MAX as u32);
         let (new_x, new_y, new_z) = new_position;
         let new_width = width as i32;
         let new_height = height as i32;
