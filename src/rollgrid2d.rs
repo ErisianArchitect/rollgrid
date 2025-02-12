@@ -8,10 +8,7 @@ use crate::{bounds2d::*, fixedarray::FixedArray, error_messages::*, math::*, *};
 pub struct RollGrid2D<T: Sized> {
     cells: FixedArray<T>,
     size: (u32, u32),
-    // TODO: I think that wrap_offset can (and should) be (u32, u32).
-    //       Determine if wrap_offset could become negative. If it
-    //       can become negative, determine if it can be done without
-    //       it becoming negative.
+    // TODO: wrap_offset should be (u32, u32)
     wrap_offset: (i32, i32),
     grid_offset: (i32, i32),
 }
@@ -249,6 +246,7 @@ impl<T> RollGrid2D<T> {
             .0
             .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
             .expect(DEFLATE_OVERFLOW.msg());
+        AREA_IS_ZERO.panic_if(width == 0 || height == 0);
         self.resize_and_reposition(width, height, position, manage);
     }
 
@@ -308,6 +306,7 @@ impl<T> RollGrid2D<T> {
             .0
             .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
             .expect(DEFLATE_OVERFLOW.msg());
+        AREA_IS_ZERO.panic_if(width == 0 || height == 0);
         self.try_resize_and_reposition(width, height, position, manage)
     }
 
