@@ -29,6 +29,7 @@ impl<T: Default> RollGrid3D<T> {
 }
 
 impl RollGrid3D<()> {
+    /// Creates a new grid of unit types.
     pub fn new_zst(width: u32, height: u32, depth: u32, grid_offset: (i32, i32, i32)) -> Self {
         let size = (width, height, depth);
         RollGrid3D {
