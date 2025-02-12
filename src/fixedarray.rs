@@ -91,6 +91,26 @@ impl<T> FixedArray<T> {
         }
     }
 
+    /// Allocate a new [FixedArray] from a 1D size and offset with an
+    /// initialization function.
+    pub fn try_new_1d<E, F: FnMut(i32) -> Result<T, E>>(size: u32, offset: i32, mut init: F) -> Result<Self, E> {
+        X_MAX_EXCEEDS_MAXIMUM.panic_if(offset as i64 + size as i64 > i32::MAX as i64);
+        unsafe {
+            let ptr = Self::prealloc(size as usize);
+            if std::mem::size_of::<T>() != 0 {
+                for i in 0..size as usize {
+                    let x = (offset as i64 + i as i64) as i32;
+                    let item = ptr.add(i);
+                    item.write(init(x)?);
+                }
+            }
+            Ok(Self {
+                ptr: Some(ptr),
+                capacity: size as usize,
+            })
+        }
+    }
+
     /// Allocate a new [FixedArray] from a 2D size and offset with an
     /// initialization function.
     ///
