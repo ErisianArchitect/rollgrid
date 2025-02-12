@@ -123,17 +123,19 @@ You can modify this code to fit your purpose.
 ##### Additions
 - Added `Grid2D` and `Grid3D`.
 - Added `math` module, for some useful math functionality that this crate uses.
-- Added `new_zst` constructor to `RollGrid2D` and `RollGrid3D`.
+- Added `new_zst` constructor to `RollGrid2D<()>` and `RollGrid3D<()>`.
 - Added `new_1d` and `try_new_1d` functions to `FixedArray`.
 - Added `into_raw
 - Implemented `Send` for `RollGrid2D<T>` where `T: Send`.
-- Implemented `Sync` for `RollGrid2D<T>` where `T: Sync`.
 - Implemented `Send` for `RollGrid3D<T>` where `T: Send`.
+- Implemented `Sync` for `RollGrid2D<T>` where `T: Sync`.
 - Implemented `Sync` for `RollGrid3D<T>` where `T: Sync`.
 - Implemented `FromIterator` for `FixedArray`.
 - Implemented `From<Vec<T>>` for `FixedArray<T>`.
 - Implemented `From<Box<[T]>>` for `FixedArray<T>`.
-- Implemented `Clone` for `FixedArray`.
+- Implemented `Clone` for `FixedArray<T>` where `T: Clone`.
+- Implemented `Clone` for `RollGrid2D<T>` where `T: Clone`.
+- Implemented `Clone` for `RollGrid3D<T>` where `T: Clone`.
 - Implemented `AsRef<FixedArray<T>>` for `FixedArray<T>`.
 - Implemented `AsMut<FixedArray<T>>` for `FixedArray<T>`.
 - Implemented `AsRef<[T]>` for `FixedArray<T>`.
