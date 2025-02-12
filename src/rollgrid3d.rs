@@ -605,9 +605,6 @@ impl<T> RollGrid3D<T> {
             }
             return Ok(());
         }
-        if new_position == self.grid_offset && (width, height, depth) == self.size {
-            return Ok(());
-        }
         let volume = width
             .checked_mul(height)
             .expect(SIZE_TOO_LARGE.msg())
