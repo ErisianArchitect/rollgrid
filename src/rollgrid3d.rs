@@ -605,6 +605,7 @@ impl<T> RollGrid3D<T> {
             }
             return Ok(());
         }
+        // FIXME: volume should be usize, not u32.
         let volume = width
             .checked_mul(height)
             .expect(SIZE_TOO_LARGE.msg())
@@ -613,6 +614,8 @@ impl<T> RollGrid3D<T> {
         VOLUME_IS_ZERO.panic_if(volume == 0);
         SIZE_TOO_LARGE.panic_if(volume > i32::MAX as u32);
         let (new_x, new_y, new_z) = new_position;
+        // FIXME: Rather than converting width, height, and depth to i32, keep them
+        //        as u32 and use fallible addition to create Bounds3D (new_x/y/z + nw/h/d).
         let new_width = width as i32;
         let new_height = height as i32;
         let new_depth = depth as i32;
