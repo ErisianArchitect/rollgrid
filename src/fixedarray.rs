@@ -7,6 +7,7 @@ use std::{mem::ManuallyDrop, ptr::NonNull};
 /// dropping the old value, as well as the ability to drop values in place. This
 /// gives the user the ability to manually manage dropping of individual regions.
 /// The user manages the dimensionality and bounds of the [FixedArray].
+#[derive(Default)]
 pub struct FixedArray<T> {
     pub(crate) ptr: Option<NonNull<T>>,
     pub(crate) capacity: usize,
