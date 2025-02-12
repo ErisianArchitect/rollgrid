@@ -428,6 +428,7 @@ impl<T> RollGrid2D<T> {
         //        Convert width and height to usize for this operation.
         let area = SIZE_TOO_LARGE.expect(width.checked_mul(height));
         AREA_IS_ZERO.panic_if(area == 0);
+        // FIXME: area should not exceed usize::MAX.
         SIZE_TOO_LARGE.panic_if(area > i32::MAX as u32);
         let (new_x, new_y) = new_position;
         // FIXME: Rather than converting width and height to i32, keep them
@@ -572,7 +573,7 @@ impl<T> RollGrid2D<T> {
         let old_bounds: Bounds2D = self.bounds();
         let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
         // TODO: When width and height are returned to u32, remove conversions.
-        // FIXME: Operation is performed too early.
+        // FIXME: size is set too early. It should be set after creation of new FixedArray.
         let size = (width as u32, height as u32);
         if old_bounds.intersects(new_bounds) {
             macro_rules! unload_bounds {
