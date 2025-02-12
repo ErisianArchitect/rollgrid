@@ -33,6 +33,23 @@ impl<T: Default> RollGrid3D<T> {
     }
 }
 
+impl RollGrid3D<()> {
+    pub fn new_zst(
+        width: u32,
+        height: u32,
+        depth: u32,
+        grid_offset: (i32, i32, i32),
+    ) -> Self {
+        let size = (width, height, depth);
+        RollGrid3D {
+            cells: FixedArray::new_3d(size, grid_offset, |_| ()),
+            size,
+            grid_offset,
+            wrap_offset: (0, 0, 0),
+        }
+    }
+}
+
 impl<T> RollGrid3D<T> {
     /// Create a new [RollGrid3D] using an initialize function to initialize cells.
     ///
