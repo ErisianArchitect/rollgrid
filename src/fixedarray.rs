@@ -522,6 +522,10 @@ pub struct FixedArrayRefIterator<'a, T> {
 impl<'a, T> Iterator for FixedArrayRefIterator<'a, T> {
     type Item = &'a T;
 
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.array.capacity - self.index, Some(self.array.capacity - self.index))
+    }
+
     fn next(&mut self) -> Option<Self::Item> {
         if self.index == self.array.capacity {
             return None;
