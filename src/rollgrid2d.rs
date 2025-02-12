@@ -15,6 +15,9 @@ pub struct RollGrid2D<T: Sized> {
     grid_offset: (i32, i32),
 }
 
+unsafe impl<T: Send> Send for RollGrid2D<T> {}
+unsafe impl<T: Sync> Sync for RollGrid2D<T> {}
+
 impl<T: Default> RollGrid2D<T> {
     /// Create a new [RollGrid2D] with all the cells set to the default for `T`.
     pub fn new_default(width: u32, height: u32, grid_offset: (i32, i32)) -> Self {

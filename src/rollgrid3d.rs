@@ -13,6 +13,9 @@ pub struct RollGrid3D<T> {
     grid_offset: (i32, i32, i32),
 }
 
+unsafe impl<T: Send> Send for RollGrid3D<T> {}
+unsafe impl<T: Sync> Sync for RollGrid3D<T> {}
+
 impl<T: Default> RollGrid3D<T> {
     /// Create a new [RollGrid3D] with all the cells set to the default for `T`.
     pub fn new_default(
