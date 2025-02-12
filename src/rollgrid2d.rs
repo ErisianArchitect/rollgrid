@@ -6,6 +6,8 @@ use crate::{bounds2d::*, fixedarray::FixedArray, error_messages::*, math::*, *};
 /// create the illusion that cells are being moved while the cells remain
 /// in the same position in the underlying array.
 pub struct RollGrid2D<T: Sized> {
+    // TODO: Using FixedArray means that it's not Send/Sync. Look into an
+    //       alternative with Box, or some other construct.
     cells: FixedArray<T>,
     size: (u32, u32),
     // TODO: wrap_offset should be (u32, u32)
