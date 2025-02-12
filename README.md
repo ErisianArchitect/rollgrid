@@ -124,9 +124,26 @@ You can modify this code to fit your purpose.
 - Added `Grid2D` and `Grid3D`.
 - Added `math` module, for some useful math functionality that this crate uses.
 - Added `new_zst` constructor to `RollGrid2D` and `RollGrid3D`.
+- Added `new_1d` and `try_new_1d` functions to `FixedArray`.
+- Added `into_raw
+- Implemented `Send` for `RollGrid2D<T>` where `T: Send`.
+- Implemented `Sync` for `RollGrid2D<T>` where `T: Sync`.
+- Implemented `Send` for `RollGrid3D<T>` where `T: Send`.
+- Implemented `Sync` for `RollGrid3D<T>` where `T: Sync`.
+- Implemented `FromIterator` for `FixedArray`.
+- Implemented `From<Vec<T>>` for `FixedArray<T>`.
+- Implemented `From<Box<[T]>>` for `FixedArray<T>`.
+- Implemented `Clone` for `FixedArray`.
+- Implemented `AsRef<FixedArray<T>>` for `FixedArray<T>`.
+- Implemented `AsMut<FixedArray<T>>` for `FixedArray<T>`.
+- Implemented `AsRef<[T]>` for `FixedArray<T>`.
+- Implemented `AsMut<[T]>` for `FixedArray<T>`.
+- Implemented `Borrow<[T]>` for `FixedArray<T>`.
+- Implemented `BorrowMut<[T]>` for `FixedArray<T>`.
 ##### Changes
 - Modified `RollGrid2D` and `RollGrid3D` to use `u32` for dimensions rather than `usize`. This makes it more clear what types of values should be used.
-
+- Reset `capacity` in `FixedArray::internal_dealloc` instead of `FixedArray::dealloc`.
+- Modified `FixedArray::into_raw` to be a static function rather than a method.
 ### 2.0.0
 
 - Changed the internal representation of the cells in `RollGrid2D` and `RollGrid3D` from `Box<[Option<T>]>` to `rollgrid::cells::FixedArray<T>`. `FixedArray` is an internal type that was created to fulfill the needs of this crate.
