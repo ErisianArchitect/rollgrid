@@ -245,14 +245,7 @@ impl<T> RollGrid3D<T> {
             .2
             .checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
             .expect(DEFLATE_OVERFLOW.msg());
-        let volume = width
-            .checked_mul(height)
-            .expect(SIZE_TOO_LARGE.msg())
-            .checked_mul(depth)
-            .expect(SIZE_TOO_LARGE.msg());
-        if volume == 0 {
-            panic!("{VOLUME_IS_ZERO}");
-        }
+        VOLUME_IS_ZERO.panic_if(width == 0 || height == 0 || depth == 0);
         self.resize_and_reposition(width, height, depth, position, manage);
     }
 
@@ -316,14 +309,7 @@ impl<T> RollGrid3D<T> {
             .2
             .checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
             .expect(DEFLATE_OVERFLOW.msg());
-        let volume = width
-            .checked_mul(height)
-            .expect(SIZE_TOO_LARGE.msg())
-            .checked_mul(depth)
-            .expect(SIZE_TOO_LARGE.msg());
-        if volume == 0 {
-            panic!("{VOLUME_IS_ZERO}");
-        }
+        VOLUME_IS_ZERO.panic_if(width == 0 || height == 0 || depth == 0);
         self.try_resize_and_reposition(width, height, depth, position, manage)
     }
 
