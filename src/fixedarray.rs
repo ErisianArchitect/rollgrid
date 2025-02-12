@@ -26,7 +26,7 @@ impl<T> FixedArray<T> {
     }
 
     #[inline(always)]
-    fn prealloc_2d(size: (u32, u32), offset: (i32, i32)) -> (NonNull<T>, Bounds2D, usize) {
+    unsafe fn prealloc_2d(size: (u32, u32), offset: (i32, i32)) -> (NonNull<T>, Bounds2D, usize) {
         let (width, height) = (size.0 as usize, size.1 as usize);
         let x_max = offset.0 as i64 + width as i64;
         X_MAX_EXCEEDS_MAXIMUM.panic_if(x_max > i32::MAX as i64);
@@ -53,7 +53,7 @@ impl<T> FixedArray<T> {
     }
 
     #[inline(always)]
-    fn prealloc_3d(
+    unsafe fn prealloc_3d(
         size: (u32, u32, u32),
         offset: (i32, i32, i32),
     ) -> (NonNull<T>, Bounds3D, usize) {
@@ -103,7 +103,7 @@ impl<T> FixedArray<T> {
         offset: (i32, i32),
         mut init: F,
     ) -> Self {
-        let (ptr, bounds, capacity) = Self::prealloc_2d(size, offset);
+        let (ptr, bounds, capacity) = unsafe { Self::prealloc_2d(size, offset) };
         if std::mem::size_of::<T>() != 0 {
             bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
                 let item = ptr.add(i);
@@ -130,7 +130,7 @@ impl<T> FixedArray<T> {
         offset: (i32, i32),
         mut init: F,
     ) -> Result<Self, E> {
-        let (ptr, bounds, capacity) = Self::prealloc_2d(size, offset);
+        let (ptr, bounds, capacity) = unsafe { Self::prealloc_2d(size, offset) };
         if std::mem::size_of::<T>() != 0 {
             bounds.iter().enumerate().try_for_each(move |(i, pos)| {
                 unsafe {
@@ -164,7 +164,7 @@ impl<T> FixedArray<T> {
         offset: (i32, i32, i32),
         mut init: F,
     ) -> Self {
-        let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
+        let (ptr, bounds, capacity) = unsafe { Self::prealloc_3d(size, offset) };
         if std::mem::size_of::<T>() != 0 {
             bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
                 let item = ptr.add(i);
@@ -195,7 +195,7 @@ impl<T> FixedArray<T> {
         offset: (i32, i32, i32),
         mut init: F,
     ) -> Result<Self, E> {
-        let (ptr, bounds, capacity) = Self::prealloc_3d(size, offset);
+        let (ptr, bounds, capacity) = unsafe { Self::prealloc_3d(size, offset) };
         if std::mem::size_of::<T>() != 0 {
             bounds.iter().enumerate().try_for_each(move |(i, pos)| {
                 unsafe {
