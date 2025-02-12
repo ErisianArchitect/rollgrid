@@ -16,8 +16,6 @@ pub struct RollGrid3D<T> {
 unsafe impl<T: Send> Send for RollGrid3D<T> {}
 unsafe impl<T: Sync> Sync for RollGrid3D<T> {}
 
-// TODO: impl Clone
-
 impl<T: Default> RollGrid3D<T> {
     /// Create a new [RollGrid3D] with all the cells set to the default for `T`.
     pub fn new_default(
@@ -1710,11 +1708,13 @@ impl<T> RollGrid3D<T> {
             // TODO: overflow.
             let (wrap_x, wrap_y, wrap_z) =
                 (self.wrap_offset.0, self.wrap_offset.1, self.wrap_offset.2);
+            // TODO: This usage of rem_euclid might be wrong.
             let (wrapped_offset_x, wrapped_offset_y, wrapped_offset_z) = (
                 offset_x.rem_euclid(width),
                 offset_y.rem_euclid(height),
                 offset_z.rem_euclid(depth),
             );
+            // TODO: and this one too.
             let new_wrap_x = (wrap_x + wrapped_offset_x).rem_euclid(width);
             let new_wrap_y = (wrap_y + wrapped_offset_y).rem_euclid(height);
             let new_wrap_z = (wrap_z + wrapped_offset_z).rem_euclid(depth);
@@ -1727,6 +1727,7 @@ impl<T> RollGrid3D<T> {
             }
             impl OffsetFix {
                 fn wrap(&self, pos: (i32, i32, i32)) -> (i32, i32, i32) {
+                    // FIXME: This should not use rem_euclid.
                     let x = (pos.0 - self.offset.0).rem_euclid(self.size.0) + self.offset.0;
                     let y = (pos.1 - self.offset.1).rem_euclid(self.size.1) + self.offset.1;
                     let z = (pos.2 - self.offset.2).rem_euclid(self.size.2) + self.offset.2;
@@ -1769,6 +1770,7 @@ impl<T> RollGrid3D<T> {
             for (yi, y) in (new_y..new_y + height).enumerate() {
                 for (zi, z) in (new_z..new_z + depth).enumerate() {
                     for (xi, x) in (new_x..new_x + width).enumerate() {
+                        // FIXME: overflow
                         let prior_x = old_x + xi as i32;
                         let prior_y = old_y + yi as i32;
                         let prior_z = old_z + zi as i32;
@@ -1785,6 +1787,7 @@ impl<T> RollGrid3D<T> {
         Ok(())
     }
 
+    // FIXME: This should return (i64, i64, i64) because it can overflow.
     /// Get the offset relative to the grid's offset.
     pub fn relative_offset(&self, coord: (i32, i32, i32)) -> (i32, i32, i32) {
         let (x, y, z) = coord;
@@ -1800,6 +1803,8 @@ impl<T> RollGrid3D<T> {
     /// Offsets are relative to the world origin `(0, 0, 0)`, and must account for
     /// the grid offset.
     fn offset_index(&self, (x, y, z): (i32, i32, i32)) -> Option<usize> {
+        // FIXME: Variables here have terrible names.
+        // FIXME: Use i64 instead.
         let (mx, my, mz) = self.grid_offset;
         let width = self.size.0 as i32;
         let height = self.size.1 as i32;
@@ -1824,6 +1829,7 @@ impl<T> RollGrid3D<T> {
         Some(wy as usize * plane as usize + wz as usize * self.size.0 as usize + wx as usize)
     }
 
+    // TODO: This can fail, so either explain that or return Option<()>
     /// Replace item at `coord` using `replace` function that takes as
     /// input the old value and returns the new value. This will swap the
     /// value in-place.
@@ -1832,6 +1838,7 @@ impl<T> RollGrid3D<T> {
         self.cells.replace_with(index, replace);
     }
 
+    // TODO: This can fail, so either explain that or return Option<T>
     /// Replace item at `coord` using [std::mem::replace] and then returns
     /// the old value.
     pub fn replace(&mut self, coord: (i32, i32, i32), value: T) -> T {
@@ -1839,6 +1846,7 @@ impl<T> RollGrid3D<T> {
         self.cells.replace(index, value)
     }
 
+    // TODO: Explain the return value. Also, this should use `must_use`.
     /// Reads the value from the cell without moving it. This leaves the memory in the cell unchanged.
     pub unsafe fn read(&self, coord: (i32, i32, i32)) -> Option<T> {
         let index = self.offset_index(coord)?;
@@ -1908,6 +1916,7 @@ impl<T> RollGrid3D<T> {
 
     /// Get the maximum bound on the `X` axis.
     pub fn x_max(&self) -> i32 {
+        // FIXME: overflow
         self.grid_offset.0 + self.size.0 as i32
     }
 
@@ -1918,6 +1927,7 @@ impl<T> RollGrid3D<T> {
 
     /// Get the maximum bound on the `Y` axis.
     pub fn y_max(&self) -> i32 {
+        // FIXME: overflow
         self.grid_offset.1 + self.size.1 as i32
     }
 
@@ -1928,6 +1938,7 @@ impl<T> RollGrid3D<T> {
 
     /// Get the maximum bound on the `Z` axis.
     pub fn z_max(&self) -> i32 {
+        // FIXME: overflow
         self.grid_offset.2 + self.size.2 as i32
     }
 

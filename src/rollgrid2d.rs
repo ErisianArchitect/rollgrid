@@ -755,6 +755,7 @@ impl<T> RollGrid2D<T> {
             // TODO: Work out how this works again so I can document it, and
             //       figure out edge cases.
             let (roll_x, roll_y) = (self.wrap_offset.0 as i32, self.wrap_offset.1 as i32);
+            // TODO: This usage of rem_euclid might be wrong.
             let (wrapped_offset_x, wrapped_offset_y) =
                 (offset_x.rem_euclid(width), offset_y.rem_euclid(height));
             // Update the roll so that we reduce reloading.
@@ -1056,7 +1057,7 @@ impl<T> RollGrid2D<T> {
         self.cells.replace(index, value)
     }
 
-    // TODO: Explain the return value.
+    // TODO: Explain the return value. Also, this should use `must_use`.
     /// Reads the value from the cell without moving it. This leaves the memory in the cell unchanged.
     pub unsafe fn read(&self, coord: (i32, i32)) -> Option<T> {
         let index = self.offset_index(coord)?;
@@ -1145,7 +1146,6 @@ impl<T> RollGrid2D<T> {
 
     /// This is equivalent to the area (width * height).
     pub fn len(&self) -> usize {
-        // FIXME: This could overflow on 32-bit systems.
         self.size.0 as usize * self.size.1 as usize
     }
 
