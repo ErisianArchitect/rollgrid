@@ -227,12 +227,6 @@ impl<T> FixedArray<T> {
         })
     }
 
-    /// Deallocates the internal buffer in this [FixedArray].
-    pub unsafe fn dealloc(&mut self) {
-        self.internal_dealloc(true);
-        
-    }
-
     /// Set `drop` to `false` if you have already manually dropped the items.
     pub(crate) unsafe fn internal_dealloc(&mut self, drop: bool) {
         if let Some(ptr) = self.ptr.take() {
@@ -247,6 +241,12 @@ impl<T> FixedArray<T> {
             }
         }
         self.capacity = 0;
+    }
+
+    /// Deallocates the internal buffer in this [FixedArray].
+    pub unsafe fn dealloc(&mut self) {
+        self.internal_dealloc(true);
+        
     }
 
     /// Deallocates the buffer and forgets about the contained items (does not drop them).
