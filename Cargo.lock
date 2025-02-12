@@ -4,9 +4,9 @@ version = 4
 
 [[package]]
 name = "panicmsg"
-version = "1.0.0"
+version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3c4e1c17a86fc36044421030fa77a7c96cacc09cab551ad0fb3bd4ab5a91c02"
+checksum = "f27ec65b8f5699739edd2e978ed74f256ebdb08aa67a82f4ef18657838a2dc0e"
 
 [[package]]
 name = "proc-macro2"
