@@ -500,6 +500,12 @@ impl<T> From<Vec<T>> for FixedArray<T> {
 
 impl<T> From<Box<[T]>> for FixedArray<T> {
     fn from(value: Box<[T]>) -> Self {
+        if value.len() == 0 {
+            return Self {
+                ptr: None,
+                capacity: 0,
+            };
+        }
         let capacity = value.len();
         let ptr = Box::into_raw(value);
         let non_null = NonNull::new(ptr.cast()).expect(NOT_ALLOCATED.msg());
