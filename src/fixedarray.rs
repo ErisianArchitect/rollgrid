@@ -394,6 +394,18 @@ impl<T: Clone> Clone for FixedArray<T> {
     }
 }
 
+impl<T> AsRef<FixedArray<T>> for FixedArray<T> {
+    fn as_ref(&self) -> &FixedArray<T> {
+        self
+    }
+}
+
+impl<T> AsMut<FixedArray<T>> for FixedArray<T> {
+    fn as_mut(&mut self) -> &mut FixedArray<T> {
+        self
+    }
+}
+
 impl<T> AsRef<[T]> for FixedArray<T> {
     fn as_ref(&self) -> &[T] {
         self.as_slice()
