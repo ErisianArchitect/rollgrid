@@ -337,7 +337,7 @@ pub const fn checked_sub_i32_into_u32(lhs: i32, rhs: i32) -> Option<u32> {
 /// to the right-hand side.
 /// 
 /// In debug mode, this function will panic if `rhs > lhs`.
-pub const fn sub_i32_into_u32(lhs: i32, rhs: i32) -> u32 {
+pub(crate) const fn sub_i32_into_u32(lhs: i32, rhs: i32) -> u32 {
     debug_assert!(rhs <= lhs);
     let lhs = lhs as i64;
     let rhs = rhs as i64;
@@ -346,19 +346,19 @@ pub const fn sub_i32_into_u32(lhs: i32, rhs: i32) -> u32 {
 }
 
 #[inline]
-const fn add_u32_to_i32(i32_value: i32, u32_value: u32) -> i32 {
+pub(crate) const fn add_u32_to_i32(i32_value: i32, u32_value: u32) -> i32 {
     let conv = i32_to_u32(i32_value);
     debug_assert!(u32::MAX - conv >= u32_value);
     u32_to_i32(conv + u32_value)
 }
 
 #[inline]
-const fn i32_to_u32(i32_value: i32) -> u32 {
+pub(crate) const fn i32_to_u32(i32_value: i32) -> u32 {
     (i32_value as u32) ^ 0x8000_0000
 }
 
 #[inline]
-const fn u32_to_i32(u32_value: u32) -> i32 {
+pub(crate) const fn u32_to_i32(u32_value: u32) -> i32 {
     (u32_value ^ 0x8000_0000) as i32
 }
 
