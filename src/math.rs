@@ -345,12 +345,11 @@ pub const fn sub_i32_into_u32(lhs: i32, rhs: i32) -> u32 {
     result as u32
 }
 
-pub const fn add_u32_to_i32(lhs: i32, rhs: u32) -> i32 {
-    let lhs = lhs as i64;
-    let rhs = rhs as i64;
-    let result = lhs + rhs;
-    debug_assert!(result <= i32::MAX as i64);
-    result as i32
+#[inline]
+const fn add_u32_to_i32(i32_value: i32, u32_value: u32) -> i32 {
+    let conv = i32_to_u32(i32_value);
+    debug_assert!(u32::MAX - conv >= u32_value);
+    u32_to_i32(conv + u32_value)
 }
 
 #[inline]
