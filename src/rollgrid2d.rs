@@ -1053,9 +1053,9 @@ impl<T> RollGrid2D<T> {
 
     /// Overwrites a cell at the given coordinate with the given value without reading or dropping the old value.
     ///
-    /// write does not drop the contents of the cell. This is safe, but it could leak allocations or resources, so care should be taken not to overwrite an object that should be dropped.
+    /// This is safe, but it could leak allocations or resources, so care should be taken not to overwrite an object that should be dropped.
     ///
-    /// Additionally, it does not drop the contents of the cell. Semantically, `value` is moved into the cell at the given coordinate.
+    /// Semantically, `value` is moved into the cell at the given coordinate.
     ///
     /// This is appropriate for initializing uninitialized cells, or overwriting memory that has previously been [read] from.
     pub unsafe fn write(&mut self, coord: (i32, i32), value: T) {
