@@ -406,6 +406,69 @@ impl<T> AsMut<[T]> for FixedArray<T> {
     }
 }
 
+impl<T> From<FixedArray<T>> for Vec<T> {
+    fn from(value: FixedArray<T>) -> Self {
+        value.into_vec()
+    }
+}
+
+impl<T> From<FixedArray<T>> for Box<[T]> {
+    fn from(value: FixedArray<T>) -> Self {
+        value.into_boxed_slice()
+    }
+}
+
+impl<T> std::ops::Deref for FixedArray<T> {
+    type Target = [T];
+    fn deref(&self) -> &Self::Target {
+        self.as_slice()
+    }
+}
+
+impl<T> std::ops::DerefMut for FixedArray<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.as_mut_slice()
+    }
+}
+
+impl<T: Default> FixedArray<T> {
+    /// Takes the value at `index` while replacing the old value with [Default::default()].
+    pub fn take(&mut self, index: usize) -> T {
+        self.replace(index, Default::default())
+    }
+}
+
+impl<T> std::ops::Index<usize> for FixedArray<T> {
+    type Output = T;
+    fn index(&self, index: usize) -> &Self::Output {
+        if let Some(ptr) = self.ptr {
+            INDEX_OUT_OF_BOUNDS.assert(index < self.capacity);
+            unsafe { ptr.add(index).as_ref() }
+        } else {
+            UNALLOCATED_BUFFER.panic();
+        }
+    }
+}
+
+impl<T> std::ops::IndexMut<usize> for FixedArray<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        if let Some(ptr) = self.ptr {
+            INDEX_OUT_OF_BOUNDS.assert(index < self.capacity);
+            unsafe { ptr.add(index).as_mut() }
+        } else {
+            UNALLOCATED_BUFFER.panic();
+        }
+    }
+}
+
+impl<T> Drop for FixedArray<T> {
+    fn drop(&mut self) {
+        unsafe {
+            self.internal_dealloc(true);
+        }
+    }
+}
+
 pub struct FixedArrayRefIterator<'a, T> {
     array: &'a FixedArray<T>,
     index: usize,
@@ -467,69 +530,6 @@ impl<T> Drop for FixedArrayIterator<T> {
         }
         unsafe {
             self.array.internal_dealloc(false);
-        }
-    }
-}
-
-impl<T> From<FixedArray<T>> for Vec<T> {
-    fn from(value: FixedArray<T>) -> Self {
-        value.into_vec()
-    }
-}
-
-impl<T> From<FixedArray<T>> for Box<[T]> {
-    fn from(value: FixedArray<T>) -> Self {
-        value.into_boxed_slice()
-    }
-}
-
-impl<T> std::ops::Deref for FixedArray<T> {
-    type Target = [T];
-    fn deref(&self) -> &Self::Target {
-        self.as_slice()
-    }
-}
-
-impl<T> std::ops::DerefMut for FixedArray<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.as_mut_slice()
-    }
-}
-
-impl<T: Default> FixedArray<T> {
-    /// Takes the value at `index` while replacing the old value with [Default::default()].
-    pub fn take(&mut self, index: usize) -> T {
-        self.replace(index, Default::default())
-    }
-}
-
-impl<T> std::ops::Index<usize> for FixedArray<T> {
-    type Output = T;
-    fn index(&self, index: usize) -> &Self::Output {
-        if let Some(ptr) = self.ptr {
-            INDEX_OUT_OF_BOUNDS.assert(index < self.capacity);
-            unsafe { ptr.add(index).as_ref() }
-        } else {
-            UNALLOCATED_BUFFER.panic();
-        }
-    }
-}
-
-impl<T> std::ops::IndexMut<usize> for FixedArray<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        if let Some(ptr) = self.ptr {
-            INDEX_OUT_OF_BOUNDS.assert(index < self.capacity);
-            unsafe { ptr.add(index).as_mut() }
-        } else {
-            UNALLOCATED_BUFFER.panic();
-        }
-    }
-}
-
-impl<T> Drop for FixedArray<T> {
-    fn drop(&mut self) {
-        unsafe {
-            self.internal_dealloc(true);
         }
     }
 }
