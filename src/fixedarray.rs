@@ -394,6 +394,18 @@ impl<T: Clone> Clone for FixedArray<T> {
     }
 }
 
+impl<T> AsRef<[T]> for FixedArray<T> {
+    fn as_ref(&self) -> &[T] {
+        self.as_slice()
+    }
+}
+
+impl<T> AsMut<[T]> for FixedArray<T> {
+    fn as_mut(&mut self) -> &mut [T] {
+        self.as_mut_slice()
+    }
+}
+
 pub struct FixedArrayRefIterator<'a, T> {
     array: &'a FixedArray<T>,
     index: usize,
