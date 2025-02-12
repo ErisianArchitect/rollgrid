@@ -8,6 +8,7 @@ use crate::{bounds3d::*, fixedarray::FixedArray, error_messages::*, *};
 pub struct RollGrid3D<T> {
     cells: FixedArray<T>,
     size: (u32, u32, u32),
+    // TODO: wrap_offset should be (u32, u32, u32)
     wrap_offset: (i32, i32, i32),
     grid_offset: (i32, i32, i32),
 }
@@ -99,15 +100,9 @@ impl<T> RollGrid3D<T> {
     where
         M: CellManage<(i32, i32, i32), T>,
     {
-        if inflate.0 > i32::MAX as u32 {
-            panic!("{INFLATE_PAST_I32_MAX}");
-        }
-        if inflate.1 > i32::MAX as u32 {
-            panic!("{INFLATE_PAST_I32_MAX}");
-        }
-        if inflate.2 > i32::MAX as u32 {
-            panic!("{INFLATE_PAST_I32_MAX}");
-        }
+        INFLATE_PAST_I32_MAX.panic_if(inflate.0 > i32::MAX as u32);
+        INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
+        INFLATE_PAST_I32_MAX.panic_if(inflate.2 > i32::MAX as u32);
         // let inf = inflate as i32;
         let position = (
             self.grid_offset.0 - inflate.0 as i32,
@@ -169,15 +164,9 @@ impl<T> RollGrid3D<T> {
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
-        if inflate.0 > i32::MAX as u32 {
-            panic!("{INFLATE_PAST_I32_MAX}");
-        }
-        if inflate.1 > i32::MAX as u32 {
-            panic!("{INFLATE_PAST_I32_MAX}");
-        }
-        if inflate.2 > i32::MAX as u32 {
-            panic!("{INFLATE_PAST_I32_MAX}");
-        }
+        INFLATE_PAST_I32_MAX.panic_if(inflate.0 > i32::MAX as u32);
+        INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
+        INFLATE_PAST_I32_MAX.panic_if(inflate.2 > i32::MAX as u32);
         // let inf = inflate as i32;
         let position = (
             self.grid_offset.0 - inflate.0 as i32,
@@ -233,15 +222,9 @@ impl<T> RollGrid3D<T> {
     where
         M: CellManage<(i32, i32, i32), T>,
     {
-        if deflate.0 > i32::MAX as u32 {
-            panic!("{DEFLATE_PAST_I32_MAX}");
-        }
-        if deflate.1 > i32::MAX as u32 {
-            panic!("{DEFLATE_PAST_I32_MAX}");
-        }
-        if deflate.2 > i32::MAX as u32 {
-            panic!("{DEFLATE_PAST_I32_MAX}");
-        }
+        DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
+        DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
+        DEFLATE_PAST_I32_MAX.panic_if(deflate.2 > i32::MAX as u32);
         let position = (
             self.grid_offset.0 + deflate.0 as i32,
             self.grid_offset.1 + deflate.1 as i32,
@@ -310,15 +293,9 @@ impl<T> RollGrid3D<T> {
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
-        if deflate.0 > i32::MAX as u32 {
-            panic!("{DEFLATE_PAST_I32_MAX}");
-        }
-        if deflate.1 > i32::MAX as u32 {
-            panic!("{DEFLATE_PAST_I32_MAX}");
-        }
-        if deflate.2 > i32::MAX as u32 {
-            panic!("{DEFLATE_PAST_I32_MAX}");
-        }
+        DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
+        DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
+        DEFLATE_PAST_I32_MAX.panic_if(deflate.2 > i32::MAX as u32);
         let position = (
             self.grid_offset.0 + deflate.0 as i32,
             self.grid_offset.1 + deflate.1 as i32,
