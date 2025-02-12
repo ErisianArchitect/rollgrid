@@ -230,7 +230,7 @@ impl<T> FixedArray<T> {
     /// Deallocates the internal buffer in this [FixedArray].
     pub unsafe fn dealloc(&mut self) {
         self.internal_dealloc(true);
-        self.capacity = 0;
+        
     }
 
     /// Set `drop` to `false` if you have already manually dropped the items.
@@ -246,6 +246,7 @@ impl<T> FixedArray<T> {
                 std::alloc::dealloc(ptr.as_ptr() as *mut u8, layout);
             }
         }
+        self.capacity = 0;
     }
 
     /// Deallocates the buffer and forgets about the contained items (does not drop them).
