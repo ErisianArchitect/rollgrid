@@ -3,7 +3,8 @@ use crate::math::*;
 
 // TODO: There's a lot of work to be done here.
 //       Ideally, `Grid2D` can be used to represent a slice of
-//       a `RollGrid2D`.
+//       a `RollGrid2D`. I'd like to be able to use this struct
+//       to store a subgrid of references or mutable references.
 
 /// A 2-Dimensional matrix of values.
 pub struct Grid2D<T: Sized> {
