@@ -12,31 +12,6 @@ pub struct FixedArray<T> {
     pub(crate) capacity: usize,
 }
 
-unsafe impl<T: Send> Send for FixedArray<T> {}
-unsafe impl<T: Sync> Sync for FixedArray<T> {}
-
-impl<T: Clone> Clone for FixedArray<T> {
-    fn clone(&self) -> Self {
-        if let Some(ptr) = self.ptr {
-            unsafe {
-                let new_array = Self::prealloc(self.capacity);
-                for i in 0..self.capacity {
-                    let dest = new_array.add(i);
-                    let src = ptr.add(i);
-                    let value = src.as_ref().clone();
-                    dest.write(value);
-                }
-                Self {
-                    ptr: Some(new_array),
-                    capacity: self.capacity,
-                }
-            }
-        } else {
-            Self { ptr: None, capacity: self.capacity }
-        }
-    }
-}
-
 impl<T> FixedArray<T> {
 
     #[inline(always)]
@@ -390,6 +365,31 @@ impl<T> FixedArray<T> {
                 ptr: Some(NonNull::new_unchecked(data)),
                 capacity,
             }
+        }
+    }
+}
+
+unsafe impl<T: Send> Send for FixedArray<T> {}
+unsafe impl<T: Sync> Sync for FixedArray<T> {}
+
+impl<T: Clone> Clone for FixedArray<T> {
+    fn clone(&self) -> Self {
+        if let Some(ptr) = self.ptr {
+            unsafe {
+                let new_array = Self::prealloc(self.capacity);
+                for i in 0..self.capacity {
+                    let dest = new_array.add(i);
+                    let src = ptr.add(i);
+                    let value = src.as_ref().clone();
+                    dest.write(value);
+                }
+                Self {
+                    ptr: Some(new_array),
+                    capacity: self.capacity,
+                }
+            }
+        } else {
+            Self { ptr: None, capacity: self.capacity }
         }
     }
 }
