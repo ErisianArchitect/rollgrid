@@ -369,6 +369,13 @@ impl<T> FixedArray<T> {
     }
 }
 
+impl<T: Default> FixedArray<T> {
+    /// Takes the value at `index` while replacing the old value with [Default::default()].
+    pub fn take(&mut self, index: usize) -> T {
+        self.replace(index, Default::default())
+    }
+}
+
 unsafe impl<T: Send> Send for FixedArray<T> {}
 unsafe impl<T: Sync> Sync for FixedArray<T> {}
 
@@ -418,6 +425,18 @@ impl<T> AsMut<[T]> for FixedArray<T> {
     }
 }
 
+impl<T> std::borrow::Borrow<[T]> for FixedArray<T> {
+    fn borrow(&self) -> &[T] {
+        self.as_slice()
+    }
+}
+
+impl<T> std::borrow::BorrowMut<[T]> for FixedArray<T> {
+    fn borrow_mut(&mut self) -> &mut [T] {
+        self.as_mut_slice()
+    }
+}
+
 impl<T> From<FixedArray<T>> for Vec<T> {
     fn from(value: FixedArray<T>) -> Self {
         value.into_vec()
@@ -440,13 +459,6 @@ impl<T> std::ops::Deref for FixedArray<T> {
 impl<T> std::ops::DerefMut for FixedArray<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_slice()
-    }
-}
-
-impl<T: Default> FixedArray<T> {
-    /// Takes the value at `index` while replacing the old value with [Default::default()].
-    pub fn take(&mut self, index: usize) -> T {
-        self.replace(index, Default::default())
     }
 }
 
