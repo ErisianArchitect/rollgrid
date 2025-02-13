@@ -1,3 +1,5 @@
+use crate::math::*;
+
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A 3D bounding box.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -41,6 +43,20 @@ impl Bounds3D {
     /// The size along the Z axis.
     pub fn depth(&self) -> u32 {
         (self.max.2 as i64 - self.min.2 as i64) as u32
+    }
+    /// Get the size of the bounds.
+    pub fn size(&self) -> (u32, u32, u32) {
+        let x_min = i32_to_u32(self.min.0);
+        let y_min = i32_to_u32(self.min.1);
+        let z_min = i32_to_u32(self.min.2);
+        let x_max = i32_to_u32(self.max.0);
+        let y_max = i32_to_u32(self.max.1);
+        let z_max = i32_to_u32(self.max.2);
+        (
+            x_max - x_min,
+            y_max - y_min,
+            z_max - z_min,
+        )
     }
 
     /// The volume is `width * height * depth`.
