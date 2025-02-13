@@ -547,13 +547,11 @@ impl<T> RollGrid2D<T> {
         }
         AREA_IS_ZERO.panic_if(width == 0 || height == 0);
         let (new_x, new_y) = new_position;
-        // FIXME: Rather than converting width and height to i32, keep them
-        //        as u32 and use fallible addition to create Bounds2D (new_x/y + nw/h).
-        let nw = width as i32;
-        let nh = height as i32;
+        let right = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_x, width));
+        let bottom = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_y, height));
         // Determine what needs to be unloaded
         let old_bounds: Bounds2D = self.bounds();
-        let new_bounds = Bounds2D::new((new_x, new_y), (new_x + nw, new_y + nh));
+        let new_bounds = Bounds2D::new((new_x, new_y), (right, bottom));
         // TODO: When width and height are returned to u32, remove conversions.
         // FIXME: size is set too early. It should be set after creation of new FixedArray.
         let size = (width as u32, height as u32);
