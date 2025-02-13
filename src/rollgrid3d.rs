@@ -1,5 +1,11 @@
-use crate::{bounds3d::*, error_messages::*, fixedarray::FixedArray, math::{add_u32_to_i32, checked_add_u32_to_i32, Convert}, *};
 use crate::grid3d::*;
+use crate::{
+    bounds3d::*,
+    error_messages::*,
+    fixedarray::FixedArray,
+    math::{add_u32_to_i32, checked_add_u32_to_i32, Convert},
+    *,
+};
 
 /// A 3D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -138,11 +144,7 @@ impl<T> RollGrid3D<T> {
         INFLATE_OVERFLOW.panic_if(bottom > i32::MAX as i64);
         let back = pos_z + depth as i64;
         INFLATE_OVERFLOW.panic_if(back > i32::MAX as i64);
-        let position = (
-            pos_x as i32,
-            pos_y as i32,
-            pos_z as i32,
-        );
+        let position = (pos_x as i32, pos_y as i32, pos_z as i32);
         self.resize_and_reposition((width, height, depth), position, manage);
     }
 
@@ -210,11 +212,7 @@ impl<T> RollGrid3D<T> {
         INFLATE_OVERFLOW.panic_if(bottom > i32::MAX as i64);
         let back = pos_z + depth as i64;
         INFLATE_OVERFLOW.panic_if(back > i32::MAX as i64);
-        let position = (
-            pos_x as i32,
-            pos_y as i32,
-            pos_z as i32,
-        );
+        let position = (pos_x as i32, pos_y as i32, pos_z as i32);
         self.try_resize_and_reposition((width, height, depth), position, manage)
     }
 
@@ -401,11 +399,7 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_resize<E, M>(
-        &mut self,
-        size: (u32, u32, u32),
-        manage: M,
-    ) -> Result<(), E>
+    pub fn try_resize<E, M>(&mut self, size: (u32, u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
@@ -465,10 +459,7 @@ impl<T> RollGrid3D<T> {
         let bottom = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_y, height));
         let back = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_z, depth));
         let old_bounds = self.bounds();
-        let new_bounds = Bounds3D::new(
-            (new_x, new_y, new_z),
-            (right, bottom, back),
-        );
+        let new_bounds = Bounds3D::new((new_x, new_y, new_z), (right, bottom, back));
         if old_bounds.intersects(new_bounds) {
             macro_rules! unload_bounds {
                 ($cond:expr => xmin = $xmin:expr; ymin = $ymin:expr; zmin = $zmin:expr; xmax = $xmax:expr; ymax = $ymax:expr; zmax = $zmax:expr;) => {
@@ -628,10 +619,7 @@ impl<T> RollGrid3D<T> {
         let bottom = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_y, height));
         let back = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_z, depth));
         let old_bounds = self.bounds();
-        let new_bounds = Bounds3D::new(
-            (new_x, new_y, new_z),
-            (right, bottom, back),
-        );
+        let new_bounds = Bounds3D::new((new_x, new_y, new_z), (right, bottom, back));
         if old_bounds.intersects(new_bounds) {
             macro_rules! unload_bounds {
                 ($cond:expr => xmin = $xmin:expr; ymin = $ymin:expr; zmin = $zmin:expr; xmax = $xmax:expr; ymax = $ymax:expr; zmax = $zmax:expr;) => {
@@ -810,7 +798,7 @@ impl<T> RollGrid3D<T> {
         let offset = (
             new_x as i64 - old_x as i64,
             new_y as i64 - old_y as i64,
-            new_z as i64 - old_z as i64
+            new_z as i64 - old_z as i64,
         );
         let width = self.size.0 as i64;
         let height = self.size.1 as i64;
@@ -820,10 +808,7 @@ impl<T> RollGrid3D<T> {
         let right = X_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_x, self.size.0));
         let bottom = Y_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_y, self.size.1));
         let back = Z_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_z, self.size.2));
-        let new_bounds = Bounds3D::new(
-            (new_x, new_y, new_z),
-            (right, bottom, back),
-        );
+        let new_bounds = Bounds3D::new((new_x, new_y, new_z), (right, bottom, back));
         // A cool trick to test whether the translation moves out of bounds.
         if offset_x.abs() < width && offset_y.abs() < height && offset_z.abs() < depth {
             // translation in bounds, the hard part.
@@ -1210,8 +1195,11 @@ impl<T> RollGrid3D<T> {
                 (half_region, quarter_region, None)
             };
             // Calculate new wrap_offset
-            let (wrap_x, wrap_y, wrap_z) =
-                (self.wrap_offset.0 as i64, self.wrap_offset.1 as i64, self.wrap_offset.2 as i64);
+            let (wrap_x, wrap_y, wrap_z) = (
+                self.wrap_offset.0 as i64,
+                self.wrap_offset.1 as i64,
+                self.wrap_offset.2 as i64,
+            );
             let (wrapped_offset_x, wrapped_offset_y, wrapped_offset_z) = (
                 offset_x.rem_euclid(width),
                 offset_y.rem_euclid(height),
@@ -1278,11 +1266,7 @@ impl<T> RollGrid3D<T> {
                         let prior_z = (old_z + zi as i64) as i32;
                         let offset = (x as i32, y as i32, z as i32);
                         let index = self.offset_index(offset).expect(OUT_OF_BOUNDS.msg());
-                        reload(
-                            (prior_x, prior_y, prior_z),
-                            offset,
-                            &mut self.cells[index],
-                        );
+                        reload((prior_x, prior_y, prior_z), offset, &mut self.cells[index]);
                     }
                 }
             }
@@ -1316,7 +1300,7 @@ impl<T> RollGrid3D<T> {
         let offset = (
             new_x as i64 - old_x as i64,
             new_y as i64 - old_y as i64,
-            new_z as i64 - old_z as i64
+            new_z as i64 - old_z as i64,
         );
         let width = self.size.0 as i64;
         let height = self.size.1 as i64;
@@ -1326,10 +1310,7 @@ impl<T> RollGrid3D<T> {
         let right = X_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_x, self.size.0));
         let bottom = Y_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_y, self.size.1));
         let back = Z_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_z, self.size.2));
-        let new_bounds = Bounds3D::new(
-            (new_x, new_y, new_z),
-            (right, bottom, back),
-        );
+        let new_bounds = Bounds3D::new((new_x, new_y, new_z), (right, bottom, back));
         // A cool trick to test whether the translation moves out of bounds.
         if offset_x.abs() < width && offset_y.abs() < height && offset_z.abs() < depth {
             // translation in bounds, the hard part.
@@ -1716,8 +1697,11 @@ impl<T> RollGrid3D<T> {
                 (half_region, quarter_region, None)
             };
             // Calculate new wrap_offset
-            let (wrap_x, wrap_y, wrap_z) =
-                (self.wrap_offset.0 as i64, self.wrap_offset.1 as i64, self.wrap_offset.2 as i64);
+            let (wrap_x, wrap_y, wrap_z) = (
+                self.wrap_offset.0 as i64,
+                self.wrap_offset.1 as i64,
+                self.wrap_offset.2 as i64,
+            );
             let (wrapped_offset_x, wrapped_offset_y, wrapped_offset_z) = (
                 offset_x.rem_euclid(width),
                 offset_y.rem_euclid(height),
@@ -1787,11 +1771,7 @@ impl<T> RollGrid3D<T> {
                         let prior_z = (old_z + zi as i64) as i32;
                         let offset = (x as i32, y as i32, z as i32);
                         let index = self.offset_index(offset).expect(OUT_OF_BOUNDS.msg());
-                        reload(
-                            (prior_x, prior_y, prior_z),
-                            offset,
-                            &mut self.cells[index],
-                        )?;
+                        reload((prior_x, prior_y, prior_z), offset, &mut self.cells[index])?;
                     }
                 }
             }
@@ -1803,11 +1783,7 @@ impl<T> RollGrid3D<T> {
     pub fn relative_offset(&self, coord: (i32, i32, i32)) -> (i64, i64, i64) {
         let (x, y, z) = coord.convert::<(i64, i64, i64)>();
         let (ox, oy, oz) = self.grid_offset.convert::<(i64, i64, i64)>();
-        (
-            x - ox,
-            y - oy,
-            z - oz,
-        )
+        (x - ox, y - oy, z - oz)
     }
 
     /// The grid has a wrapping offset, which dictates the lookup order of cells.
@@ -1821,11 +1797,12 @@ impl<T> RollGrid3D<T> {
         let height = self.size.1 as i64;
         let depth = self.size.2 as i64;
         if x < off_x
-        || y < off_y
-        || z < off_z
-        || x >= off_x + width
-        || y >= off_y + height
-        || z >= off_z + depth {
+            || y < off_y
+            || z < off_z
+            || x >= off_x + width
+            || y >= off_y + height
+            || z >= off_z + depth
+        {
             return None;
         }
         // Adjust x, y, and z
@@ -1901,11 +1878,12 @@ impl<T> RollGrid3D<T> {
     pub fn subgrid<'a>(&'a self, bounds: Bounds3D) -> Grid3D<&'a T> {
         let self_bounds = self.bounds();
         if bounds.x_min() < self_bounds.x_min()
-        || bounds.y_min() < self_bounds.y_min()
-        || bounds.z_min() < self_bounds.z_min()
-        || bounds.x_max() > self_bounds.x_max()
-        || bounds.y_max() > self_bounds.y_max()
-        || bounds.z_max() > self_bounds.z_max() {
+            || bounds.y_min() < self_bounds.y_min()
+            || bounds.z_min() < self_bounds.z_min()
+            || bounds.x_max() > self_bounds.x_max()
+            || bounds.y_max() > self_bounds.y_max()
+            || bounds.z_max() > self_bounds.z_max()
+        {
             OUT_OF_BOUNDS.panic();
         }
         unsafe {
@@ -1923,11 +1901,12 @@ impl<T> RollGrid3D<T> {
     pub fn subgrid_mut<'a>(&'a mut self, bounds: Bounds3D) -> Grid3D<&'a mut T> {
         let self_bounds = self.bounds();
         if bounds.x_min() < self_bounds.x_min()
-        || bounds.y_min() < self_bounds.y_min()
-        || bounds.z_min() < self_bounds.z_min()
-        || bounds.x_max() > self_bounds.x_max()
-        || bounds.y_max() > self_bounds.y_max()
-        || bounds.z_max() > self_bounds.z_max() {
+            || bounds.y_min() < self_bounds.y_min()
+            || bounds.z_min() < self_bounds.z_min()
+            || bounds.x_max() > self_bounds.x_max()
+            || bounds.y_max() > self_bounds.y_max()
+            || bounds.z_max() > self_bounds.z_max()
+        {
             OUT_OF_BOUNDS.panic();
         }
         unsafe {
@@ -2037,16 +2016,15 @@ impl<T: Copy> RollGrid3D<T> {
     pub fn copy_subgrid(&self, bounds: Bounds3D) -> Grid3D<T> {
         let self_bounds = self.bounds();
         if bounds.x_min() < self_bounds.x_min()
-        || bounds.y_min() < self_bounds.y_min()
-        || bounds.z_min() < self_bounds.z_min()
-        || bounds.x_max() > self_bounds.x_max()
-        || bounds.y_max() > self_bounds.y_max()
-        || bounds.z_max() > self_bounds.z_max() {
+            || bounds.y_min() < self_bounds.y_min()
+            || bounds.z_min() < self_bounds.z_min()
+            || bounds.x_max() > self_bounds.x_max()
+            || bounds.y_max() > self_bounds.y_max()
+            || bounds.z_max() > self_bounds.z_max()
+        {
             OUT_OF_BOUNDS.panic();
         }
-        Grid3D::new(bounds.size(), bounds.min, |pos| {
-            self[pos]
-        })
+        Grid3D::new(bounds.size(), bounds.min, |pos| self[pos])
     }
 }
 
@@ -2061,16 +2039,15 @@ impl<T: Clone> RollGrid3D<T> {
     pub fn clone_subgrid(&self, bounds: Bounds3D) -> Grid3D<T> {
         let self_bounds = self.bounds();
         if bounds.x_min() < self_bounds.x_min()
-        || bounds.y_min() < self_bounds.y_min()
-        || bounds.z_min() < self_bounds.z_min()
-        || bounds.x_max() > self_bounds.x_max()
-        || bounds.y_max() > self_bounds.y_max()
-        || bounds.z_max() > self_bounds.z_max() {
+            || bounds.y_min() < self_bounds.y_min()
+            || bounds.z_min() < self_bounds.z_min()
+            || bounds.x_max() > self_bounds.x_max()
+            || bounds.y_max() > self_bounds.y_max()
+            || bounds.z_max() > self_bounds.z_max()
+        {
             OUT_OF_BOUNDS.panic();
         }
-        Grid3D::new(bounds.size(), bounds.min, |pos| {
-            self[pos].clone()
-        })
+        Grid3D::new(bounds.size(), bounds.min, |pos| self[pos].clone())
     }
 }
 
@@ -2231,7 +2208,9 @@ mod tests {
                     for ny in -7..7 {
                         for nz in -7..7 {
                             for nx in -7..7 {
-                                let mut grid = RollGrid3D::new((2, 2, 2), (x, y, z), |pos| DropCoord::from(pos));
+                                let mut grid = RollGrid3D::new((2, 2, 2), (x, y, z), |pos| {
+                                    DropCoord::from(pos)
+                                });
                                 grid.reposition((nx, ny, nz), |old_pos, new_pos, cell| {
                                     assert_eq!(cell.coord, old_pos);
                                     cell.coord = new_pos;
@@ -2253,10 +2232,11 @@ mod tests {
                     for y in -1..6 {
                         for z in -1..6 {
                             for x in -1..6 {
-                                let mut grid =
-                                    RollGrid3D::new((4, 4, 4), (0, 0, 0), |pos: (i32, i32, i32)| {
-                                        DropCoord::from(pos)
-                                    });
+                                let mut grid = RollGrid3D::new(
+                                    (4, 4, 4),
+                                    (0, 0, 0),
+                                    |pos: (i32, i32, i32)| DropCoord::from(pos),
+                                );
                                 // reposition to half point to ensure wrapping doesn't cause lookup invalidation.
                                 grid.reposition((2, 2, 2), |old_pos, new_pos, cell| {
                                     assert_eq!(old_pos, cell.coord);

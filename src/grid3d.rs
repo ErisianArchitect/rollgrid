@@ -1,7 +1,7 @@
+use crate::bounds3d::*;
+use crate::error_messages::*;
 use crate::fixedarray::FixedArray;
 use crate::math::*;
-use crate::error_messages::*;
-use crate::bounds3d::*;
 
 /// A 3-Dimensional matrix.
 pub struct Grid3D<T: Sized> {
@@ -12,11 +12,15 @@ pub struct Grid3D<T: Sized> {
 
 impl<T> Grid3D<T> {
     /// Create a new [Grid3D] using a function to initialize cells.
-    /// 
+    ///
     /// The init function should take as input the coordinate that is
     /// being initialized, and should return the desired value for the
     /// cell.
-    pub fn new<F: FnMut((i32, i32, i32)) -> T>(size: (u32, u32, u32), offset: (i32, i32, i32), init: F) -> Self {
+    pub fn new<F: FnMut((i32, i32, i32)) -> T>(
+        size: (u32, u32, u32),
+        offset: (i32, i32, i32),
+        init: F,
+    ) -> Self {
         Self {
             cells: FixedArray::new_3d(size, offset, init),
             size,
@@ -27,45 +31,42 @@ impl<T> Grid3D<T> {
     /// The grid has an offset, so this function will find the index of the cell
     /// at the world coordinate `(x, y, z)`.
     pub fn offset_index(&self, (x, y, z): (i32, i32, i32)) -> Option<usize> {
-        let (x, y, z) = (
-            x as i64,
-            y as i64,
-            z as i64
-        );
+        let (x, y, z) = (x as i64, y as i64, z as i64);
         let (off_x, off_y, off_z) = self.offset.convert::<(i64, i64, i64)>();
         let width = self.size.0 as i64;
         let height = self.size.1 as i64;
         let depth = self.size.2 as i64;
         if x < off_x
-        || y < off_y
-        || z < off_z
-        || x >= off_x + width
-        || y >= off_y + height
-        || z >= off_z + depth {
+            || y < off_y
+            || z < off_z
+            || x >= off_x + width
+            || y >= off_y + height
+            || z >= off_z + depth
+        {
             return None;
         }
         let adj_x = x - off_x;
         let adj_y = y - off_x;
         let adj_z = z - off_z;
         let plane = self.size.0 * self.size.2;
-        Some(adj_y as usize * plane as usize + adj_z as usize * self.size.0 as usize + adj_x as usize)
+        Some(
+            adj_y as usize * plane as usize
+                + adj_z as usize * self.size.0 as usize
+                + adj_x as usize,
+        )
     }
 
     /// Get the offset relative to the grid's offset.
     pub fn relative_offset(&self, coord: (i32, i32, i32)) -> (i64, i64, i64) {
         let (x, y, z) = coord.convert::<(i64, i64, i64)>();
         let (ox, oy, oz) = self.offset.convert::<(i64, i64, i64)>();
-        (
-            x - ox,
-            y - oy,
-            z - oz,
-        )
+        (x - ox, y - oy, z - oz)
     }
 
     /// Replace item at `coord` using `replace` function that takes as
     /// input the old value and returns the new value. This will swap the
     /// value in-place.
-    /// 
+    ///
     /// # Panics
     /// - When out of bounds, this method will panic.
     pub fn replace_with<F: FnOnce(T) -> T>(&mut self, coord: (i32, i32, i32), replace: F) {
@@ -75,7 +76,7 @@ impl<T> Grid3D<T> {
 
     /// Replace item at `coord` using [std::mem::replace] and then returns
     /// the old value.
-    /// 
+    ///
     /// # Panics
     /// - When out of bounds, this method will panic.
     pub fn replace(&mut self, coord: (i32, i32, i32), value: T) -> T {

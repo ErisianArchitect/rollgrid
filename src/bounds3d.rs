@@ -52,11 +52,7 @@ impl Bounds3D {
         let x_max = i32_to_u32(self.max.0);
         let y_max = i32_to_u32(self.max.1);
         let z_max = i32_to_u32(self.max.2);
-        (
-            x_max - x_min,
-            y_max - y_min,
-            z_max - z_min,
-        )
+        (x_max - x_min, y_max - y_min, z_max - z_min)
     }
 
     /// The volume is `width * height * depth`.

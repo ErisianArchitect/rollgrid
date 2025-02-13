@@ -1,5 +1,5 @@
-use crate::{bounds2d::*, error_messages::*, fixedarray::FixedArray, math::*, *};
 use crate::grid2d::*;
+use crate::{bounds2d::*, error_messages::*, fixedarray::FixedArray, math::*, *};
 
 /// A 2D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -126,10 +126,7 @@ impl<T> RollGrid2D<T> {
         INFLATE_OVERFLOW.panic_if(right > i32::MAX as i64);
         let bottom = pos_y + height as i64;
         INFLATE_OVERFLOW.panic_if(bottom > i32::MAX as i64);
-        let position = (
-            pos_x as i32,
-            pos_y as i32,
-        );
+        let position = (pos_x as i32, pos_y as i32);
         self.resize_and_reposition((width, height), position, manage);
     }
 
@@ -189,10 +186,7 @@ impl<T> RollGrid2D<T> {
         INFLATE_OVERFLOW.panic_if(right > i32::MAX as i64);
         let bottom = pos_y + height as i64;
         INFLATE_OVERFLOW.panic_if(bottom > i32::MAX as i64);
-        let position = (
-            pos_x as i32,
-            pos_y as i32,
-        );
+        let position = (pos_x as i32, pos_y as i32);
         self.try_resize_and_reposition((width, height), position, manage)
     }
 
@@ -246,10 +240,7 @@ impl<T> RollGrid2D<T> {
         DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
         let pos_y = off_y + deflate.1 as i64;
         DEFLATE_OVERFLOW.panic_if(pos_y > i32::MAX as i64);
-        let position = (
-            pos_x as i32,
-            pos_y as i32,
-        );
+        let position = (pos_x as i32, pos_y as i32);
         self.resize_and_reposition((width, height), position, manage);
     }
 
@@ -305,10 +296,7 @@ impl<T> RollGrid2D<T> {
         DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
         let pos_y = off_y + deflate.1 as i64;
         DEFLATE_OVERFLOW.panic_if(pos_y > i32::MAX as i64);
-        let position = (
-            pos_x as i32,
-            pos_y as i32,
-        );
+        let position = (pos_x as i32, pos_y as i32);
         self.try_resize_and_reposition((width, height), position, manage)
     }
 
@@ -491,8 +479,7 @@ impl<T> RollGrid2D<T> {
                     manage.unload(pos, self.cells.read(index));
                 }
             });
-            let new_grid =
-                FixedArray::new_2d(size, new_position, |pos| manage.load(pos));
+            let new_grid = FixedArray::new_2d(size, new_position, |pos| manage.load(pos));
             self.size = size;
             self.grid_offset = new_position;
             unsafe {
@@ -704,10 +691,7 @@ impl<T> RollGrid2D<T> {
         }
         let (old_x, old_y) = self.grid_offset;
         let (new_x, new_y) = position;
-        let offset = (
-            new_x as i64 - old_x as i64,
-            new_y as i64 - old_y as i64,
-        );
+        let offset = (new_x as i64 - old_x as i64, new_y as i64 - old_y as i64);
         let width = self.size.0 as i64;
         let height = self.size.1 as i64;
         let (offset_x, offset_y) = offset;
@@ -728,8 +712,10 @@ impl<T> RollGrid2D<T> {
             let new_rolled_x = (roll_x + wrapped_offset_x).rem_euclid(width);
             let new_rolled_y = (roll_y + wrapped_offset_y).rem_euclid(height);
             self.wrap_offset = (new_rolled_x as u32, new_rolled_y as u32);
-            let right = X_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_x, self.size.0)) as i64;
-            let bottom = Y_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_y, self.size.1)) as i64;
+            let right =
+                X_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_x, self.size.0)) as i64;
+            let bottom =
+                Y_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_y, self.size.1)) as i64;
             let new_x = new_x as i64;
             let new_y = new_y as i64;
             let old_x = old_x as i64;
@@ -804,7 +790,6 @@ impl<T> RollGrid2D<T> {
                     reload((prior_x, prior_y), (x, y), &mut self.cells[index]);
                 }
             }
-            
         } else {
             let new_x = new_x as i64;
             let new_y = new_y as i64;
@@ -847,10 +832,7 @@ impl<T> RollGrid2D<T> {
         }
         let (old_x, old_y) = self.grid_offset;
         let (new_x, new_y) = position;
-        let offset = (
-            new_x as i64 - old_x as i64,
-            new_y as i64 - old_y as i64,
-        );
+        let offset = (new_x as i64 - old_x as i64, new_y as i64 - old_y as i64);
         let width = self.size.0 as i64;
         let height = self.size.1 as i64;
         let (offset_x, offset_y) = offset;
@@ -871,8 +853,10 @@ impl<T> RollGrid2D<T> {
             let new_rolled_x = (roll_x + wrapped_offset_x).rem_euclid(width);
             let new_rolled_y = (roll_y + wrapped_offset_y).rem_euclid(height);
             self.wrap_offset = (new_rolled_x as u32, new_rolled_y as u32);
-            let right = X_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_x, self.size.0)) as i64;
-            let bottom = Y_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_y, self.size.1)) as i64;
+            let right =
+                X_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_x, self.size.0)) as i64;
+            let bottom =
+                Y_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_y, self.size.1)) as i64;
             let new_x = new_x as i64;
             let new_y = new_y as i64;
             let old_x = old_x as i64;
@@ -970,10 +954,7 @@ impl<T> RollGrid2D<T> {
     pub fn relative_offset(&self, coord: (i32, i32)) -> (i64, i64) {
         let (x, y): (i64, i64) = coord.convert();
         let (ox, oy): (i64, i64) = self.grid_offset.convert();
-        (
-            x - ox,
-            y - oy,
-        )
+        (x - ox, y - oy)
     }
 
     /// The grid has a wrapping offset, which dictates the lookup order of cells.
@@ -1001,7 +982,7 @@ impl<T> RollGrid2D<T> {
     /// Replace item at `coord` using `replace` function that takes as
     /// input the old value and returns the new value. This will swap the
     /// value in-place.
-    /// 
+    ///
     /// # Panics
     /// - When out of bounds, this method will panic.
     pub fn replace_with<F: FnOnce(T) -> T>(&mut self, coord: (i32, i32), replace: F) {
@@ -1011,7 +992,7 @@ impl<T> RollGrid2D<T> {
 
     /// Replace item at `coord` using [std::mem::replace] and then returns
     /// the old value.
-    /// 
+    ///
     /// # Panics
     /// - When out of bounds, this method will panic.
     pub fn replace(&mut self, coord: (i32, i32), value: T) -> T {
@@ -1061,9 +1042,10 @@ impl<T> RollGrid2D<T> {
     pub fn subgrid<'a>(&'a self, bounds: Bounds2D) -> Grid2D<&'a T> {
         let self_bounds = self.bounds();
         if bounds.x_min() < self_bounds.x_min()
-        || bounds.y_min() < self_bounds.y_min()
-        || bounds.x_max() > self_bounds.x_max()
-        || bounds.y_max() > self_bounds.y_max() {
+            || bounds.y_min() < self_bounds.y_min()
+            || bounds.x_max() > self_bounds.x_max()
+            || bounds.y_max() > self_bounds.y_max()
+        {
             OUT_OF_BOUNDS.panic();
         }
         unsafe {
@@ -1081,9 +1063,10 @@ impl<T> RollGrid2D<T> {
     pub fn subgrid_mut<'a>(&'a mut self, bounds: Bounds2D) -> Grid2D<&'a mut T> {
         let self_bounds = self.bounds();
         if bounds.x_min() < self_bounds.x_min()
-        || bounds.y_min() < self_bounds.y_min()
-        || bounds.x_max() > self_bounds.x_max()
-        || bounds.y_max() > self_bounds.y_max() {
+            || bounds.y_min() < self_bounds.y_min()
+            || bounds.x_max() > self_bounds.x_max()
+            || bounds.y_max() > self_bounds.y_max()
+        {
             OUT_OF_BOUNDS.panic();
         }
         unsafe {
@@ -1178,14 +1161,13 @@ impl<T: Copy> RollGrid2D<T> {
     pub fn copy_subgrid(&self, bounds: Bounds2D) -> Grid2D<T> {
         let self_bounds = self.bounds();
         if bounds.x_min() < self_bounds.x_min()
-        || bounds.y_min() < self_bounds.y_min()
-        || bounds.x_max() > self_bounds.x_max()
-        || bounds.y_max() > self_bounds.y_max() {
+            || bounds.y_min() < self_bounds.y_min()
+            || bounds.x_max() > self_bounds.x_max()
+            || bounds.y_max() > self_bounds.y_max()
+        {
             OUT_OF_BOUNDS.panic();
         }
-        Grid2D::new(bounds.size(), bounds.min, |pos| {
-            self[pos]
-        })
+        Grid2D::new(bounds.size(), bounds.min, |pos| self[pos])
     }
 }
 
@@ -1200,14 +1182,13 @@ impl<T: Clone> RollGrid2D<T> {
     pub fn clone_subgrid(&self, bounds: Bounds2D) -> Grid2D<T> {
         let self_bounds = self.bounds();
         if bounds.x_min() < self_bounds.x_min()
-        || bounds.y_min() < self_bounds.y_min()
-        || bounds.x_max() > self_bounds.x_max()
-        || bounds.y_max() > self_bounds.y_max() {
+            || bounds.y_min() < self_bounds.y_min()
+            || bounds.x_max() > self_bounds.x_max()
+            || bounds.y_max() > self_bounds.y_max()
+        {
             OUT_OF_BOUNDS.panic();
         }
-        Grid2D::new(bounds.size(), bounds.min, |pos| {
-            self[pos].clone()
-        })
+        Grid2D::new(bounds.size(), bounds.min, |pos| self[pos].clone())
     }
 }
 
@@ -1363,7 +1344,8 @@ mod tests {
             for start_x in -6..6 {
                 for end_y in -6..6 {
                     for end_x in -6..6 {
-                        let mut grid = RollGrid2D::new((6, 6), (start_x, start_y), |pos| DropCoord::from(pos));
+                        let mut grid =
+                            RollGrid2D::new((6, 6), (start_x, start_y), |pos| DropCoord::from(pos));
                         grid.reposition((end_x, end_y), |old_pos, new_pos, cell| {
                             // println!("Grid: {:?} -> {:?}", (start_x, start_y), (end_x, end_y));
                             // println!("Cell: {:?} -> {:?}", old_pos, new_pos);

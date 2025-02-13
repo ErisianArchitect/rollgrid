@@ -1,7 +1,7 @@
+use crate::bounds2d::*;
+use crate::error_messages::*;
 use crate::fixedarray::FixedArray;
 use crate::math::*;
-use crate::error_messages::*;
-use crate::bounds2d::*;
 
 /// A 2-Dimensional matrix.
 pub struct Grid2D<T> {
@@ -12,7 +12,7 @@ pub struct Grid2D<T> {
 
 impl<T> Grid2D<T> {
     /// Create a new [Grid2D] using a function to initialize cells.
-    /// 
+    ///
     /// The init function should take as input the coordinate that is
     /// being initialized, and should return the desired value for the
     /// cell.
@@ -43,16 +43,13 @@ impl<T> Grid2D<T> {
     pub fn relative_offset(&self, coord: (i32, i32)) -> (i64, i64) {
         let (x, y) = coord.convert::<(i64, i64)>();
         let (ox, oy) = self.offset.convert::<(i64, i64)>();
-        (
-            x - ox,
-            y - oy,
-        )
+        (x - ox, y - oy)
     }
 
     /// Replace item at `coord` using `replace` function that takes as
     /// input the old value and returns the new value. This will swap the
     /// value in-place.
-    /// 
+    ///
     /// # Panics
     /// - When out of bounds, this method will panic.
     pub fn replace_with<F: FnOnce(T) -> T>(&mut self, coord: (i32, i32), replace: F) {
@@ -62,7 +59,7 @@ impl<T> Grid2D<T> {
 
     /// Replace item at `coord` using [std::mem::replace] and then returns
     /// the old value.
-    /// 
+    ///
     /// # Panics
     /// - When out of bounds, this method will panic.
     pub fn replace(&mut self, coord: (i32, i32), value: T) -> T {
@@ -173,7 +170,7 @@ impl<T> Grid2D<T> {
     pub fn iter_mut(&mut self) -> Grid2DMutIterator<T> {
         Grid2DMutIterator {
             bounds_iter: self.bounds().iter(),
-            grid: self
+            grid: self,
         }
     }
 }

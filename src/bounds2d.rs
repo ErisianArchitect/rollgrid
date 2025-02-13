@@ -48,10 +48,7 @@ impl Bounds2D {
         let y_min = i32_to_u32(self.min.1);
         let x_max = i32_to_u32(self.max.0);
         let y_max = i32_to_u32(self.max.1);
-        (
-            x_max - x_min,
-            y_max - y_min,
-        )
+        (x_max - x_min, y_max - y_min)
     }
 
     /// The minimum bound on the X axis.
