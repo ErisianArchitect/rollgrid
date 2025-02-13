@@ -131,12 +131,16 @@ You can modify this code to fit your purpose.
 - Implemented `Send` for `RollGrid3D<T>` where `T: Send`.
 - Implemented `Sync` for `RollGrid2D<T>` where `T: Sync`.
 - Implemented `Sync` for `RollGrid3D<T>` where `T: Sync`.
-- Implemented `FromIterator` for `FixedArray`.
-- Implemented `From<Vec<T>>` for `FixedArray<T>`.
-- Implemented `From<Box<[T]>>` for `FixedArray<T>`.
 - Implemented `Clone` for `FixedArray<T>` where `T: Clone`.
 - Implemented `Clone` for `RollGrid2D<T>` where `T: Clone`.
 - Implemented `Clone` for `RollGrid3D<T>` where `T: Clone`.
+- Implemented `FromIterator` for `FixedArray`.
+- Implemented `From<Vec<T>>` for `FixedArray<T>`.
+- Implemented `From<Box<[T]>>` for `FixedArray<T>`.
+- Implemented `Index<(i32, i32)>` for `RollGrid2D<T>`.
+- Implemented `IndexMut<(i32, i32)>` for `RollGrid2D<T>`.
+- Implemented `Index<(i32, i32, i32)>` for `RollGrid3D<T>`.
+- Implemented `IndexMut<(i32, i32, i32)>` for `RollGrid3D<T>`.
 - Implemented `AsRef<FixedArray<T>>` for `FixedArray<T>`.
 - Implemented `AsMut<FixedArray<T>>` for `FixedArray<T>`.
 - Implemented `AsRef<[T]>` for `FixedArray<T>`.
