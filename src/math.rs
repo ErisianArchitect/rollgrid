@@ -67,6 +67,24 @@ impl ConvertTuple<(u32, u32), (usize, usize)> for TupleConverter {
     }
 }
 
+impl ConvertTuple<(i32, i32, i32), (i64, i64, i64)> for TupleConverter {
+    fn convert(input: (i32, i32, i32)) -> (i64, i64, i64) {
+        (input.0 as i64, input.1 as i64, input.2 as i64)
+    }
+}
+
+impl ConvertTuple<(u32, u32, u32), (i64, i64, i64)> for TupleConverter {
+    fn convert(input: (u32, u32, u32)) -> (i64, i64, i64) {
+        (input.0 as i64, input.1 as i64, input.2 as i64)
+    }
+}
+
+impl ConvertTuple<(u32, u32, u32), (usize, usize, usize)> for TupleConverter {
+    fn convert(input: (u32, u32, u32)) -> (usize, usize, usize) {
+        (input.0 as usize, input.1 as usize, input.2 as usize)
+    }
+}
+
 impl<A: DimensionsType> Convert for A {
     fn convert<T>(self) -> T
     where
