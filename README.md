@@ -147,6 +147,8 @@ You can modify this code to fit your purpose.
 - Modified `RollGrid2D` and `RollGrid3D` to use `u32` for dimensions rather than `usize`. This makes it more clear what types of values should be used.
 - Reset `capacity` in `FixedArray::internal_dealloc` instead of `FixedArray::dealloc`.
 - Modified `FixedArray::into_raw` to be a static function rather than a method.
+- `relative_offset` now returns `(i64, ...)` instead of `(i32, ...)`.
+- Operations that took dimensions as individual arguments now take them as tuples.
 ### 2.0.0
 
 - Changed the internal representation of the cells in `RollGrid2D` and `RollGrid3D` from `Box<[Option<T>]>` to `rollgrid::cells::FixedArray<T>`. `FixedArray` is an internal type that was created to fulfill the needs of this crate.
