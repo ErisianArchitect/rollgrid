@@ -40,7 +40,7 @@ impl RollGrid2D<()> {
 }
 
 impl<T> RollGrid2D<T> {
-    /// Create a new [RollGrid2D] using an initialize function to initialize cells.
+    /// Create a new [RollGrid2D] using a function to initialize cells.
     ///
     /// The init function should take as input the coordinate that is being
     /// initialized, and should return the desired value for the cell.
@@ -57,7 +57,7 @@ impl<T> RollGrid2D<T> {
         }
     }
 
-    /// Try to create a new [RollGrid2D] using a fallible initialize function to initialize elements.
+    /// Try to create a new [RollGrid2D] using a fallible function to initialize elements.
     ///
     /// The init function should take as input the coordinate that is being
     /// initialized, and should return the desired value for the cell.
@@ -1020,9 +1020,9 @@ impl<T> RollGrid2D<T> {
 
     /// Reads the value from the cell without moving it. This leaves the memory in the cell unchanged.
     #[must_use]
-    pub unsafe fn read(&self, coord: (i32, i32)) -> Option<T> {
-        let index = self.offset_index(coord)?;
-        Some(self.cells.read(index))
+    pub unsafe fn read(&self, coord: (i32, i32)) -> T {
+        let index = OUT_OF_BOUNDS.expect(self.offset_index(coord));
+        self.cells.read(index)
     }
 
     /// Overwrites a cell at the given coordinate with the given value without reading or dropping the old value.
