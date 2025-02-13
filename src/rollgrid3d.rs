@@ -111,10 +111,6 @@ impl<T> RollGrid3D<T> {
     where
         M: CellManage<(i32, i32, i32), T>,
     {
-        // FIXME: superfluous checks
-        INFLATE_PAST_I32_MAX.panic_if(inflate.0 > i32::MAX as u32);
-        INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
-        INFLATE_PAST_I32_MAX.panic_if(inflate.2 > i32::MAX as u32);
         // let inf = inflate as i32;
         // FIXME: Ensure that grid_offset does not exceed min/max, and panic
         //        if it does.
@@ -175,10 +171,6 @@ impl<T> RollGrid3D<T> {
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
-        // FIXME: superfluous checks
-        INFLATE_PAST_I32_MAX.panic_if(inflate.0 > i32::MAX as u32);
-        INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
-        INFLATE_PAST_I32_MAX.panic_if(inflate.2 > i32::MAX as u32);
         // let inf = inflate as i32;
         // FIXME: Ensure that grid_offset does not exceed min/max, and panic
         //        if it does.
