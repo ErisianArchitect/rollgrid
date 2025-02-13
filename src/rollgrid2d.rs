@@ -230,11 +230,14 @@ impl<T> RollGrid2D<T> {
         // upper bound. That happens when the grid offset is centered.
         DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
         DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
-        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
-        //        if it does.
+        let (off_x, off_y): (i64, i64) = self.grid_offset.convert();
+        let pos_x = off_x + deflate.0 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
+        let pos_y = off_y + deflate.1 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_y > i32::MAX as i64);
         let position = (
-            self.grid_offset.0 + deflate.0 as i32,
-            self.grid_offset.1 + deflate.1 as i32,
+            pos_x as i32,
+            pos_y as i32,
         );
         let width = self
             .size
@@ -290,11 +293,14 @@ impl<T> RollGrid2D<T> {
         // upper bound. That happens when the grid offset is centered.
         DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
         DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
-        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
-        //        if it does.
+        let (off_x, off_y): (i64, i64) = self.grid_offset.convert();
+        let pos_x = off_x + deflate.0 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
+        let pos_y = off_y + deflate.1 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_y > i32::MAX as i64);
         let position = (
-            self.grid_offset.0 + deflate.0 as i32,
-            self.grid_offset.1 + deflate.1 as i32,
+            pos_x as i32,
+            pos_y as i32,
         );
         let width = self
             .size
