@@ -226,10 +226,6 @@ impl<T> RollGrid2D<T> {
     where
         M: CellManage<(i32, i32), T>,
     {
-        // Since deflate is doubled, you can only deflate up to 2^31 at the
-        // upper bound. That happens when the grid offset is centered.
-        DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
-        DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
         let (off_x, off_y): (i64, i64) = self.grid_offset.convert();
         let pos_x = off_x + deflate.0 as i64;
         DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
@@ -289,10 +285,6 @@ impl<T> RollGrid2D<T> {
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
-        // Since deflate is doubled, you can only deflate up to 2^31 at the
-        // upper bound. That happens when the grid offset is centered.
-        DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
-        DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
         let (off_x, off_y): (i64, i64) = self.grid_offset.convert();
         let pos_x = off_x + deflate.0 as i64;
         DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
