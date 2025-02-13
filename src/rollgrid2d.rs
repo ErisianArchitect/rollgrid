@@ -8,8 +8,7 @@ use crate::{bounds2d::*, error_messages::*, fixedarray::FixedArray, math::*, *};
 pub struct RollGrid2D<T: Sized> {
     cells: FixedArray<T>,
     size: (u32, u32),
-    // TODO: wrap_offset should be (u32, u32)
-    wrap_offset: (i32, i32),
+    wrap_offset: (u32, u32),
     grid_offset: (i32, i32),
 }
 
@@ -741,7 +740,7 @@ impl<T> RollGrid2D<T> {
         if offset_x.abs() < width && offset_y.abs() < height {
             // TODO: Work out how this works again so I can document it, and
             //       figure out edge cases.
-            let (roll_x, roll_y) = (self.wrap_offset.0 as i32, self.wrap_offset.1 as i32);
+            let (roll_x, roll_y) = (self.wrap_offset.0 as i64, self.wrap_offset.1 as i64);
             // TODO: This usage of rem_euclid might be wrong.
             let (wrapped_offset_x, wrapped_offset_y) =
                 (offset_x.rem_euclid(width), offset_y.rem_euclid(height));
