@@ -111,6 +111,7 @@ impl<T> RollGrid3D<T> {
     where
         M: CellManage<(i32, i32, i32), T>,
     {
+        // FIXME: superfluous checks
         INFLATE_PAST_I32_MAX.panic_if(inflate.0 > i32::MAX as u32);
         INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
         INFLATE_PAST_I32_MAX.panic_if(inflate.2 > i32::MAX as u32);
@@ -137,6 +138,7 @@ impl<T> RollGrid3D<T> {
             .2
             .checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
             .expect(INFLATE_OVERFLOW.msg());
+        // FIXME: check for overflow on max bounds.
         self.resize_and_reposition(width, height, depth, position, manage);
     }
 
@@ -173,6 +175,7 @@ impl<T> RollGrid3D<T> {
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
+        // FIXME: superfluous checks
         INFLATE_PAST_I32_MAX.panic_if(inflate.0 > i32::MAX as u32);
         INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
         INFLATE_PAST_I32_MAX.panic_if(inflate.2 > i32::MAX as u32);
@@ -199,6 +202,7 @@ impl<T> RollGrid3D<T> {
             .2
             .checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
             .expect(INFLATE_OVERFLOW.msg());
+        // FIXME: check for overflow on max bounds.
         self.try_resize_and_reposition(width, height, depth, position, manage)
     }
 
