@@ -6,11 +6,6 @@ use crate::{bounds3d::*, error_messages::*, fixedarray::FixedArray, *};
 /// create the illusion that cells are being moved while the cells remain
 /// in the same position in the underlying array.
 pub struct RollGrid3D<T> {
-    // TODO: Since the capacity can be deduced from the size, storing
-    //       the capacity is redundant. Store the pointer to the
-    //       array directly as NonNull<T> and convert it to and from
-    //       FixedArray<T> by calculating the capacity fom the size.
-    //       This will save 8 bytes.
     cells: FixedArray<T>,
     size: (u32, u32, u32),
     // TODO: wrap_offset should be (u32, u32, u32)
