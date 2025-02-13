@@ -8,8 +8,7 @@ use crate::{bounds3d::*, error_messages::*, fixedarray::FixedArray, *};
 pub struct RollGrid3D<T> {
     cells: FixedArray<T>,
     size: (u32, u32, u32),
-    // TODO: wrap_offset should be (u32, u32, u32)
-    wrap_offset: (i32, i32, i32),
+    wrap_offset: (u32, u32, u32),
     grid_offset: (i32, i32, i32),
 }
 
@@ -20,10 +19,10 @@ unsafe impl<T: Sync> Sync for RollGrid3D<T> {}
 
 impl<T: Default> RollGrid3D<T> {
     /// Create a new [RollGrid3D] with all the cells set to the default for `T`.
-    pub fn new_default(width: u32, height: u32, depth: u32, grid_offset: (i32, i32, i32)) -> Self {
+    pub fn new_default(size: (u32, u32, u32), grid_offset: (i32, i32, i32)) -> Self {
         Self {
-            cells: FixedArray::new_3d((width, height, depth), grid_offset, |_| T::default()),
-            size: (width, height, depth),
+            cells: FixedArray::new_3d(size, grid_offset, |_| T::default()),
+            size,
             grid_offset,
             wrap_offset: (0, 0, 0),
         }
@@ -32,8 +31,7 @@ impl<T: Default> RollGrid3D<T> {
 
 impl RollGrid3D<()> {
     /// Creates a new grid of unit types.
-    pub fn new_zst(width: u32, height: u32, depth: u32, grid_offset: (i32, i32, i32)) -> Self {
-        let size = (width, height, depth);
+    pub fn new_zst(size: (u32, u32, u32), grid_offset: (i32, i32, i32)) -> Self {
         RollGrid3D {
             cells: FixedArray::new_3d(size, grid_offset, |_| ()),
             size,
@@ -49,15 +47,13 @@ impl<T> RollGrid3D<T> {
     /// The init function should take as input the coordinate that is being
     /// initialized, and should return the desired value for the cell.
     pub fn new<F: FnMut((i32, i32, i32)) -> T>(
-        width: u32,
-        height: u32,
-        depth: u32,
+        size: (u32, u32, u32),
         grid_offset: (i32, i32, i32),
         init: F,
     ) -> Self {
         Self {
-            cells: FixedArray::new_3d((width, height, depth), grid_offset, init),
-            size: (width, height, depth),
+            cells: FixedArray::new_3d(size, grid_offset, init),
+            size,
             wrap_offset: (0, 0, 0),
             grid_offset,
         }
@@ -68,15 +64,13 @@ impl<T> RollGrid3D<T> {
     /// The init function should take as input the coordinate that is being
     /// initialized, and should return the desired value for the cell.
     pub fn try_new<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
-        width: u32,
-        height: u32,
-        depth: u32,
+        size: (u32, u32, u32),
         grid_offset: (i32, i32, i32),
         init: F,
     ) -> Result<Self, E> {
         Ok(Self {
-            cells: FixedArray::try_new_3d((width, height, depth), grid_offset, init)?,
-            size: (width, height, depth),
+            cells: FixedArray::try_new_3d(size, grid_offset, init)?,
+            size,
             wrap_offset: (0, 0, 0),
             grid_offset,
         })
@@ -137,7 +131,7 @@ impl<T> RollGrid3D<T> {
             .checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
             .expect(INFLATE_OVERFLOW.msg());
         // FIXME: check for overflow on max bounds.
-        self.resize_and_reposition(width, height, depth, position, manage);
+        self.resize_and_reposition((width, height, depth), position, manage);
     }
 
     /// Try to inflate the size by `inflate` using a fallible function, keeping the bounds centered.
@@ -197,7 +191,7 @@ impl<T> RollGrid3D<T> {
             .checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
             .expect(INFLATE_OVERFLOW.msg());
         // FIXME: check for overflow on max bounds.
-        self.try_resize_and_reposition(width, height, depth, position, manage)
+        self.try_resize_and_reposition((width, height, depth), position, manage)
     }
 
     /// Deflate the size by `deflate`, keeping the bounds centered.
@@ -257,7 +251,7 @@ impl<T> RollGrid3D<T> {
             .checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
             .expect(DEFLATE_OVERFLOW.msg());
         VOLUME_IS_ZERO.panic_if(width == 0 || height == 0 || depth == 0);
-        self.resize_and_reposition(width, height, depth, position, manage);
+        self.resize_and_reposition((width, height, depth), position, manage);
     }
 
     /// Try to deflate the size by `deflate` using a fallible function, keeping the bounds centered.
@@ -319,7 +313,7 @@ impl<T> RollGrid3D<T> {
             .checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
             .expect(DEFLATE_OVERFLOW.msg());
         VOLUME_IS_ZERO.panic_if(width == 0 || height == 0 || depth == 0);
-        self.try_resize_and_reposition(width, height, depth, position, manage)
+        self.try_resize_and_reposition((width, height, depth), position, manage)
     }
 
     /// Resize the grid without changing the offset.
@@ -346,11 +340,11 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [CellManage].
-    pub fn resize<M>(&mut self, width: u32, height: u32, depth: u32, manage: M)
+    pub fn resize<M>(&mut self, size: (u32, u32, u32), manage: M)
     where
         M: CellManage<(i32, i32, i32), T>,
     {
-        self.resize_and_reposition(width, height, depth, self.grid_offset, manage);
+        self.resize_and_reposition(size, self.grid_offset, manage);
     }
 
     /// Try to resize the grid with a fallible function without changing the offset.
@@ -381,15 +375,13 @@ impl<T> RollGrid3D<T> {
     /// See [TryCellManage].
     pub fn try_resize<E, M>(
         &mut self,
-        width: u32,
-        height: u32,
-        depth: u32,
+        size: (u32, u32, u32),
         manage: M,
     ) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
-        self.try_resize_and_reposition(width, height, depth, self.grid_offset, manage)
+        self.try_resize_and_reposition(size, self.grid_offset, manage)
     }
 
     /// Resize and reposition the grid simultaneously.
@@ -418,16 +410,14 @@ impl<T> RollGrid3D<T> {
     /// See [CellManage].
     pub fn resize_and_reposition<M>(
         &mut self,
-        width: u32,
-        height: u32,
-        depth: u32,
+        size: (u32, u32, u32),
         new_position: (i32, i32, i32),
         manage: M,
     ) where
         M: CellManage<(i32, i32, i32), T>,
     {
         let mut manage = manage;
-        let size = (width, height, depth);
+        let (width, height, depth) = size;
         if size == self.size {
             if new_position != self.grid_offset {
                 self.reposition(new_position, |old_pos, new_pos, cell| {
@@ -588,9 +578,7 @@ impl<T> RollGrid3D<T> {
     /// See [TryCellManage].
     pub fn try_resize_and_reposition<E, M>(
         &mut self,
-        width: u32,
-        height: u32,
-        depth: u32,
+        size: (u32, u32, u32),
         new_position: (i32, i32, i32),
         manage: M,
     ) -> Result<(), E>
@@ -598,6 +586,7 @@ impl<T> RollGrid3D<T> {
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
         let mut manage = manage;
+        let (width, height, depth) = size;
         if (width, height, depth) == self.size {
             if new_position != self.grid_offset {
                 self.try_reposition(new_position, |old_pos, new_pos, cell| {
@@ -2118,6 +2107,28 @@ mod tests {
                         let pos = (x, y, z);
                         let cell = grid.get(pos).expect("Cell was None");
                         assert_eq!(pos, cell.coord);
+                    }
+                }
+            }
+        }
+        for y in -7..7 {
+            for z in -7..7 {
+                for x in -7..7 {
+                    for ny in -7..7 {
+                        for nz in -7..7 {
+                            for nx in -7..7 {
+                                let mut grid = RollGrid3D::new(2, 2, 2, (x, y, z), |pos| DropCoord::from(pos));
+                                grid.reposition((nx, ny, nz), |old_pos, new_pos, cell| {
+                                    assert_eq!(cell.coord, old_pos);
+                                    cell.coord = new_pos;
+                                });
+                                verify_grid(&grid);
+                                grid.iter_mut().for_each(|(pos, cell)| {
+                                    assert_eq!(pos, cell.coord);
+                                    cell.unloaded = true;
+                                });
+                            }
+                        }
                     }
                 }
             }
