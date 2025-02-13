@@ -1328,7 +1328,7 @@ mod tests {
         }
         impl Drop for DropCoord {
             fn drop(&mut self) {
-                // assert!(self.unloaded);
+                assert!(self.unloaded);
             }
         }
         fn verify_grid(grid: &RollGrid2D<DropCoord>) {
@@ -1355,6 +1355,9 @@ mod tests {
                             cell.coord = new_pos;
                         });
                         verify_grid(&grid);
+                        grid.iter_mut().for_each(|(_, cell)| {
+                            cell.unloaded = true;
+                        });
                     }
                 }
             }
@@ -1386,10 +1389,10 @@ mod tests {
                                 },
                             ),
                         );
+                        verify_grid(&grid);
                         grid.iter_mut().for_each(|(_, cell)| {
                             cell.unloaded = true;
                         });
-                        verify_grid(&grid);
                     }
                 }
             }
