@@ -112,8 +112,6 @@ impl<T> RollGrid2D<T> {
         // upper bound. That happens when the grid offset is centered.
         INFLATE_PAST_I32_MAX.panic_if(inflate.0 > i32::MAX as u32);
         INFLATE_PAST_I32_MAX.panic_if(inflate.1 > i32::MAX as u32);
-        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
-        //        if it does.
         let off_x = self.grid_offset.0 as i64;
         let off_y = self.grid_offset.1 as i64;
         let pos_x = off_x - inflate.0 as i64;
