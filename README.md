@@ -119,7 +119,7 @@ You can modify this code to fit your purpose.
 
 ### 3.0.0-alpha1
 ##### Bug Fixes
-- Integer overflow in inflate/deflate operations.
+- Integer overflows in as many places as I could find.
 ##### Additions
 - Added `Grid2D` and `Grid3D`.
 - Added `math` module, for some useful math functionality that this crate uses.
