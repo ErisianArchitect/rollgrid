@@ -108,16 +108,6 @@ impl<T> RollGrid2D<T> {
     where
         M: CellManage<(i32, i32), T>,
     {
-        let off_x = self.grid_offset.0 as i64;
-        let off_y = self.grid_offset.1 as i64;
-        let pos_x = off_x - inflate.0 as i64;
-        INFLATE_OVERFLOW.panic_if(pos_x < i32::MIN as i64);
-        let pos_y = off_y - inflate.1 as i64;
-        INFLATE_OVERFLOW.panic_if(pos_y < i32::MIN as i64);
-        let position = (
-            pos_x as i32,
-            pos_y as i32,
-        );
         let width = self
             .size
             .0
@@ -129,6 +119,16 @@ impl<T> RollGrid2D<T> {
             .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
             .expect(INFLATE_OVERFLOW.msg());
         // FIXME: check for overflow on max bounds.
+        let off_x = self.grid_offset.0 as i64;
+        let off_y = self.grid_offset.1 as i64;
+        let pos_x = off_x - inflate.0 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_x < i32::MIN as i64);
+        let pos_y = off_y - inflate.1 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_y < i32::MIN as i64);
+        let position = (
+            pos_x as i32,
+            pos_y as i32,
+        );
         self.resize_and_reposition(width, height, position, manage);
     }
 
@@ -168,16 +168,6 @@ impl<T> RollGrid2D<T> {
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
-        let off_x = self.grid_offset.0 as i64;
-        let off_y = self.grid_offset.1 as i64;
-        let pos_x = off_x - inflate.0 as i64;
-        INFLATE_OVERFLOW.panic_if(pos_x < i32::MIN as i64);
-        let pos_y = off_y - inflate.1 as i64;
-        INFLATE_OVERFLOW.panic_if(pos_y < i32::MIN as i64);
-        let position = (
-            pos_x as i32,
-            pos_y as i32,
-        );
         let width = self
             .size
             .0
@@ -189,6 +179,16 @@ impl<T> RollGrid2D<T> {
             .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
             .expect(INFLATE_OVERFLOW.msg());
         // FIXME: check for overflow on max bounds.
+        let off_x = self.grid_offset.0 as i64;
+        let off_y = self.grid_offset.1 as i64;
+        let pos_x = off_x - inflate.0 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_x < i32::MIN as i64);
+        let pos_y = off_y - inflate.1 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_y < i32::MIN as i64);
+        let position = (
+            pos_x as i32,
+            pos_y as i32,
+        );
         self.try_resize_and_reposition(width, height, position, manage)
     }
 
