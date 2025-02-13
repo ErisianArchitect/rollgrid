@@ -168,11 +168,15 @@ impl<T> RollGrid2D<T> {
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
-        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
-        //        if it does.
+        let off_x = self.grid_offset.0 as i64;
+        let off_y = self.grid_offset.1 as i64;
+        let pos_x = off_x - inflate.0 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_x < i32::MIN as i64);
+        let pos_y = off_y - inflate.1 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_y < i32::MIN as i64);
         let position = (
-            self.grid_offset.0 - inflate.0 as i32,
-            self.grid_offset.1 - inflate.1 as i32,
+            pos_x as i32,
+            pos_y as i32,
         );
         let width = self
             .size
