@@ -226,15 +226,6 @@ impl<T> RollGrid2D<T> {
     where
         M: CellManage<(i32, i32), T>,
     {
-        let (off_x, off_y): (i64, i64) = self.grid_offset.convert();
-        let pos_x = off_x + deflate.0 as i64;
-        DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
-        let pos_y = off_y + deflate.1 as i64;
-        DEFLATE_OVERFLOW.panic_if(pos_y > i32::MAX as i64);
-        let position = (
-            pos_x as i32,
-            pos_y as i32,
-        );
         let width = self
             .size
             .0
@@ -246,6 +237,15 @@ impl<T> RollGrid2D<T> {
             .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
             .expect(DEFLATE_OVERFLOW.msg());
         AREA_IS_ZERO.panic_if(width == 0 || height == 0);
+        let (off_x, off_y): (i64, i64) = self.grid_offset.convert();
+        let pos_x = off_x + deflate.0 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
+        let pos_y = off_y + deflate.1 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_y > i32::MAX as i64);
+        let position = (
+            pos_x as i32,
+            pos_y as i32,
+        );
         self.resize_and_reposition(width, height, position, manage);
     }
 
@@ -285,15 +285,6 @@ impl<T> RollGrid2D<T> {
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
-        let (off_x, off_y): (i64, i64) = self.grid_offset.convert();
-        let pos_x = off_x + deflate.0 as i64;
-        DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
-        let pos_y = off_y + deflate.1 as i64;
-        DEFLATE_OVERFLOW.panic_if(pos_y > i32::MAX as i64);
-        let position = (
-            pos_x as i32,
-            pos_y as i32,
-        );
         let width = self
             .size
             .0
@@ -305,6 +296,15 @@ impl<T> RollGrid2D<T> {
             .checked_sub(deflate.0.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
             .expect(DEFLATE_OVERFLOW.msg());
         AREA_IS_ZERO.panic_if(width == 0 || height == 0);
+        let (off_x, off_y): (i64, i64) = self.grid_offset.convert();
+        let pos_x = off_x + deflate.0 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
+        let pos_y = off_y + deflate.1 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_y > i32::MAX as i64);
+        let position = (
+            pos_x as i32,
+            pos_y as i32,
+        );
         self.try_resize_and_reposition(width, height, position, manage)
     }
 
