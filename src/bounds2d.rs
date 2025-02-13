@@ -1,3 +1,5 @@
+use crate::math::i32_to_u32;
+
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A 2D bounding box. Essentially a rectangle.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -38,6 +40,18 @@ impl Bounds2D {
     /// `width` * `height`.
     pub fn area(&self) -> i64 {
         self.width() as i64 * self.height() as i64
+    }
+
+    /// Get the size of the bounds.
+    pub fn size(&self) -> (u32, u32) {
+        let x_min = i32_to_u32(self.min.0);
+        let y_min = i32_to_u32(self.min.1);
+        let x_max = i32_to_u32(self.max.0);
+        let y_max = i32_to_u32(self.max.1);
+        (
+            x_max - x_min,
+            y_max - y_min,
+        )
     }
 
     /// The minimum bound on the X axis.
