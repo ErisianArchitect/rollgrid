@@ -545,9 +545,6 @@ impl<T> RollGrid2D<T> {
             }
             return Ok(());
         }
-        // FIXME: width and height should remain as u32.
-        let width = width as usize;
-        let height = height as usize;
         AREA_IS_ZERO.panic_if(width == 0 || height == 0);
         let (new_x, new_y) = new_position;
         // FIXME: Rather than converting width and height to i32, keep them
