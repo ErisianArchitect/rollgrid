@@ -1,4 +1,5 @@
 use crate::{bounds2d::*, error_messages::*, fixedarray::FixedArray, math::*, *};
+use crate::grid2d::*;
 
 /// A 2D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -1056,6 +1057,46 @@ impl<T> RollGrid2D<T> {
         Some(std::mem::replace(dest, value))
     }
 
+    /// Get a subsection of the grid.
+    pub fn subgrid<'a>(&'a self, bounds: Bounds2D) -> Grid2D<&'a T> {
+        let self_bounds = self.bounds();
+        if bounds.x_min() < self_bounds.x_min()
+        || bounds.y_min() < self_bounds.y_min()
+        || bounds.x_max() > self_bounds.x_max()
+        || bounds.y_max() > self_bounds.y_max() {
+            OUT_OF_BOUNDS.panic();
+        }
+        unsafe {
+            let ptr = self.cells.as_ptr();
+            let grid = Grid2D::new(bounds.size(), bounds.min, |pos| {
+                let index = self.offset_index(pos).unwrap();
+                let cell_ptr = ptr.add(index);
+                cell_ptr.as_ref().unwrap()
+            });
+            grid
+        }
+    }
+
+    /// Get a mutable subsection of the grid.
+    pub fn subgrid_mut<'a>(&'a mut self, bounds: Bounds2D) -> Grid2D<&'a mut T> {
+        let self_bounds = self.bounds();
+        if bounds.x_min() < self_bounds.x_min()
+        || bounds.y_min() < self_bounds.y_min()
+        || bounds.x_max() > self_bounds.x_max()
+        || bounds.y_max() > self_bounds.y_max() {
+            OUT_OF_BOUNDS.panic();
+        }
+        unsafe {
+            let ptr = self.cells.as_ptr();
+            let grid = Grid2D::new(bounds.size(), bounds.min, |pos| {
+                let index = self.offset_index(pos).unwrap();
+                let cell_ptr = ptr.add(index);
+                cell_ptr.cast_mut().as_mut().unwrap()
+            });
+            grid
+        }
+    }
+
     /// Get the dimensions of the grid.
     pub fn size(&self) -> (u32, u32) {
         self.size
@@ -1132,6 +1173,20 @@ impl<T: Copy> RollGrid2D<T> {
         let index = self.offset_index(coord)?;
         Some(self.cells[index])
     }
+
+    /// Copy a subsection of the grid.
+    pub fn copy_subgrid(&self, bounds: Bounds2D) -> Grid2D<T> {
+        let self_bounds = self.bounds();
+        if bounds.x_min() < self_bounds.x_min()
+        || bounds.y_min() < self_bounds.y_min()
+        || bounds.x_max() > self_bounds.x_max()
+        || bounds.y_max() > self_bounds.y_max() {
+            OUT_OF_BOUNDS.panic();
+        }
+        Grid2D::new(bounds.size(), bounds.min, |pos| {
+            self[pos]
+        })
+    }
 }
 
 impl<T: Clone> RollGrid2D<T> {
@@ -1139,6 +1194,20 @@ impl<T: Clone> RollGrid2D<T> {
     pub fn get_clone(&self, coord: (i32, i32)) -> Option<T> {
         let index = self.offset_index(coord)?;
         Some(self.cells[index].clone())
+    }
+
+    /// Clone a subsection of the grid.
+    pub fn clone_subgrid(&self, bounds: Bounds2D) -> Grid2D<T> {
+        let self_bounds = self.bounds();
+        if bounds.x_min() < self_bounds.x_min()
+        || bounds.y_min() < self_bounds.y_min()
+        || bounds.x_max() > self_bounds.x_max()
+        || bounds.y_max() > self_bounds.y_max() {
+            OUT_OF_BOUNDS.panic();
+        }
+        Grid2D::new(bounds.size(), bounds.min, |pos| {
+            self[pos].clone()
+        })
     }
 }
 

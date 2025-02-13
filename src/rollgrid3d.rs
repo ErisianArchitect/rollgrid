@@ -1,4 +1,5 @@
 use crate::{bounds3d::*, error_messages::*, fixedarray::FixedArray, math::{add_u32_to_i32, checked_add_u32_to_i32, Convert}, *};
+use crate::grid3d::*;
 
 /// A 3D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -1891,6 +1892,50 @@ impl<T> RollGrid3D<T> {
         Some(std::mem::replace(dest, value))
     }
 
+    /// Get a subsection of the grid.
+    pub fn subgrid<'a>(&'a self, bounds: Bounds3D) -> Grid3D<&'a T> {
+        let self_bounds = self.bounds();
+        if bounds.x_min() < self_bounds.x_min()
+        || bounds.y_min() < self_bounds.y_min()
+        || bounds.z_min() < self_bounds.z_min()
+        || bounds.x_max() > self_bounds.x_max()
+        || bounds.y_max() > self_bounds.y_max()
+        || bounds.z_max() > self_bounds.z_max() {
+            OUT_OF_BOUNDS.panic();
+        }
+        unsafe {
+            let ptr = self.cells.as_ptr();
+            let grid = Grid3D::new(bounds.size(), bounds.min, |pos| {
+                let index = self.offset_index(pos).unwrap();
+                let cell_ptr = ptr.add(index);
+                cell_ptr.as_ref().unwrap()
+            });
+            grid
+        }
+    }
+
+    /// Get a mutable subsection of the grid.
+    pub fn subgrid_mut<'a>(&'a mut self, bounds: Bounds3D) -> Grid3D<&'a mut T> {
+        let self_bounds = self.bounds();
+        if bounds.x_min() < self_bounds.x_min()
+        || bounds.y_min() < self_bounds.y_min()
+        || bounds.z_min() < self_bounds.z_min()
+        || bounds.x_max() > self_bounds.x_max()
+        || bounds.y_max() > self_bounds.y_max()
+        || bounds.z_max() > self_bounds.z_max() {
+            OUT_OF_BOUNDS.panic();
+        }
+        unsafe {
+            let ptr = self.cells.as_ptr();
+            let grid = Grid3D::new(bounds.size(), bounds.min, |pos| {
+                let index = self.offset_index(pos).unwrap();
+                let cell_ptr = ptr.add(index);
+                cell_ptr.cast_mut().as_mut().unwrap()
+            });
+            grid
+        }
+    }
+
     /// Get the dimensions of the grid.
     pub fn size(&self) -> (u32, u32, u32) {
         self.size
@@ -1982,6 +2027,22 @@ impl<T: Copy> RollGrid3D<T> {
         let index = self.offset_index(coord)?;
         Some(self.cells[index])
     }
+
+    /// Copy a subsection of the grid.
+    pub fn copy_subgrid(&self, bounds: Bounds3D) -> Grid3D<T> {
+        let self_bounds = self.bounds();
+        if bounds.x_min() < self_bounds.x_min()
+        || bounds.y_min() < self_bounds.y_min()
+        || bounds.z_min() < self_bounds.z_min()
+        || bounds.x_max() > self_bounds.x_max()
+        || bounds.y_max() > self_bounds.y_max()
+        || bounds.z_max() > self_bounds.z_max() {
+            OUT_OF_BOUNDS.panic();
+        }
+        Grid3D::new(bounds.size(), bounds.min, |pos| {
+            self[pos]
+        })
+    }
 }
 
 impl<T: Clone> RollGrid3D<T> {
@@ -1989,6 +2050,22 @@ impl<T: Clone> RollGrid3D<T> {
     pub fn get_clone(&self, coord: (i32, i32, i32)) -> Option<T> {
         let index = self.offset_index(coord)?;
         Some(self.cells[index].clone())
+    }
+
+    /// Clone a subsection of the grid.
+    pub fn clone_subgrid(&self, bounds: Bounds3D) -> Grid3D<T> {
+        let self_bounds = self.bounds();
+        if bounds.x_min() < self_bounds.x_min()
+        || bounds.y_min() < self_bounds.y_min()
+        || bounds.z_min() < self_bounds.z_min()
+        || bounds.x_max() > self_bounds.x_max()
+        || bounds.y_max() > self_bounds.y_max()
+        || bounds.z_max() > self_bounds.z_max() {
+            OUT_OF_BOUNDS.panic();
+        }
+        Grid3D::new(bounds.size(), bounds.min, |pos| {
+            self[pos].clone()
+        })
     }
 }
 
