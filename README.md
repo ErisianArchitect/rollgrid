@@ -153,6 +153,7 @@ You can modify this code to fit your purpose.
 - Modified `FixedArray::into_raw` to be a static function rather than a method.
 - `relative_offset` now returns `(i64, ...)` instead of `(i32, ...)`.
 - Operations that took dimensions as individual arguments now take them as tuples.
+- `read` in `RollGrid2D` and `RollGrid3D` now returns `T` instead of `Option<T>` and panics if the coordinate is out of bounds.
 ### 2.0.0
 
 - Changed the internal representation of the cells in `RollGrid2D` and `RollGrid3D` from `Box<[Option<T>]>` to `rollgrid::cells::FixedArray<T>`. `FixedArray` is an internal type that was created to fulfill the needs of this crate.
