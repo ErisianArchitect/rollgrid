@@ -3,7 +3,7 @@ use crate::math::*;
 use crate::error_messages::*;
 use crate::bounds2d::*;
 
-/// A 2-Dimensional matrix of values.
+/// A 2-Dimensional matrix.
 pub struct Grid2D<T> {
     cells: FixedArray<T>,
     size: (u32, u32),
@@ -36,7 +36,7 @@ impl<T> Grid2D<T> {
         }
         let adj_x = x - off_x;
         let adj_y = y - off_x;
-        Some(adj_x as usize * adj_y as usize)
+        Some((adj_y as usize * width as usize) + adj_x as usize)
     }
 
     /// Get the offset relative to the grid's offset.
@@ -135,7 +135,7 @@ impl<T> Grid2D<T> {
 
     /// Get the maximum bound on the `X` axis.
     pub fn x_max(&self) -> i32 {
-        self.offset.0 + self.size.0 as i32
+        add_u32_to_i32(self.offset.0, self.size.0)
     }
 
     /// Get the minimum bound on the `Y` axis.
@@ -145,7 +145,7 @@ impl<T> Grid2D<T> {
 
     /// Get the maximum bound on the `Y` axis.
     pub fn y_max(&self) -> i32 {
-        self.offset.1 + self.size.1 as i32
+        add_u32_to_i32(self.offset.1, self.size.1)
     }
 
     /// Get the bounds of the grid.
