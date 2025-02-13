@@ -426,6 +426,7 @@ impl<T> RollGrid2D<T> {
         // Determine what needs to be unloaded
         let old_bounds: Bounds2D = self.bounds();
         let new_bounds = Bounds2D::new((new_x, new_y), (right, bottom));
+        let size = (width, height);
         if old_bounds.intersects(new_bounds) {
             macro_rules! unload_bounds {
                 ($cond: expr => xmin = $xmin:expr; ymin = $ymin:expr; xmax = $xmax:expr; ymax = $ymax:expr;) => {
@@ -465,7 +466,7 @@ impl<T> RollGrid2D<T> {
                 xmax = old_bounds.x_max();
                 ymax = old_bounds.y_max();
             );
-            let new_grid = FixedArray::new_2d((width, height), new_position, |pos| {
+            let new_grid = FixedArray::new_2d(size, new_position, |pos| {
                 if old_bounds.contains(pos) {
                     let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     unsafe { self.cells.read(index) }
@@ -473,7 +474,7 @@ impl<T> RollGrid2D<T> {
                     manage.load(pos)
                 }
             });
-            self.size = (width, height);
+            self.size = size;
             self.grid_offset = new_position;
             unsafe {
                 self.cells.forget_dealloc();
@@ -489,8 +490,8 @@ impl<T> RollGrid2D<T> {
                 }
             });
             let new_grid =
-                FixedArray::new_2d((width, height), new_position, |pos| manage.load(pos));
-            self.size = (width, height);
+                FixedArray::new_2d(size, new_position, |pos| manage.load(pos));
+            self.size = size;
             self.grid_offset = new_position;
             unsafe {
                 self.cells.forget_dealloc();
@@ -552,7 +553,6 @@ impl<T> RollGrid2D<T> {
         // Determine what needs to be unloaded
         let old_bounds: Bounds2D = self.bounds();
         let new_bounds = Bounds2D::new((new_x, new_y), (right, bottom));
-        // FIXME: size is set too early. It should be set after creation of new FixedArray.
         let size = (width, height);
         if old_bounds.intersects(new_bounds) {
             macro_rules! unload_bounds {
