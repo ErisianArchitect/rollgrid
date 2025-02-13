@@ -1123,7 +1123,7 @@ impl<T> RollGrid2D<T> {
     /// Get the bounds of the grid.
     pub fn bounds(&self) -> Bounds2D {
         Bounds2D {
-            min: (self.x_min(), self.y_min()),
+            min: self.grid_offset,
             max: (self.x_max(), self.y_max()),
         }
     }
@@ -1397,5 +1397,13 @@ mod tests {
                 }
             }
         }
+        let mut grid = RollGrid2D::new((4, 4), (2, 3), |pos| {
+            pos
+        });
+        let mut subgrid = grid.subgrid_mut(Bounds2D::new((2, 3), (3, 4)));
+        assert_eq!(*subgrid[(2, 3)], (2, 3));
+        *subgrid[(2, 3)] = (7, 7);
+        drop(subgrid);
+        assert_eq!(grid[(2, 3)], (7, 7));
     }
 }

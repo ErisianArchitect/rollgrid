@@ -1978,7 +1978,7 @@ impl<T> RollGrid3D<T> {
     /// Get the bounds of the grid.
     pub fn bounds(&self) -> Bounds3D {
         Bounds3D {
-            min: (self.x_min(), self.y_min(), self.z_min()),
+            min: self.grid_offset,
             max: (self.x_max(), self.y_max(), self.z_max()),
         }
     }
