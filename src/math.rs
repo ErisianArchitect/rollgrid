@@ -291,6 +291,16 @@ pub(crate) const fn add_u32_to_i32(i32_value: i32, u32_value: u32) -> i32 {
 }
 
 #[inline]
+pub(crate) const fn checked_add_u32_to_i32(i32_value: i32, u32_value: u32) -> Option<i32> {
+    let conv = i32_to_u32(i32_value);
+    if let Some(result) = conv.checked_add(u32_value) {
+        Some(u32_to_i32(result))
+    } else {
+        None
+    }
+}
+
+#[inline]
 pub(crate) const fn i32_to_u32(i32_value: i32) -> u32 {
     (i32_value as u32) ^ 0x8000_0000
 }
