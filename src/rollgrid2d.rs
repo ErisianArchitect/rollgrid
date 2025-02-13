@@ -1083,7 +1083,7 @@ impl<T> RollGrid2D<T> {
 
     /// Get the maximum bound on the `X` axis.
     pub fn x_max(&self) -> i32 {
-        self.grid_offset.0 + self.size.0 as i32
+        add_u32_to_i32(self.grid_offset.0, self.size.0)
     }
 
     /// Get the minimum bound on the `Y` axis.
@@ -1093,7 +1093,7 @@ impl<T> RollGrid2D<T> {
 
     /// Get the maximum bound on the `Y` axis.
     pub fn y_max(&self) -> i32 {
-        self.grid_offset.1 + self.size.1 as i32
+        add_u32_to_i32(self.grid_offset.1, self.size.1)
     }
 
     /// Get the bounds of the grid.

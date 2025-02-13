@@ -1,4 +1,4 @@
-use crate::{bounds3d::*, error_messages::*, fixedarray::FixedArray, math::{checked_add_u32_to_i32, Convert}, *};
+use crate::{bounds3d::*, error_messages::*, fixedarray::FixedArray, math::{add_u32_to_i32, checked_add_u32_to_i32, Convert}, *};
 
 /// A 3D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -42,8 +42,9 @@ impl RollGrid3D<()> {
 impl<T> RollGrid3D<T> {
     /// Create a new [RollGrid3D] using a function to initialize cells.
     ///
-    /// The init function should take as input the coordinate that is being
-    /// initialized, and should return the desired value for the cell.
+    /// The init function should take as input the coordinate that is
+    /// being initialized, and should return the desired value for the
+    /// cell.
     pub fn new<F: FnMut((i32, i32, i32)) -> T>(
         size: (u32, u32, u32),
         grid_offset: (i32, i32, i32),
@@ -1922,7 +1923,7 @@ impl<T> RollGrid3D<T> {
 
     /// Get the maximum bound on the `X` axis.
     pub fn x_max(&self) -> i32 {
-        self.grid_offset.0 + self.size.0 as i32
+        add_u32_to_i32(self.grid_offset.0, self.size.0)
     }
 
     /// Get the minimum bound on the `Y` axis.
@@ -1932,7 +1933,7 @@ impl<T> RollGrid3D<T> {
 
     /// Get the maximum bound on the `Y` axis.
     pub fn y_max(&self) -> i32 {
-        self.grid_offset.1 + self.size.1 as i32
+        add_u32_to_i32(self.grid_offset.1, self.size.1)
     }
 
     /// Get the minimum bound on the `Z` axis.
@@ -1942,7 +1943,7 @@ impl<T> RollGrid3D<T> {
 
     /// Get the maximum bound on the `Z` axis.
     pub fn z_max(&self) -> i32 {
-        self.grid_offset.2 + self.size.2 as i32
+        add_u32_to_i32(self.grid_offset.2, self.size.2)
     }
 
     /// Get the bounds of the grid.
