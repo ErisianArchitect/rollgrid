@@ -46,7 +46,7 @@ impl<T> Grid3D<T> {
             return None;
         }
         let adj_x = x - off_x;
-        let adj_y = y - off_x;
+        let adj_y = y - off_y;
         let adj_z = z - off_z;
         let plane = self.size.0 * self.size.2;
         Some(
@@ -180,7 +180,7 @@ impl<T> Grid3D<T> {
     /// Get the bounds of the grid.
     pub fn bounds(&self) -> Bounds3D {
         Bounds3D {
-            min: (self.x_min(), self.y_min(), self.z_min()),
+            min: self.offset,
             max: (self.x_max(), self.y_max(), self.z_max()),
         }
     }

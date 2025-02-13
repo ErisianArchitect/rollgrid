@@ -35,7 +35,7 @@ impl<T> Grid2D<T> {
             return None;
         }
         let adj_x = x - off_x;
-        let adj_y = y - off_x;
+        let adj_y = y - off_y;
         Some((adj_y as usize * width as usize) + adj_x as usize)
     }
 
@@ -148,7 +148,7 @@ impl<T> Grid2D<T> {
     /// Get the bounds of the grid.
     pub fn bounds(&self) -> Bounds2D {
         Bounds2D {
-            min: (self.x_min(), self.y_min()),
+            min: self.offset,
             max: (self.x_max(), self.y_max()),
         }
     }
