@@ -1080,6 +1080,7 @@ impl<T> RollGrid2D<T> {
     pub fn x_min(&self) -> i32 {
         self.grid_offset.0
     }
+
     /// Get the maximum bound on the `X` axis.
     pub fn x_max(&self) -> i32 {
         self.grid_offset.0 + self.size.0 as i32
@@ -1109,7 +1110,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Get an iterator over the cells in the grid.
-    pub fn iter<'a>(&'a self) -> RollGrid2DIterator<'a, T> {
+    pub fn iter(&self) -> RollGrid2DIterator<T> {
         RollGrid2DIterator {
             bounds_iter: self.bounds().iter(),
             grid: self,
@@ -1117,7 +1118,7 @@ impl<T> RollGrid2D<T> {
     }
 
     /// Get a mutable iterator over the cells in the grid.
-    pub fn iter_mut<'a>(&'a mut self) -> RollGrid2DMutIterator<'a, T> {
+    pub fn iter_mut(&mut self) -> RollGrid2DMutIterator<T> {
         RollGrid2DMutIterator {
             bounds_iter: self.bounds().iter(),
             grid: self,

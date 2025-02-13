@@ -106,8 +106,6 @@ impl<T> RollGrid3D<T> {
         M: CellManage<(i32, i32, i32), T>,
     {
         // let inf = inflate as i32;
-        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
-        //        if it does.
         let width = self
             .size
             .0
@@ -1273,7 +1271,6 @@ impl<T> RollGrid3D<T> {
             for (yi, y) in (new_y..new_y + height).enumerate() {
                 for (zi, z) in (new_z..new_z + depth).enumerate() {
                     for (xi, x) in (new_x..new_x + width).enumerate() {
-                        // FIXME: overflow
                         let prior_x = (old_x + xi as i64) as i32;
                         let prior_y = (old_y + yi as i64) as i32;
                         let prior_z = (old_z + zi as i64) as i32;
@@ -1783,7 +1780,6 @@ impl<T> RollGrid3D<T> {
             for (yi, y) in (new_y..new_y + height).enumerate() {
                 for (zi, z) in (new_z..new_z + depth).enumerate() {
                     for (xi, x) in (new_x..new_x + width).enumerate() {
-                        // FIXME: overflow
                         let prior_x = (old_x + xi as i64) as i32;
                         let prior_y = (old_y + yi as i64) as i32;
                         let prior_z = (old_z + zi as i64) as i32;
@@ -1963,7 +1959,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Get an iterator over the cells in the grid.
-    pub fn iter<'a>(&'a self) -> RollGrid3DIterator<'a, T> {
+    pub fn iter(&self) -> RollGrid3DIterator<T> {
         RollGrid3DIterator {
             bounds_iter: self.bounds().iter(),
             grid: self,
@@ -1971,7 +1967,7 @@ impl<T> RollGrid3D<T> {
     }
 
     /// Get a mutable iterator over the cells in the grid.
-    pub fn iter_mut<'a>(&'a mut self) -> RollGrid3DMutIterator<'a, T> {
+    pub fn iter_mut(&mut self) -> RollGrid3DMutIterator<T> {
         RollGrid3DMutIterator {
             bounds_iter: self.bounds().iter(),
             grid: self,
