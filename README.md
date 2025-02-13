@@ -120,6 +120,7 @@ You can modify this code to fit your purpose.
 ### 3.0.0-alpha1
 ##### Bug Fixes
 - Integer overflows in as many places as I could find.
+- Major bug that caused the grids to become invalidated during `resize_and_reposition` operation.
 ##### Additions
 - Added `Grid2D` and `Grid3D`.
 - Added `math` module, for some useful math functionality that this crate uses.
