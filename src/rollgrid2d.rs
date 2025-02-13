@@ -1405,3 +1405,5 @@ mod tests {
         *subgrid[(2, 3)] = (7, 7);
         drop(subgrid);
         assert_eq!(grid[(2, 3)], (7, 7));
+    }
+}
