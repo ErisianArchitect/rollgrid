@@ -32,7 +32,7 @@ Now, that's not the benefit of this library. When repositioning the grid, it doe
 Here are a couple examples in practice
 
 ```rust
-let mut grid = RollGrid2D::new(4, 4, (0, 0), |pos: (i32, i32)| {
+let mut grid = RollGrid2D::new((4, 4), (0, 0), |pos: (i32, i32)| {
     pos
 });
 println!("Initial grid:");
