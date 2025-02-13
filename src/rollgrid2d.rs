@@ -419,12 +419,7 @@ impl<T> RollGrid2D<T> {
             }
             return;
         }
-        // FIXME: area should be usize, not u32.
-        //        Convert width and height to usize for this operation.
-        let area = SIZE_TOO_LARGE.expect(width.checked_mul(height));
-        AREA_IS_ZERO.panic_if(area == 0);
-        // FIXME: area should not exceed usize::MAX.
-        SIZE_TOO_LARGE.panic_if(area > i32::MAX as u32);
+        AREA_IS_ZERO.panic_if(width == 0 || height == 0);
         let (new_x, new_y) = new_position;
         // FIXME: Rather than converting width and height to i32, keep them
         //        as u32 and use fallible addition to create Bounds2D (new_x/y + nw/h).
@@ -555,10 +550,7 @@ impl<T> RollGrid2D<T> {
         // FIXME: width and height should remain as u32.
         let width = width as usize;
         let height = height as usize;
-        // FIXME: area should be usize, not u32.
-        let area = SIZE_TOO_LARGE.expect(width.checked_mul(height));
-        AREA_IS_ZERO.panic_if(area == 0);
-        SIZE_TOO_LARGE.panic_if(area > i32::MAX as usize);
+        AREA_IS_ZERO.panic_if(width == 0 || height == 0);
         let (new_x, new_y) = new_position;
         // FIXME: Rather than converting width and height to i32, keep them
         //        as u32 and use fallible addition to create Bounds2D (new_x/y + nw/h).
