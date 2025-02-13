@@ -156,7 +156,7 @@ mod tests {
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
         ];
         let mut hex = HEX_CHARS.into_iter();
-        let mut grid = RollGrid2D::new(4, 4, (0, 0), |pos: (i32, i32)| hex.next().unwrap());
+        let mut grid = RollGrid2D::new((4, 4), (0, 0), |pos: (i32, i32)| hex.next().unwrap());
         fn print_grid(grid: &RollGrid2D<char>) {
             for y in grid.y_min()..grid.y_max() {
                 for x in grid.x_min()..grid.x_max() {
@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     pub fn rollgrid2d_test() {
-        let mut grid = RollGrid2D::new(2, 2, (0, 0), |coord: (i32, i32)| coord);
+        let mut grid = RollGrid2D::new((2, 2), (0, 0), |coord: (i32, i32)| coord);
         fn print_grid(grid: &RollGrid2D<(i32, i32)>) {
             println!("***");
             for y in grid.y_min()..grid.y_max() {
