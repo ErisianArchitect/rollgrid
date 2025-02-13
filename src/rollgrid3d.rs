@@ -1875,13 +1875,13 @@ impl<T> RollGrid3D<T> {
         self.cells.write(index, value);
     }
 
-    /// Get a reference to the cell's value if it exists and the coord is in bounds, otherwise return `None`.
+    /// Get a reference to the cell's value if the coord is in bounds, otherwise return `None`.
     pub fn get(&self, coord: (i32, i32, i32)) -> Option<&T> {
         let index = self.offset_index(coord)?;
         Some(&self.cells[index])
     }
 
-    /// Get a mutable reference to the cell's value if it exists and the coord is in bounds, otherwise return `None`.
+    /// Get a mutable reference to the cell's value if the coord is in bounds, otherwise return `None`.
     pub fn get_mut(&mut self, coord: (i32, i32, i32)) -> Option<&mut T> {
         let index = self.offset_index(coord)?;
         Some(&mut self.cells[index])
