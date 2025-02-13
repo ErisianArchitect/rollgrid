@@ -16,6 +16,8 @@ pub struct RollGrid3D<T> {
 unsafe impl<T: Send> Send for RollGrid3D<T> {}
 unsafe impl<T: Sync> Sync for RollGrid3D<T> {}
 
+// TODO: Operations that take dimensions should take tuple instead of individual dimension arguments.
+
 impl<T: Default> RollGrid3D<T> {
     /// Create a new [RollGrid3D] with all the cells set to the default for `T`.
     pub fn new_default(width: u32, height: u32, depth: u32, grid_offset: (i32, i32, i32)) -> Self {
