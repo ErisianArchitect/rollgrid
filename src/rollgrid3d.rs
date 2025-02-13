@@ -1820,7 +1820,12 @@ impl<T> RollGrid3D<T> {
         let width = self.size.0 as i64;
         let height = self.size.1 as i64;
         let depth = self.size.2 as i64;
-        if x < off_x || y < off_y || z < off_z || x >= off_x + width || y >= off_y + height || z >= off_z + depth {
+        if x < off_x
+        || y < off_y
+        || z < off_z
+        || x >= off_x + width
+        || y >= off_y + height
+        || z >= off_z + depth {
             return None;
         }
         // Adjust x, y, and z
