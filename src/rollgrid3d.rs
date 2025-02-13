@@ -1,4 +1,4 @@
-use crate::{bounds3d::*, error_messages::*, fixedarray::FixedArray, *};
+use crate::{bounds3d::*, error_messages::*, fixedarray::FixedArray, math::{checked_add_u32_to_i32, Convert}, *};
 
 /// A 3D implementation of a rolling grid. It's a data structure similar
 /// to a circular buffer in the sense that cells can wrap around.
@@ -14,8 +14,6 @@ pub struct RollGrid3D<T> {
 
 unsafe impl<T: Send> Send for RollGrid3D<T> {}
 unsafe impl<T: Sync> Sync for RollGrid3D<T> {}
-
-// TODO: Operations that take dimensions should take tuple instead of individual dimension arguments.
 
 impl<T: Default> RollGrid3D<T> {
     /// Create a new [RollGrid3D] with all the cells set to the default for `T`.
@@ -110,11 +108,6 @@ impl<T> RollGrid3D<T> {
         // let inf = inflate as i32;
         // FIXME: Ensure that grid_offset does not exceed min/max, and panic
         //        if it does.
-        let position = (
-            self.grid_offset.0 - inflate.0 as i32,
-            self.grid_offset.1 - inflate.1 as i32,
-            self.grid_offset.2 - inflate.2 as i32,
-        );
         let width = self
             .size
             .0
@@ -130,7 +123,26 @@ impl<T> RollGrid3D<T> {
             .2
             .checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
             .expect(INFLATE_OVERFLOW.msg());
-        // FIXME: check for overflow on max bounds.
+        let off_x = self.grid_offset.0 as i64;
+        let off_y = self.grid_offset.1 as i64;
+        let off_z = self.grid_offset.2 as i64;
+        let pos_x = off_x - inflate.0 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_x < i32::MIN as i64);
+        let pos_y = off_y - inflate.1 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_y < i32::MIN as i64);
+        let pos_z = off_z - inflate.2 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_z < i32::MIN as i64);
+        let right = pos_x + width as i64;
+        INFLATE_OVERFLOW.panic_if(right > i32::MAX as i64);
+        let bottom = pos_y + height as i64;
+        INFLATE_OVERFLOW.panic_if(bottom > i32::MAX as i64);
+        let back = pos_z + depth as i64;
+        INFLATE_OVERFLOW.panic_if(back > i32::MAX as i64);
+        let position = (
+            pos_x as i32,
+            pos_y as i32,
+            pos_z as i32,
+        );
         self.resize_and_reposition((width, height, depth), position, manage);
     }
 
@@ -168,13 +180,6 @@ impl<T> RollGrid3D<T> {
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
         // let inf = inflate as i32;
-        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
-        //        if it does.
-        let position = (
-            self.grid_offset.0 - inflate.0 as i32,
-            self.grid_offset.1 - inflate.1 as i32,
-            self.grid_offset.2 - inflate.2 as i32,
-        );
         let width = self
             .size
             .0
@@ -190,7 +195,26 @@ impl<T> RollGrid3D<T> {
             .2
             .checked_add(inflate.2.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
             .expect(INFLATE_OVERFLOW.msg());
-        // FIXME: check for overflow on max bounds.
+        let off_x = self.grid_offset.0 as i64;
+        let off_y = self.grid_offset.1 as i64;
+        let off_z = self.grid_offset.2 as i64;
+        let pos_x = off_x - inflate.0 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_x < i32::MIN as i64);
+        let pos_y = off_y - inflate.1 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_y < i32::MIN as i64);
+        let pos_z = off_z - inflate.2 as i64;
+        INFLATE_OVERFLOW.panic_if(pos_z < i32::MIN as i64);
+        let right = pos_x + width as i64;
+        INFLATE_OVERFLOW.panic_if(right > i32::MAX as i64);
+        let bottom = pos_y + height as i64;
+        INFLATE_OVERFLOW.panic_if(bottom > i32::MAX as i64);
+        let back = pos_z + depth as i64;
+        INFLATE_OVERFLOW.panic_if(back > i32::MAX as i64);
+        let position = (
+            pos_x as i32,
+            pos_y as i32,
+            pos_z as i32,
+        );
         self.try_resize_and_reposition((width, height, depth), position, manage)
     }
 
@@ -225,16 +249,6 @@ impl<T> RollGrid3D<T> {
     where
         M: CellManage<(i32, i32, i32), T>,
     {
-        DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
-        DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
-        DEFLATE_PAST_I32_MAX.panic_if(deflate.2 > i32::MAX as u32);
-        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
-        //        if it does.
-        let position = (
-            self.grid_offset.0 + deflate.0 as i32,
-            self.grid_offset.1 + deflate.1 as i32,
-            self.grid_offset.2 + deflate.2 as i32,
-        );
         let width = self
             .size
             .0
@@ -251,6 +265,18 @@ impl<T> RollGrid3D<T> {
             .checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
             .expect(DEFLATE_OVERFLOW.msg());
         VOLUME_IS_ZERO.panic_if(width == 0 || height == 0 || depth == 0);
+        let (off_x, off_y, off_z): (i64, i64, i64) = self.grid_offset.convert();
+        let pos_x = off_x + deflate.0 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
+        let pos_y = off_y + deflate.1 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_y > i32::MAX as i64);
+        let pos_z = off_z + deflate.2 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_z > i32::MAX as i64);
+        let position = (
+            self.grid_offset.0 + deflate.0 as i32,
+            self.grid_offset.1 + deflate.1 as i32,
+            self.grid_offset.2 + deflate.2 as i32,
+        );
         self.resize_and_reposition((width, height, depth), position, manage);
     }
 
@@ -287,16 +313,6 @@ impl<T> RollGrid3D<T> {
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
-        DEFLATE_PAST_I32_MAX.panic_if(deflate.0 > i32::MAX as u32);
-        DEFLATE_PAST_I32_MAX.panic_if(deflate.1 > i32::MAX as u32);
-        DEFLATE_PAST_I32_MAX.panic_if(deflate.2 > i32::MAX as u32);
-        // FIXME: Ensure that grid_offset does not exceed min/max, and panic
-        //        if it does.
-        let position = (
-            self.grid_offset.0 + deflate.0 as i32,
-            self.grid_offset.1 + deflate.1 as i32,
-            self.grid_offset.2 + deflate.2 as i32,
-        );
         let width = self
             .size
             .0
@@ -313,6 +329,18 @@ impl<T> RollGrid3D<T> {
             .checked_sub(deflate.2.checked_mul(2).expect(DEFLATE_OVERFLOW.msg()))
             .expect(DEFLATE_OVERFLOW.msg());
         VOLUME_IS_ZERO.panic_if(width == 0 || height == 0 || depth == 0);
+        let (off_x, off_y, off_z): (i64, i64, i64) = self.grid_offset.convert();
+        let pos_x = off_x + deflate.0 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_x > i32::MAX as i64);
+        let pos_y = off_y + deflate.1 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_y > i32::MAX as i64);
+        let pos_z = off_z + deflate.2 as i64;
+        DEFLATE_OVERFLOW.panic_if(pos_z > i32::MAX as i64);
+        let position = (
+            self.grid_offset.0 + deflate.0 as i32,
+            self.grid_offset.1 + deflate.1 as i32,
+            self.grid_offset.2 + deflate.2 as i32,
+        );
         self.try_resize_and_reposition((width, height, depth), position, manage)
     }
 
@@ -426,26 +454,20 @@ impl<T> RollGrid3D<T> {
             }
             return;
         }
-        // FIXME: volume should be usize, not u32.
-        //        Convert width, height, and depth to usize for this operation.
-        let volume = width
-            .checked_mul(height)
+        let volume = (width as usize)
+            .checked_mul(height as usize)
             .expect(SIZE_TOO_LARGE.msg())
-            .checked_mul(depth)
+            .checked_mul(depth as usize)
             .expect(SIZE_TOO_LARGE.msg());
         VOLUME_IS_ZERO.panic_if(volume == 0);
-        // FIXME: volume should not exceed usize::MAX.
-        SIZE_TOO_LARGE.panic_if(volume > i32::MAX as u32);
-        // FIXME: Rather than converting width, height, and depth to i32, keep them
-        //        as u32 and use fallible addition to create Bounds3D (new_x/y/z + nw/h/d).
         let (new_x, new_y, new_z) = new_position;
-        let new_width = width as i32;
-        let new_height = height as i32;
-        let new_depth = depth as i32;
+        let right = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_x, width));
+        let bottom = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_y, height));
+        let back = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_z, depth));
         let old_bounds = self.bounds();
         let new_bounds = Bounds3D::new(
             (new_x, new_y, new_z),
-            (new_x + new_width, new_y + new_height, new_z + new_depth),
+            (right, bottom, back),
         );
         if old_bounds.intersects(new_bounds) {
             macro_rules! unload_bounds {
@@ -595,24 +617,20 @@ impl<T> RollGrid3D<T> {
             }
             return Ok(());
         }
-        // FIXME: volume should be usize, not u32.
-        let volume = width
-            .checked_mul(height)
+        let volume = (width as usize)
+            .checked_mul(height as usize)
             .expect(SIZE_TOO_LARGE.msg())
-            .checked_mul(depth)
+            .checked_mul(depth as usize)
             .expect(SIZE_TOO_LARGE.msg());
         VOLUME_IS_ZERO.panic_if(volume == 0);
-        SIZE_TOO_LARGE.panic_if(volume > i32::MAX as u32);
         let (new_x, new_y, new_z) = new_position;
-        // FIXME: Rather than converting width, height, and depth to i32, keep them
-        //        as u32 and use fallible addition to create Bounds3D (new_x/y/z + nw/h/d).
-        let new_width = width as i32;
-        let new_height = height as i32;
-        let new_depth = depth as i32;
+        let right = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_x, width));
+        let bottom = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_y, height));
+        let back = RESIZE_OVERFLOW.expect(checked_add_u32_to_i32(new_z, depth));
         let old_bounds = self.bounds();
         let new_bounds = Bounds3D::new(
             (new_x, new_y, new_z),
-            (new_x + new_width, new_y + new_height, new_z + new_depth),
+            (right, bottom, back),
         );
         if old_bounds.intersects(new_bounds) {
             macro_rules! unload_bounds {
@@ -737,14 +755,12 @@ impl<T> RollGrid3D<T> {
     where
         F: FnMut((i32, i32, i32), (i32, i32, i32), &mut T),
     {
-        let (off_x, off_y, off_z) = offset;
-        // FIXME: Overflow
-        let new_pos = (
-            self.grid_offset.0 + off_x,
-            self.grid_offset.1 + off_y,
-            self.grid_offset.2 + off_z,
-        );
-        self.reposition(new_pos, reload);
+        let (curx, cury, curz) = offset;
+        let (ox, oy, oz) = offset;
+        let new_x = X_MAX_EXCEEDS_MAXIMUM.expect(curx.checked_add(ox));
+        let new_y = Y_MAX_EXCEEDS_MAXIMUM.expect(cury.checked_add(oy));
+        let new_z = Z_MAX_EXCEEDS_MAXIMUM.expect(curz.checked_add(oz));
+        self.reposition((new_x, new_y, new_z), reload);
     }
 
     /// Try to translate the grid by offset amount using a fallible reload function.
@@ -760,14 +776,12 @@ impl<T> RollGrid3D<T> {
     where
         F: FnMut((i32, i32, i32), (i32, i32, i32), &mut T) -> Result<(), E>,
     {
-        let (off_x, off_y, off_z) = offset;
-        // FIXME: Overflow
-        let new_pos = (
-            self.grid_offset.0 + off_x,
-            self.grid_offset.1 + off_y,
-            self.grid_offset.2 + off_z,
-        );
-        self.try_reposition(new_pos, reload)
+        let (curx, cury, curz) = offset;
+        let (ox, oy, oz) = offset;
+        let new_x = X_MAX_EXCEEDS_MAXIMUM.expect(curx.checked_add(ox));
+        let new_y = Y_MAX_EXCEEDS_MAXIMUM.expect(cury.checked_add(oy));
+        let new_z = Z_MAX_EXCEEDS_MAXIMUM.expect(curz.checked_add(oz));
+        self.try_reposition((new_x, new_y, new_z), reload)
     }
 
     /// Reposition the offset of the grid and reload the slots that are changed.
@@ -793,19 +807,22 @@ impl<T> RollGrid3D<T> {
         }
         let (old_x, old_y, old_z) = self.grid_offset;
         let (new_x, new_y, new_z) = position;
-        // FIXME: This will overflow, use i64 instead.
-        let offset = (new_x - old_x, new_y - old_y, new_z - old_z);
-        // FIXME: Don't convert width/height/depth to i32, keep them as u32.
-        let width = self.size.0 as i32;
-        let height = self.size.1 as i32;
-        let depth = self.size.2 as i32;
-        // FIXME: use i64 for offset
+        let offset = (
+            new_x as i64 - old_x as i64,
+            new_y as i64 - old_y as i64,
+            new_z as i64 - old_z as i64
+        );
+        let width = self.size.0 as i64;
+        let height = self.size.1 as i64;
+        let depth = self.size.2 as i64;
         let (offset_x, offset_y, offset_z) = offset;
         let old_bounds = self.bounds();
-        // FIXME: overflow
+        let right = X_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_x, self.size.0));
+        let bottom = Y_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_y, self.size.1));
+        let back = Z_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_z, self.size.2));
         let new_bounds = Bounds3D::new(
             (new_x, new_y, new_z),
-            (new_x + width, new_y + height, new_z + depth),
+            (right, bottom, back),
         );
         // A cool trick to test whether the translation moves out of bounds.
         if offset_x.abs() < width && offset_y.abs() < height && offset_z.abs() < depth {
@@ -1193,9 +1210,8 @@ impl<T> RollGrid3D<T> {
                 (half_region, quarter_region, None)
             };
             // Calculate new wrap_offset
-            // FIXME: overflow
             let (wrap_x, wrap_y, wrap_z) =
-                (self.wrap_offset.0, self.wrap_offset.1, self.wrap_offset.2);
+                (self.wrap_offset.0 as i64, self.wrap_offset.1 as i64, self.wrap_offset.2 as i64);
             let (wrapped_offset_x, wrapped_offset_y, wrapped_offset_z) = (
                 offset_x.rem_euclid(width),
                 offset_y.rem_euclid(height),
@@ -1204,26 +1220,25 @@ impl<T> RollGrid3D<T> {
             let new_wrap_x = (wrap_x + wrapped_offset_x).rem_euclid(width);
             let new_wrap_y = (wrap_y + wrapped_offset_y).rem_euclid(height);
             let new_wrap_z = (wrap_z + wrapped_offset_z).rem_euclid(depth);
-            // FIXME: This should use i64 instead.
             struct OffsetFix {
                 /// the old grid offset that we can use to
                 /// create a relational offset
-                offset: (i32, i32, i32),
-                size: (i32, i32, i32),
+                offset: (i64, i64, i64),
+                size: (i64, i64, i64),
             }
             impl OffsetFix {
                 fn wrap(&self, pos: (i32, i32, i32)) -> (i32, i32, i32) {
-                    let x = (pos.0 - self.offset.0).rem_euclid(self.size.0) + self.offset.0;
-                    let y = (pos.1 - self.offset.1).rem_euclid(self.size.1) + self.offset.1;
-                    let z = (pos.2 - self.offset.2).rem_euclid(self.size.2) + self.offset.2;
-                    (x, y, z)
+                    let x = (pos.0 as i64 - self.offset.0).rem_euclid(self.size.0) + self.offset.0;
+                    let y = (pos.1 as i64 - self.offset.1).rem_euclid(self.size.1) + self.offset.1;
+                    let z = (pos.2 as i64 - self.offset.2).rem_euclid(self.size.2) + self.offset.2;
+                    (x as i32, y as i32, z as i32)
                 }
             }
             let fix = OffsetFix {
-                offset: self.grid_offset,
+                offset: self.grid_offset.convert(),
                 size: (width, height, depth),
             };
-            self.wrap_offset = (new_wrap_x, new_wrap_y, new_wrap_z);
+            self.wrap_offset = (new_wrap_x as u32, new_wrap_y as u32, new_wrap_z as u32);
             self.grid_offset = (new_x, new_y, new_z);
             // Now that we have the regions, we can iterate over them to reload cells.
             // iterate regions and reload cells
@@ -1249,19 +1264,24 @@ impl<T> RollGrid3D<T> {
         } else {
             // translation out of bounds, reload everything
             self.grid_offset = (new_x, new_y, new_z);
-            // FIXME: overflow (new_y + height, etc.)
-            //   Fix: i32_add_u32 function
+            let new_x = new_x as i64;
+            let new_y = new_y as i64;
+            let new_z = new_z as i64;
+            let old_x = old_x as i64;
+            let old_y = old_y as i64;
+            let old_z = old_z as i64;
             for (yi, y) in (new_y..new_y + height).enumerate() {
                 for (zi, z) in (new_z..new_z + depth).enumerate() {
                     for (xi, x) in (new_x..new_x + width).enumerate() {
                         // FIXME: overflow
-                        let prior_x = old_x + xi as i32;
-                        let prior_y = old_y + yi as i32;
-                        let prior_z = old_z + zi as i32;
-                        let index = self.offset_index((x, y, z)).expect(OUT_OF_BOUNDS.msg());
+                        let prior_x = (old_x + xi as i64) as i32;
+                        let prior_y = (old_y + yi as i64) as i32;
+                        let prior_z = (old_z + zi as i64) as i32;
+                        let offset = (x as i32, y as i32, z as i32);
+                        let index = self.offset_index(offset).expect(OUT_OF_BOUNDS.msg());
                         reload(
                             (prior_x, prior_y, prior_z),
-                            (x, y, z),
+                            offset,
                             &mut self.cells[index],
                         );
                     }
@@ -1294,17 +1314,22 @@ impl<T> RollGrid3D<T> {
         }
         let (old_x, old_y, old_z) = self.grid_offset;
         let (new_x, new_y, new_z) = position;
-        // FIXME: Overflow
-        let offset = (new_x - old_x, new_y - old_y, new_z - old_z);
-        // FIXME: Don't convert dimensions to i32, keep them as u32.
-        let width = self.size.0 as i32;
-        let height = self.size.1 as i32;
-        let depth = self.size.2 as i32;
+        let offset = (
+            new_x as i64 - old_x as i64,
+            new_y as i64 - old_y as i64,
+            new_z as i64 - old_z as i64
+        );
+        let width = self.size.0 as i64;
+        let height = self.size.1 as i64;
+        let depth = self.size.2 as i64;
         let (offset_x, offset_y, offset_z) = offset;
         let old_bounds = self.bounds();
+        let right = X_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_x, self.size.0));
+        let bottom = Y_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_y, self.size.1));
+        let back = Z_MAX_EXCEEDS_MAXIMUM.expect(checked_add_u32_to_i32(new_z, self.size.2));
         let new_bounds = Bounds3D::new(
             (new_x, new_y, new_z),
-            (new_x + width, new_y + height, new_z + depth),
+            (right, bottom, back),
         );
         // A cool trick to test whether the translation moves out of bounds.
         if offset_x.abs() < width && offset_y.abs() < height && offset_z.abs() < depth {
@@ -1692,40 +1717,35 @@ impl<T> RollGrid3D<T> {
                 (half_region, quarter_region, None)
             };
             // Calculate new wrap_offset
-            // TODO: overflow.
             let (wrap_x, wrap_y, wrap_z) =
-                (self.wrap_offset.0, self.wrap_offset.1, self.wrap_offset.2);
-            // TODO: This usage of rem_euclid might be wrong.
+                (self.wrap_offset.0 as i64, self.wrap_offset.1 as i64, self.wrap_offset.2 as i64);
             let (wrapped_offset_x, wrapped_offset_y, wrapped_offset_z) = (
                 offset_x.rem_euclid(width),
                 offset_y.rem_euclid(height),
                 offset_z.rem_euclid(depth),
             );
-            // TODO: and this one too.
             let new_wrap_x = (wrap_x + wrapped_offset_x).rem_euclid(width);
             let new_wrap_y = (wrap_y + wrapped_offset_y).rem_euclid(height);
             let new_wrap_z = (wrap_z + wrapped_offset_z).rem_euclid(depth);
-            // FIXME: this should use i64 instead.
             struct OffsetFix {
                 /// the old grid offset that we can use to
                 /// create a relational offset
-                offset: (i32, i32, i32),
-                size: (i32, i32, i32),
+                offset: (i64, i64, i64),
+                size: (i64, i64, i64),
             }
             impl OffsetFix {
                 fn wrap(&self, pos: (i32, i32, i32)) -> (i32, i32, i32) {
-                    // FIXME: This should not use rem_euclid.
-                    let x = (pos.0 - self.offset.0).rem_euclid(self.size.0) + self.offset.0;
-                    let y = (pos.1 - self.offset.1).rem_euclid(self.size.1) + self.offset.1;
-                    let z = (pos.2 - self.offset.2).rem_euclid(self.size.2) + self.offset.2;
-                    (x, y, z)
+                    let x = (pos.0 as i64 - self.offset.0).rem_euclid(self.size.0) + self.offset.0;
+                    let y = (pos.1 as i64 - self.offset.1).rem_euclid(self.size.1) + self.offset.1;
+                    let z = (pos.2 as i64 - self.offset.2).rem_euclid(self.size.2) + self.offset.2;
+                    (x as i32, y as i32, z as i32)
                 }
             }
             let fix = OffsetFix {
-                offset: self.grid_offset,
+                offset: self.grid_offset.convert(),
                 size: (width, height, depth),
             };
-            self.wrap_offset = (new_wrap_x, new_wrap_y, new_wrap_z);
+            self.wrap_offset = (new_wrap_x as u32, new_wrap_y as u32, new_wrap_z as u32);
             self.grid_offset = (new_x, new_y, new_z);
             // Now that we have the regions, we can iterate over them to reload cells.
             // iterate regions and reload cells
@@ -1754,17 +1774,24 @@ impl<T> RollGrid3D<T> {
         } else {
             // translation out of bounds, reload everything
             self.grid_offset = (new_x, new_y, new_z);
+            let new_x = new_x as i64;
+            let new_y = new_y as i64;
+            let new_z = new_z as i64;
+            let old_x = old_x as i64;
+            let old_y = old_y as i64;
+            let old_z = old_z as i64;
             for (yi, y) in (new_y..new_y + height).enumerate() {
                 for (zi, z) in (new_z..new_z + depth).enumerate() {
                     for (xi, x) in (new_x..new_x + width).enumerate() {
                         // FIXME: overflow
-                        let prior_x = old_x + xi as i32;
-                        let prior_y = old_y + yi as i32;
-                        let prior_z = old_z + zi as i32;
-                        let index = self.offset_index((x, y, z)).expect(OUT_OF_BOUNDS.msg());
+                        let prior_x = (old_x + xi as i64) as i32;
+                        let prior_y = (old_y + yi as i64) as i32;
+                        let prior_z = (old_z + zi as i64) as i32;
+                        let offset = (x as i32, y as i32, z as i32);
+                        let index = self.offset_index(offset).expect(OUT_OF_BOUNDS.msg());
                         reload(
                             (prior_x, prior_y, prior_z),
-                            (x, y, z),
+                            offset,
                             &mut self.cells[index],
                         )?;
                     }
@@ -1774,14 +1801,14 @@ impl<T> RollGrid3D<T> {
         Ok(())
     }
 
-    // FIXME: This should return (i64, i64, i64) because it can overflow.
     /// Get the offset relative to the grid's offset.
-    pub fn relative_offset(&self, coord: (i32, i32, i32)) -> (i32, i32, i32) {
-        let (x, y, z) = coord;
+    pub fn relative_offset(&self, coord: (i32, i32, i32)) -> (i64, i64, i64) {
+        let (x, y, z) = coord.convert::<(i64, i64, i64)>();
+        let (ox, oy, oz) = self.grid_offset.convert::<(i64, i64, i64)>();
         (
-            x - self.grid_offset.0,
-            y - self.grid_offset.1,
-            z - self.grid_offset.2,
+            x - ox,
+            y - oy,
+            z - oz,
         )
     }
 
@@ -1790,33 +1817,31 @@ impl<T> RollGrid3D<T> {
     /// Offsets are relative to the world origin `(0, 0, 0)`, and must account for
     /// the grid offset.
     fn offset_index(&self, (x, y, z): (i32, i32, i32)) -> Option<usize> {
-        // FIXME: Variables here have terrible names.
-        // FIXME: Use i64 instead.
-        let (mx, my, mz) = self.grid_offset;
-        let width = self.size.0 as i32;
-        let height = self.size.1 as i32;
-        let depth = self.size.2 as i32;
-        if x < mx || y < my || z < mz || x >= mx + width || y >= my + height || z >= mz + depth {
+        let (x, y, z): (i64, i64, i64) = (x, y, z).convert();
+        let (off_x, off_y, off_z): (i64, i64, i64) = self.grid_offset.convert();
+        let width = self.size.0 as i64;
+        let height = self.size.1 as i64;
+        let depth = self.size.2 as i64;
+        if x < off_x || y < off_y || z < off_z || x >= off_x + width || y >= off_y + height || z >= off_z + depth {
             return None;
         }
         // Adjust x, y, and z
-        let nx = x - mx;
-        let ny = y - my;
-        let nz = z - mz;
+        let adj_x = x - off_x;
+        let adj_y = y - off_y;
+        let adj_z = z - off_z;
         // Wrap x, y, and z
         let (wx, wy, wz) = (
-            self.wrap_offset.0 as i32,
-            self.wrap_offset.1 as i32,
-            self.wrap_offset.2 as i32,
+            self.wrap_offset.0 as i64,
+            self.wrap_offset.1 as i64,
+            self.wrap_offset.2 as i64,
         );
-        let wx = (nx + wx).rem_euclid(width);
-        let wy = (ny + wy).rem_euclid(height);
-        let wz = (nz + wz).rem_euclid(depth);
+        let wx = (adj_x + wx).rem_euclid(width);
+        let wy = (adj_y + wy).rem_euclid(height);
+        let wz = (adj_z + wz).rem_euclid(depth);
         let plane = self.size.0 * self.size.2;
         Some(wy as usize * plane as usize + wz as usize * self.size.0 as usize + wx as usize)
     }
 
-    // TODO: This can fail, so either explain that or return Option<()>
     /// Replace item at `coord` using `replace` function that takes as
     /// input the old value and returns the new value. This will swap the
     /// value in-place.
@@ -1825,7 +1850,6 @@ impl<T> RollGrid3D<T> {
         self.cells.replace_with(index, replace);
     }
 
-    // TODO: This can fail, so either explain that or return Option<T>
     /// Replace item at `coord` using [std::mem::replace] and then returns
     /// the old value.
     pub fn replace(&mut self, coord: (i32, i32, i32), value: T) -> T {
@@ -1833,7 +1857,6 @@ impl<T> RollGrid3D<T> {
         self.cells.replace(index, value)
     }
 
-    // TODO: Explain the return value. Also, this should use `must_use`.
     /// Reads the value from the cell without moving it. This leaves the memory in the cell unchanged.
     pub unsafe fn read(&self, coord: (i32, i32, i32)) -> Option<T> {
         let index = self.offset_index(coord)?;
@@ -1903,7 +1926,6 @@ impl<T> RollGrid3D<T> {
 
     /// Get the maximum bound on the `X` axis.
     pub fn x_max(&self) -> i32 {
-        // FIXME: overflow
         self.grid_offset.0 + self.size.0 as i32
     }
 
@@ -1914,7 +1936,6 @@ impl<T> RollGrid3D<T> {
 
     /// Get the maximum bound on the `Y` axis.
     pub fn y_max(&self) -> i32 {
-        // FIXME: overflow
         self.grid_offset.1 + self.size.1 as i32
     }
 
@@ -1925,7 +1946,6 @@ impl<T> RollGrid3D<T> {
 
     /// Get the maximum bound on the `Z` axis.
     pub fn z_max(&self) -> i32 {
-        // FIXME: overflow
         self.grid_offset.2 + self.size.2 as i32
     }
 
@@ -2037,7 +2057,7 @@ mod tests {
 
     #[test]
     fn iter_test() {
-        let mut grid = RollGrid3D::new(2, 2, 2, (0, 0, 0), |pos: (i32, i32, i32)| pos);
+        let mut grid = RollGrid3D::new((2, 2, 2), (0, 0, 0), |pos: (i32, i32, i32)| pos);
         grid.iter().for_each(|(pos, cell)| {
             assert_eq!(pos, *cell);
         });
@@ -2069,7 +2089,7 @@ mod tests {
             assert_eq!(old, *cell);
             *cell = new;
         }
-        let mut grid = RollGrid3D::new(4, 4, 4, (0, 0, 0), |pos| pos);
+        let mut grid = RollGrid3D::new((4, 4, 4), (0, 0, 0), |pos| pos);
         verify_grid(&grid);
         for y in -10..11 {
             for z in -10..11 {
@@ -2117,7 +2137,7 @@ mod tests {
                     for ny in -7..7 {
                         for nz in -7..7 {
                             for nx in -7..7 {
-                                let mut grid = RollGrid3D::new(2, 2, 2, (x, y, z), |pos| DropCoord::from(pos));
+                                let mut grid = RollGrid3D::new((2, 2, 2), (x, y, z), |pos| DropCoord::from(pos));
                                 grid.reposition((nx, ny, nz), |old_pos, new_pos, cell| {
                                     assert_eq!(cell.coord, old_pos);
                                     cell.coord = new_pos;
@@ -2140,7 +2160,7 @@ mod tests {
                         for z in -1..6 {
                             for x in -1..6 {
                                 let mut grid =
-                                    RollGrid3D::new(4, 4, 4, (0, 0, 0), |pos: (i32, i32, i32)| {
+                                    RollGrid3D::new((4, 4, 4), (0, 0, 0), |pos: (i32, i32, i32)| {
                                         DropCoord::from(pos)
                                     });
                                 // reposition to half point to ensure wrapping doesn't cause lookup invalidation.
@@ -2149,9 +2169,7 @@ mod tests {
                                     cell.coord = new_pos;
                                 });
                                 grid.resize_and_reposition(
-                                    width,
-                                    height,
-                                    depth,
+                                    (width, height, depth),
                                     (x, y, z),
                                     cell_manager(
                                         // Load
