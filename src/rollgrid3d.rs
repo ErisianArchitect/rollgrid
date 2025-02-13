@@ -2006,6 +2006,21 @@ impl<T: Clone> Clone for RollGrid3D<T> {
     }
 }
 
+impl<T> std::ops::Index<(i32, i32, i32)> for RollGrid3D<T> {
+    type Output = T;
+    fn index(&self, index: (i32, i32, i32)) -> &Self::Output {
+        let index = OUT_OF_BOUNDS.expect(self.offset_index(index));
+        &self.cells[index]
+    }
+}
+
+impl<T> std::ops::IndexMut<(i32, i32, i32)> for RollGrid3D<T> {
+    fn index_mut(&mut self, index: (i32, i32, i32)) -> &mut Self::Output {
+        let index = OUT_OF_BOUNDS.expect(self.offset_index(index));
+        &mut self.cells[index]
+    }
+}
+
 /// Iterator over all cells in a [RollGrid3D].
 pub struct RollGrid3DIterator<'a, T> {
     grid: &'a RollGrid3D<T>,
