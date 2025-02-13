@@ -649,8 +649,9 @@ impl<T> RollGrid2D<T> {
     {
         let (curx, cury) = self.grid_offset;
         let (ox, oy) = offset;
-        // FIXME: Check for overflow.
-        self.reposition((curx + ox, cury + oy), reload);
+        let new_x = X_MAX_EXCEEDS_MAXIMUM.expect(curx.checked_add(ox));
+        let new_y = Y_MAX_EXCEEDS_MAXIMUM.expect(cury.checked_add(oy));
+        self.reposition((new_x, new_y), reload);
     }
 
     /// Try to translate the grid by offset amount using a fallible reload function.
