@@ -270,19 +270,6 @@ pub const fn checked_sub_i32_into_u32(lhs: i32, rhs: i32) -> Option<u32> {
     Some(result as u32)
 }
 
-/// Since `i32::MAX - i32::MIN == u32::MAX`, it's possible to subtract
-/// an i32 from an i32 where the result can fit into a u32 so long as the left-hand side is greater or equal
-/// to the right-hand side.
-///
-/// In debug mode, this function will panic if `rhs > lhs`.
-pub(crate) const fn sub_i32_into_u32(lhs: i32, rhs: i32) -> u32 {
-    debug_assert!(rhs <= lhs);
-    let lhs = lhs as i64;
-    let rhs = rhs as i64;
-    let result = lhs - rhs;
-    result as u32
-}
-
 #[inline]
 pub(crate) const fn add_u32_to_i32(i32_value: i32, u32_value: u32) -> i32 {
     let conv = i32_to_u32(i32_value);
