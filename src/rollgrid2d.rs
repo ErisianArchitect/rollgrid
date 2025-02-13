@@ -128,6 +128,7 @@ impl<T> RollGrid2D<T> {
             .1
             .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
             .expect(INFLATE_OVERFLOW.msg());
+        // FIXME: check for overflow on max bounds.
         self.resize_and_reposition(width, height, position, manage);
     }
 
@@ -183,6 +184,7 @@ impl<T> RollGrid2D<T> {
             .1
             .checked_add(inflate.1.checked_mul(2).expect(INFLATE_OVERFLOW.msg()))
             .expect(INFLATE_OVERFLOW.msg());
+        // FIXME: check for overflow on max bounds.
         self.try_resize_and_reposition(width, height, position, manage)
     }
 
