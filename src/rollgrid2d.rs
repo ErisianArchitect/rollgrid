@@ -552,9 +552,8 @@ impl<T> RollGrid2D<T> {
         // Determine what needs to be unloaded
         let old_bounds: Bounds2D = self.bounds();
         let new_bounds = Bounds2D::new((new_x, new_y), (right, bottom));
-        // TODO: When width and height are returned to u32, remove conversions.
         // FIXME: size is set too early. It should be set after creation of new FixedArray.
-        let size = (width as u32, height as u32);
+        let size = (width, height);
         if old_bounds.intersects(new_bounds) {
             macro_rules! unload_bounds {
                 ($cond: expr => xmin = $xmin:expr; ymin = $ymin:expr; xmax = $xmax:expr; ymax = $ymax:expr;) => {
