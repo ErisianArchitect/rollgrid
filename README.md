@@ -127,6 +127,7 @@ You can modify this code to fit your purpose.
 - Added `new_zst` constructor to `RollGrid2D<()>` and `RollGrid3D<()>`.
 - Added `new_1d` and `try_new_1d` functions to `FixedArray`.
 - Added `into_raw` and `from_raw` to `FixedArray`.
+- Added `subgrid`, `subgrid_mut`, `copy_subgrid`, and `clone_subgrid` to `RollGrid2D` and `RollGrid3D`.
 - Implemented `Send` for `RollGrid2D<T>` where `T: Send`.
 - Implemented `Send` for `RollGrid3D<T>` where `T: Send`.
 - Implemented `Sync` for `RollGrid2D<T>` where `T: Sync`.
