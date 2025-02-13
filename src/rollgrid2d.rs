@@ -1200,12 +1200,6 @@ impl<'a, T> Iterator for RollGrid2DMutIterator<'a, T> {
 mod tests {
     use super::*;
 
-    // TODO: Write more comprehensive tests.
-    //       In previous versions, I missed a huge bug because the tests
-    //       weren't comprehensive enough and I missed tons of edge cases.
-    //       This time, think more about the edge cases.
-    //       Think about overflows, repeated actions, etc.
-
     fn print_grid(grid: &RollGrid2D<(i32, i32)>) {
         println!("[");
         for y in grid.y_min()..grid.y_max() {
