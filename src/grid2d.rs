@@ -4,13 +4,13 @@ use crate::error_messages::*;
 use crate::bounds2d::*;
 
 /// A 2-Dimensional matrix of values.
-pub struct Grid2D<T: Sized> {
+pub struct Grid2D<T> {
     cells: FixedArray<T>,
     size: (u32, u32),
     offset: (i32, i32),
 }
 
-impl<T: Sized> Grid2D<T> {
+impl<T> Grid2D<T> {
     /// Create a new [Grid2D] using a function to initialize cells.
     /// 
     /// The init function should take as input the coordinate that is
@@ -218,6 +218,21 @@ impl<T> std::ops::IndexMut<(i32, i32)> for Grid2D<T> {
         &mut self.cells[index]
     }
 }
+
+impl<T> AsRef<Grid2D<T>> for Grid2D<T> {
+    fn as_ref(&self) -> &Grid2D<T> {
+        self
+    }
+}
+
+impl<T> AsMut<Grid2D<T>> for Grid2D<T> {
+    fn as_mut(&mut self) -> &mut Grid2D<T> {
+        self
+    }
+}
+
+unsafe impl<T: Send> Send for Grid2D<T> {}
+unsafe impl<T: Sync> Sync for Grid2D<T> {}
 
 pub struct Grid2DIterator<'a, T> {
     grid: &'a Grid2D<T>,
