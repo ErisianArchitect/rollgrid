@@ -14,9 +14,11 @@ pub struct Grid2D<T: Sized> {
 }
 
 impl<T: Sized> Grid2D<T> {
-    // pub fn new<F: FnMut((i32, i32)) -> T>(width: u32, height: u32, init: F) -> Self {
-    //     Self {
-    //         cells: FixedArray::new_2d((width as usize, height as usize), (0, 0), init)
-    //     }
-    // }
+    pub fn new<F: FnMut((i32, i32)) -> T>(size: (u32, u32), offset: (i32, i32), init: F) -> Self {
+        Self {
+            cells: FixedArray::new_2d(size, offset, init),
+            size,
+            offset,
+        }
+    }
 }
