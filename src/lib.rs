@@ -32,6 +32,7 @@ mod error_messages {
         INFLATE_OVERFLOW        = "Inflate operation results in integer overflow.";
         DEFLATE_PAST_I32_MAX    = "Cannot deflate more than i32::MAX.";
         DEFLATE_OVERFLOW        = "Deflate operation results in integer overflow.";
+        RESIZE_OVERFLOW         = "Resize operation results in overflow.";
         /* I don't know if I'll need this, so I'm just going to comment it out for now.
         OFFSET_TOO_CLOSE_TO_MAX = "Offset is too close to maximum bound"; */
     );
