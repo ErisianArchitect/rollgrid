@@ -9,7 +9,8 @@ Offset: 1
 As you can see, the 0 was moved to the end of the buffer. 
 Since the 0 was moved to the end of the buffer, it needs to be reloaded, so the move operation will call reload:
 ```
-reload(0, 5, Some(0))
+// (old offset, new offset, mutable reference to the cell)
+reload(0, 5, &mut cell)
 ```
 
 Let's say you had this grid:
