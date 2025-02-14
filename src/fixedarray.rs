@@ -688,3 +688,64 @@ impl<FT> FromIterator<FT> for FixedArray<FT> {
         }
     }
 }
+
+#[cfg(feature = "serde")]
+mod serialize {
+    use super::*;
+    use serde::{de::Visitor, ser::SerializeSeq, Deserialize, Serialize};
+    
+    impl<T: Serialize> Serialize for FixedArray<T> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer {
+            let mut seq = serializer.serialize_seq(Some(self.capacity))?;
+            self.iter().try_for_each(|cell| {
+                seq.serialize_element(cell)
+            })?;
+            seq.end()
+        }
+    }
+
+    #[derive(Debug, Default, Clone, Copy)]
+    struct FixedArrayVisitor<T> {
+        marker: std::marker::PhantomData<T>,
+    }
+
+    impl<T> FixedArrayVisitor<T> {
+        pub const fn new() -> Self {
+            Self {
+                marker: std::marker::PhantomData,
+            }
+        }
+    }
+
+    impl<'de, T: Deserialize<'de>> Visitor<'de> for FixedArrayVisitor<T> {
+        type Value = FixedArray<T>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            write!(formatter, "A sequence of elements.")
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>, {
+            let mut builder = if let Some(hint) = seq.size_hint() {
+                Vec::with_capacity(hint)
+            } else {
+                Vec::with_capacity(16)
+            };
+            while let Ok(Some(element)) = seq.next_element::<T>() {
+                builder.push(element);
+            }
+            Ok(FixedArray::from(builder))
+        }
+    }
+
+    impl<'de, T: Deserialize<'de>> Deserialize<'de> for FixedArray<T> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: serde::Deserializer<'de> {
+            deserializer.deserialize_seq(FixedArrayVisitor::new())
+        }
+    }
+}
