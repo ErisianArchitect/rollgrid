@@ -92,7 +92,7 @@ impl<T> RollGrid3D<T> {
     /// grid.inflate_size((1, 1, 1), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {:?}", pos);
+    ///         println!("Load: {pos:?}");
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -100,11 +100,11 @@ impl<T> RollGrid3D<T> {
     ///     },
     ///     // Unload
     ///     |pos, old_value| {
-    ///         println!("Unload: {:?}", pos);
+    ///         println!("Unload: {pos:?}");
     ///     },
     ///     // Reload
     ///     |old_pos, new_pos, cell| {
-    ///         println!("Reload({:?}, {:?})")
+    ///         println!("Reload({old_pos:?}, {new_pos:?})")
     ///     }
     /// ))
     /// ```
@@ -158,7 +158,7 @@ impl<T> RollGrid3D<T> {
     /// grid.try_inflate_size((1, 1, 1), try_cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {:?}", pos);
+    ///         println!("Load: {pos:?}");
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -166,12 +166,12 @@ impl<T> RollGrid3D<T> {
     ///     },
     ///     // Unload
     ///     |pos, old_value| {
-    ///         println!("Unload: {:?}", pos);
+    ///         println!("Unload: {pos:?}");
     ///         Ok(())
     ///     },
     ///     // Reload
     ///     |old_pos, new_pos, cell| {
-    ///         println!("Reload({:?}, {:?})")
+    ///         println!("Reload({old_pos:?}, {new_pos:?})")
     ///         Ok(())
     ///     }
     /// ))
@@ -226,7 +226,7 @@ impl<T> RollGrid3D<T> {
     /// grid.deflate_size((1, 1, 1), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {:?}", pos);
+    ///         println!("Load: {pos:?}");
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -234,11 +234,11 @@ impl<T> RollGrid3D<T> {
     ///     },
     ///     // Unload
     ///     |pos, old_value| {
-    ///         println!("Unload: {:?}", pos);
+    ///         println!("Unload: {pos:?}");
     ///     },
     ///     // Reload
     ///     |old_pos, new_pos, cell| {
-    ///         println!("Reload({:?}, {:?})")
+    ///         println!("Reload({old_pos:?}, {new_pos:?})")
     ///     }
     /// ))
     /// ```
@@ -288,7 +288,7 @@ impl<T> RollGrid3D<T> {
     /// grid.try_deflate_size((1, 1, 1), try_cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {:?}", pos);
+    ///         println!("Load: {pos:?}");
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -296,12 +296,12 @@ impl<T> RollGrid3D<T> {
     ///     },
     ///     // Unload
     ///     |pos, old_value| {
-    ///         println!("Unload: {:?}", pos);
+    ///         println!("Unload: {pos:?}");
     ///         Ok(())
     ///     },
     ///     // Reload
     ///     |old_pos, new_pos, cell| {
-    ///         println!("Reload({:?}, {:?})")
+    ///         println!("Reload({old_pos:?}, {new_pos:?})")
     ///         Ok(())
     ///     }
     /// ))
@@ -346,10 +346,10 @@ impl<T> RollGrid3D<T> {
     ///
     /// # Example
     /// ```rust, no_run
-    /// grid.resize(1, 1, 1, cell_manager(
+    /// grid.resize((1, 1, 1), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {:?}", pos);
+    ///         println!("Load: {pos:?}");
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -357,11 +357,11 @@ impl<T> RollGrid3D<T> {
     ///     },
     ///     // Unload
     ///     |pos, old_value| {
-    ///         println!("Unload: {:?}", pos);
+    ///         println!("Unload: {pos:?}");
     ///     },
     ///     // Reload
     ///     |old_pos, new_pos, cell| {
-    ///         println!("Reload({:?}, {:?})")
+    ///         println!("Reload({old_pos:?}, {new_pos:?})")
     ///     }
     /// ))
     /// ```
@@ -377,10 +377,10 @@ impl<T> RollGrid3D<T> {
     ///
     /// # Example
     /// ```rust, no_run
-    /// grid.try_resize(1, 1, 1, cell_manager(
+    /// grid.try_resize((1, 1, 1), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {:?}", pos);
+    ///         println!("Load: {pos:?}");
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -388,12 +388,12 @@ impl<T> RollGrid3D<T> {
     ///     },
     ///     // Unload
     ///     |pos, old_value| {
-    ///         println!("Unload: {:?}", pos);
+    ///         println!("Unload: {pos:?}");
     ///         Ok(())
     ///     },
     ///     // Reload
     ///     |old_pos, new_pos, cell| {
-    ///         println!("Reload({:?}, {:?})")
+    ///         println!("Reload({old_pos:?}, {new_pos:?})")
     ///         Ok(())
     ///     }
     /// ))
@@ -410,10 +410,10 @@ impl<T> RollGrid3D<T> {
     ///
     /// # Example
     /// ```rust, no_run
-    /// grid.resize_and_reposition(3, 3, 3, (4, 4, 4), cell_manager(
+    /// grid.resize_and_reposition((3, 3, 3), (4, 4, 4), cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {:?}", pos);
+    ///         println!("Load: {pos:?}");
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -421,11 +421,11 @@ impl<T> RollGrid3D<T> {
     ///     },
     ///     // Unload
     ///     |pos, old_value| {
-    ///         println!("Unload: {:?}", pos);
+    ///         println!("Unload: {pos:?}");
     ///     },
     ///     // Reload
     ///     |old_pos, new_pos, cell| {
-    ///         println!("Reload({:?}, {:?})")
+    ///         println!("Reload({old_pos:?}, {new_pos:?})")
     ///     }
     /// ))
     /// ```
@@ -567,10 +567,10 @@ impl<T> RollGrid3D<T> {
     ///
     /// # Example
     /// ```rust, no_run
-    /// grid.try_resize_and_reposition(3, 3, 3, (4, 4, 4), try_cell_manager(
+    /// grid.try_resize_and_reposition((3, 3, 3), (4, 4, 4), try_cell_manager(
     ///     // Load
     ///     |pos| {
-    ///         println!("Load: {:?}", pos);
+    ///         println!("Load: {pos:?}");
     ///         // return the loaded value
     ///         // Typically you wouldn't return the position,
     ///         // you would want to load a new cell here.
@@ -578,12 +578,12 @@ impl<T> RollGrid3D<T> {
     ///     },
     ///     // Unload
     ///     |pos, old_value| {
-    ///         println!("Unload: {:?}", pos);
+    ///         println!("Unload: {pos:?}");
     ///         Ok(())
     ///     },
     ///     // Reload
     ///     |old_pos, new_pos, cell| {
-    ///         println!("Reload({:?}, {:?})")
+    ///         println!("Reload({old_pos:?}, {new_pos:?})")
     ///         Ok(())
     ///     }
     /// ))
