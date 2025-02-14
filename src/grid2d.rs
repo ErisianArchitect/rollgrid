@@ -272,3 +272,73 @@ impl<'a, T> Iterator for Grid2DMutIterator<'a, T> {
         }
     }
 }
+
+#[cfg(feature = "serde")]
+mod serialization {
+    use super::*;
+    use serde::{self, ser::SerializeStruct, Deserialize};
+
+    impl<T: serde::Serialize> serde::Serialize for Grid2D<T> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer {
+            let mut struc = serializer.serialize_struct("Grid2D", 3)?;
+            struc.serialize_field("offset", &self.offset)?;
+            struc.serialize_field("size", &self.size)?;
+            struc.serialize_field("cells", &self.cells)?;
+            struc.end()
+        }
+    }
+
+    struct Grid2DVisitor<T> {
+        marker: std::marker::PhantomData<T>,
+    }
+
+    impl<T> Grid2DVisitor<T> {
+        pub const fn new() -> Self {
+            Self { marker: std::marker::PhantomData }
+        }
+    }
+
+    impl<'de, T: Deserialize<'de>> serde::de::Visitor<'de> for Grid2DVisitor<T> {
+
+        type Value = Grid2D<T>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            write!(formatter, "A Grid2D struct with fields `offset`, `size`, and `cells`")
+        }
+
+        fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>, {
+            let mut offset = None;
+            let mut size = None;
+            let mut cells = None;
+            
+            while let Some(key) = map.next_key::<String>()? {
+                match key.as_str() {
+                    "offset" => offset = map.next_value()?,
+                    "size" => size = map.next_value()?,
+                    "cells" => cells = map.next_value()?,
+                    _ => return Err(serde::de::Error::unknown_field(&key, &["offset", "size", "cells"])),
+                }
+            }
+            let offset = offset.ok_or_else(|| serde::de::Error::missing_field("offset"))?;
+            let size = size.ok_or_else(|| serde::de::Error::missing_field("size"))?;
+            let cells = cells.ok_or_else(|| serde::de::Error::missing_field("cells"))?;
+            Ok(Grid2D {
+                offset,
+                size,
+                cells,
+            })
+        }
+    }
+    
+    impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for Grid2D<T> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: serde::Deserializer<'de> {
+            deserializer.deserialize_struct("Grid2D", &["offset", "size", "cells"], Grid2DVisitor::new())
+        }
+    }
+}
