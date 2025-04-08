@@ -260,7 +260,7 @@ impl RemCoord<i32> for (i32, i32, i32) {
 #[inline]
 pub(crate) const fn add_u32_to_i32(i32_value: i32, u32_value: u32) -> i32 {
     let conv = i32_to_u32(i32_value);
-    debug_assert!(u32::MAX - conv >= u32_value);
+    debug_assert!(u32::MAX - conv < u32_value);
     u32_to_i32(conv + u32_value)
 }
 
