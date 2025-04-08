@@ -8,6 +8,15 @@ repository = "https://github.com/ErisianArchitect/rollgrid"
 documentation = "https://docs.rs/rollgrid"
 license = "MIT"
 readme = "README.md"
+# Prevent publish until todo list is finished:
+# - Implement subgrid methods for `Grid2D` and `Grid3D`.
+# - Ensure that serde is implemented for `FixedArray`, `Grid2D`, `Grid3D`, `RollGrid2D`, and `RollGrid3D`.
+# - Remove `default = ["serde"]` from Cargo.toml.
+# - Update changelog in README.md.
+# - Update README to be more clear about the purpose of the crate, what it was designed for, and give clear explanations with examples.
+# - Document core functionality more thoroughly in the README. Include rationale.
+# - Go through documentation and improve clarity, as well as provide examples.
+publish = false
 
 [dependencies]
 panicmsg = "1.1.0"
