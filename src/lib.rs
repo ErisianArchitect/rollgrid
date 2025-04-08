@@ -9,6 +9,17 @@ pub mod math;
 pub mod rollgrid2d;
 pub mod rollgrid3d;
 
+#[cfg(not(debug_assertions))]
+compile_error!(r#"
+- Implement subgrid methods for `Grid2D` and `Grid3D`.
+- Ensure that serde is implemented for `FixedArray`, `Grid2D`, `Grid3D`, `RollGrid2D`, and `RollGrid3D`.
+- Remove `default = ["serde"]` from Cargo.toml.
+- Update changelog in README.md.
+- Update README to be more clear about the purpose of the crate, what it was designed for, and give clear explanations with examples.
+- Document core functionality more thoroughly in the README. Include rationale.
+- Go through documentation and improve clarity, as well as provide examples.
+"#);
+
 mod error_messages {
     macro_rules! error_messages {
         ($($name:ident = $message:literal;)*) => {
