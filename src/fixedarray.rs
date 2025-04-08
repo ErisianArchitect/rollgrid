@@ -18,7 +18,7 @@ impl<T> FixedArray<T> {
     unsafe fn prealloc(capacity: usize) -> NonNull<T> {
         unsafe {
             let layout = Self::make_layout(capacity).expect("Failed to create layout.");
-            NonNull::new(std::alloc::alloc(layout) as *mut T).expect("Null pointer.")
+            NonNull::new(std::alloc::alloc(layout) as _).expect("Null pointer.")
         }
     }
 
@@ -699,8 +699,9 @@ mod serialize {
             where
                 S: serde::Serializer {
             let mut seq = serializer.serialize_seq(Some(self.capacity))?;
-            self.iter().try_for_each(|cell| {
-                seq.serialize_element(cell)
+            let seq_mut = &mut seq;
+            self.iter().try_for_each(move |cell| {
+                seq_mut.serialize_element(cell)
             })?;
             seq.end()
         }
