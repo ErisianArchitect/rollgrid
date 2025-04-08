@@ -113,8 +113,14 @@ This `reposition` method works for the 2d and 3d variants of the rollgrid.
 You can modify this code to fit your purpose.
 
 # Changelog
-
-### 3.0.0-alpha1
+### 3.1.0
+##### Bug Fixes
+- No bug fixes.
+##### Additions
+- Implemented `Serialize` and `Deserialize` for `FixedArray`, `Grid2D`, `Grid3D`, `RollGrid2D`, and `RollGrid3D`.
+##### Changes
+- Renamed `grid_offset` to `offset`.
+### 3.0.0
 ##### Bug Fixes
 - Integer overflows in as many places as I could find.
 - Major bug that caused the grids to become invalidated during `resize_and_reposition` operation.
