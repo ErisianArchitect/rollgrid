@@ -115,7 +115,7 @@ You can modify this code to fit your purpose.
 # Changelog
 ### 3.1.0
 ##### Bug Fixes
-- No bug fixes.
+- Fixed incorrect comparison operator in internal function that would cause a panic in debug mode under certain circumstances.
 ##### Additions
 - Implemented `Serialize` and `Deserialize` for `FixedArray`, `Grid2D`, `Grid3D`, `RollGrid2D`, and `RollGrid3D`.
 ##### Changes
