@@ -11,6 +11,7 @@ readme = "README.md"
 # Prevent publish until todo list is finished:
 # - Implement subgrid methods for `Grid2D` and `Grid3D`.
 # - Ensure that serde is implemented for `FixedArray`, `Grid2D`, `Grid3D`, `RollGrid2D`, and `RollGrid3D`.
+# - Add From<[T; S]> and From<&[T]> impls to FixedArray<T>.
 # - Remove `default = ["serde"]` from Cargo.toml.
 # - Update changelog in README.md.
 # - Update README to be more clear about the purpose of the crate, what it was designed for, and give clear explanations with examples.
