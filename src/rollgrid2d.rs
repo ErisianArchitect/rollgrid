@@ -990,6 +990,7 @@ impl<T> RollGrid2D<T> {
         self.cells.replace_with(index, replace);
     }
 
+    // TODO: Decide if replace should have the #[must_use] attribute.
     /// Replace item at `coord` using [std::mem::replace] and then returns
     /// the old value.
     ///
@@ -1050,6 +1051,7 @@ impl<T> RollGrid2D<T> {
         }
         unsafe {
             let ptr = self.cells.as_ptr();
+            // TODO: Update this closure to `move`. Also update for RollGrid3D.
             let grid = Grid2D::new(bounds.size(), bounds.min, |pos| {
                 let index = self.offset_index(pos).unwrap();
                 let cell_ptr = ptr.add(index);
@@ -1071,6 +1073,7 @@ impl<T> RollGrid2D<T> {
         }
         unsafe {
             let ptr = self.cells.as_ptr();
+            // TODO: Update this closure to `move`. Also update for RollGrid3D.
             let grid = Grid2D::new(bounds.size(), bounds.min, |pos| {
                 let index = self.offset_index(pos).unwrap();
                 let cell_ptr = ptr.add(index);
