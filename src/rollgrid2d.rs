@@ -1,3 +1,4 @@
+use crate::fixedarray::NeedsDrop;
 use crate::grid2d::*;
 use crate::{bounds2d::*, error_messages::*, fixedarray::FixedArray, math::*, *};
 
@@ -20,7 +21,7 @@ impl<T: Default> RollGrid2D<T> {
     /// Create a new [RollGrid2D] with all the cells set to the default for `T`.
     pub fn new_default(size: (u32, u32), grid_offset: (i32, i32)) -> Self {
         Self {
-            cells: FixedArray::new_2d(size, grid_offset, |_| T::default()),
+            cells: FixedArray::new_2d(size, grid_offset, move |_| (T::default(), NeedsDrop::Yes)),
             size,
             grid_offset: grid_offset,
             wrap_offset: (0, 0),
@@ -32,7 +33,7 @@ impl RollGrid2D<()> {
     /// Creates a new grid of unit types.
     pub fn new_zst(size: (u32, u32), grid_offset: (i32, i32)) -> Self {
         RollGrid2D {
-            cells: FixedArray::new_2d(size, grid_offset, |_| ()),
+            cells: FixedArray::new_2d(size, grid_offset, move |_| ((), NeedsDrop::No)),
             size,
             grid_offset,
             wrap_offset: (0, 0),
@@ -48,10 +49,10 @@ impl<T> RollGrid2D<T> {
     pub fn new<F: FnMut((i32, i32)) -> T>(
         size: (u32, u32),
         grid_offset: (i32, i32),
-        init: F,
+        mut init: F,
     ) -> Self {
         Self {
-            cells: FixedArray::new_2d(size, grid_offset, init),
+            cells: FixedArray::new_2d(size, grid_offset, move |pos| (init(pos), NeedsDrop::Yes)),
             size,
             wrap_offset: (0, 0),
             grid_offset: grid_offset,
@@ -65,10 +66,10 @@ impl<T> RollGrid2D<T> {
     pub fn try_new<E, F: FnMut((i32, i32)) -> Result<T, E>>(
         size: (u32, u32),
         grid_offset: (i32, i32),
-        init: F,
+        mut init: F,
     ) -> Result<Self, E> {
         Ok(Self {
-            cells: FixedArray::try_new_2d(size, grid_offset, init)?,
+            cells: FixedArray::try_new_2d(size, grid_offset, move |pos| Ok((init(pos)?, NeedsDrop::Yes)))?,
             size,
             wrap_offset: (0, 0),
             grid_offset: grid_offset,
@@ -459,9 +460,9 @@ impl<T> RollGrid2D<T> {
             let new_grid = FixedArray::new_2d(size, new_position, |pos| {
                 if old_bounds.contains(pos) {
                     let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
-                    unsafe { self.cells.read(index) }
+                    (unsafe { self.cells.read(index) }, NeedsDrop::No)
                 } else {
-                    manage.load(pos)
+                    (manage.load(pos), NeedsDrop::Yes)
                 }
             });
             self.size = size;
@@ -479,7 +480,7 @@ impl<T> RollGrid2D<T> {
                     manage.unload(pos, self.cells.read(index));
                 }
             });
-            let new_grid = FixedArray::new_2d(size, new_position, |pos| manage.load(pos));
+            let new_grid = FixedArray::new_2d(size, new_position, move |pos| (manage.load(pos), NeedsDrop::Yes));
             self.size = size;
             self.grid_offset = new_position;
             unsafe {
@@ -586,9 +587,9 @@ impl<T> RollGrid2D<T> {
             let new_grid = FixedArray::try_new_2d(size, new_position, |pos| {
                 if old_bounds.contains(pos) {
                     let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
-                    unsafe { Ok(self.cells.read(index)) }
+                    unsafe { Ok((self.cells.read(index), NeedsDrop::No)) }
                 } else {
-                    manage.try_load(pos)
+                    Ok((manage.try_load(pos)?, NeedsDrop::Yes))
                 }
             })?;
             self.size = size;
@@ -607,7 +608,7 @@ impl<T> RollGrid2D<T> {
                 }
                 Ok(())
             })?;
-            let new_grid = FixedArray::try_new_2d(size, new_position, |pos| manage.try_load(pos))?;
+            let new_grid = FixedArray::try_new_2d(size, new_position, move |pos| Ok((manage.try_load(pos)?, NeedsDrop::Yes)))?;
             self.size = size;
             self.grid_offset = new_position;
             unsafe {
