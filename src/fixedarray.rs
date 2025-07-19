@@ -3,48 +3,82 @@ use std::{mem::ManuallyDrop, ptr::NonNull};
 
 /// Used for FixedArray initialization for fallible versions.
 struct SafePtrWriter<T> {
-    ptr: NonNull<T>,
+    ptr: Option<NonNull<T>>,
     len: usize,
     capacity: usize,
+    needs_drop: Box<[u32]>
 }
 
 impl<T> SafePtrWriter<T> {
     fn new(ptr: NonNull<T>, capacity: usize) -> Self {
+        let needs_drop_capacity = (capacity + 31) / 32;
         Self {
-            ptr,
+            ptr: Some(ptr),
             capacity,
             len: 0,
+            needs_drop: Box::from_iter((0..needs_drop_capacity).map(|_| 0u32)),
         }
     }
 
+    fn set_needs_drop(&mut self, index: usize, needs_drop: NeedsDrop) {
+        let stride = index / 32;
+        let bit_mask = (index & 31) as u32;
+        let mask = self.needs_drop[stride];
+        self.needs_drop[stride] = match needs_drop {
+            NeedsDrop::No => mask & !bit_mask,
+            NeedsDrop::Yes => mask | bit_mask,
+        };
+    }
+
+    fn get_needs_drop(&self, index: usize) -> bool {
+        let stride = index / 32;
+        let bit_mask = (index & 31) as u32;
+        let mask = self.needs_drop[stride];
+        (mask & bit_mask) == bit_mask
+    }
+
     /// This assumes that you do not push beyond the capacity.
-    unsafe fn push(&mut self, value: T) {
+    unsafe fn push(&mut self, (value, needs_drop): (T, NeedsDrop)) {
         debug_assert!(self.len < self.capacity);
+        let ptr = self.ptr.unwrap();
         unsafe {
-            self.ptr.add(self.len).write(value);
+            ptr.add(self.len).write(value);
         }
+        self.set_needs_drop(self.len, needs_drop);
+        self.len += 1;
     }
 
     /// Prevents the writer from running drop.
     /// This expect that the array has already been initialized fully.
-    unsafe fn forget(self) {
+    unsafe fn finish(mut self) {
         debug_assert!(self.len == self.capacity);
         // Safely place in a ManuallyDrop wrapper to prevent dropping
         // since ownership of the pointer is being taken.
-        std::mem::forget(self);
+        self.ptr.take();
     }
+}
+
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum NeedsDrop {
+    No = 0,
+    Yes = 1,
 }
 
 impl<T> Drop for SafePtrWriter<T> {
     fn drop(&mut self) {
-        for i in 0..self.len {
-            unsafe {
-                drop(self.ptr.add(i).read());
+        if let Some(ptr) = self.ptr {
+            for i in 0..self.len {
+                if self.get_needs_drop(i) {
+                    unsafe {
+                        drop(ptr.add(i).read());
+                    }
+                }
             }
-        }
-        let layout = std::alloc::Layout::array::<T>(self.capacity).expect("Failed to create Layout for type.");
-        unsafe {
-            std::alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
+            let layout = std::alloc::Layout::array::<T>(self.capacity).expect("Failed to create Layout for type.");
+            unsafe {
+                std::alloc::dealloc(ptr.as_ptr() as *mut u8, layout);
+            }
         }
     }
 }
@@ -121,7 +155,7 @@ impl<T> FixedArray<T> {
 
     /// Allocate a new [FixedArray] from a 1D size and offset with an
     /// initialization function.
-    pub fn new_1d<F: FnMut(i32) -> T>(size: u32, offset: i32, mut init: F) -> Self {
+    pub fn new_1d<F: FnMut(i32) -> (T, NeedsDrop)>(size: u32, offset: i32, mut init: F) -> Self {
         X_MAX_EXCEEDS_MAXIMUM.panic_if(offset as i64 + size as i64 > i32::MAX as i64);
         let ptr = unsafe {
             Self::prealloc(size as usize)
@@ -135,7 +169,7 @@ impl<T> FixedArray<T> {
                 }
             }
             unsafe {
-                writer.forget();
+                writer.finish();
             }
         }
         Self {
@@ -146,7 +180,7 @@ impl<T> FixedArray<T> {
 
     /// Allocate a new [FixedArray] from a 1D size and offset with an
     /// initialization function.
-    pub fn try_new_1d<E, F: FnMut(i32) -> Result<T, E>>(
+    pub fn try_new_1d<E, F: FnMut(i32) -> Result<(T, NeedsDrop), E>>(
         size: u32,
         offset: i32,
         mut init: F,
@@ -164,7 +198,7 @@ impl<T> FixedArray<T> {
                 }
             }
             unsafe {
-                writer.forget();
+                writer.finish();
             }
         }
         Ok(Self {
@@ -182,7 +216,7 @@ impl<T> FixedArray<T> {
     /// * `(1, 0)`
     /// * `(0, 1)`
     /// * `(1, 1)`
-    pub fn new_2d<F: FnMut((i32, i32)) -> T>(
+    pub fn new_2d<F: FnMut((i32, i32)) -> (T, NeedsDrop)>(
         size: (u32, u32),
         offset: (i32, i32),
         mut init: F,
@@ -196,7 +230,7 @@ impl<T> FixedArray<T> {
                 }
             }
             unsafe {
-                writer.forget();
+                writer.finish();
             }
         }
         Self {
@@ -214,7 +248,7 @@ impl<T> FixedArray<T> {
     /// * `(1, 0)`
     /// * `(0, 1)`
     /// * `(1, 1)`
-    pub fn try_new_2d<E, F: FnMut((i32, i32)) -> Result<T, E>>(
+    pub fn try_new_2d<E, F: FnMut((i32, i32)) -> Result<(T, NeedsDrop), E>>(
         size: (u32, u32),
         offset: (i32, i32),
         mut init: F,
@@ -228,7 +262,7 @@ impl<T> FixedArray<T> {
                 }
             }
             unsafe {
-                _ = writer.forget();
+                _ = writer.finish();
             }
         }
         Ok(Self {
@@ -250,7 +284,7 @@ impl<T> FixedArray<T> {
     /// * `(1, 1, 0)`
     /// * `(0, 1, 1)`
     /// * `(1, 1, 1)`
-    pub fn new_3d<F: FnMut((i32, i32, i32)) -> T>(
+    pub fn new_3d<F: FnMut((i32, i32, i32)) -> (T, NeedsDrop)>(
         size: (u32, u32, u32),
         offset: (i32, i32, i32),
         mut init: F,
@@ -264,7 +298,7 @@ impl<T> FixedArray<T> {
                 }
             }
             unsafe {
-                writer.forget();
+                writer.finish();
             }
         }
         Self {
@@ -286,7 +320,7 @@ impl<T> FixedArray<T> {
     /// * `(1, 1, 0)`
     /// * `(0, 1, 1)`
     /// * `(1, 1, 1)`
-    pub fn try_new_3d<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
+    pub fn try_new_3d<E, F: FnMut((i32, i32, i32)) -> Result<(T, NeedsDrop), E>>(
         size: (u32, u32, u32),
         offset: (i32, i32, i32),
         mut init: F,
@@ -298,11 +332,12 @@ impl<T> FixedArray<T> {
             let mut writer = SafePtrWriter::new(ptr, capacity);
             for pos in bounds.iter() {
                 unsafe {
+                    let (value, needs_drop) = init(pos)?;
                     writer.push(init(pos)?);
                 }
             }
             unsafe {
-                writer.forget();
+                writer.finish();
             }
         }
         Ok(Self {
