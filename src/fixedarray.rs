@@ -1,6 +1,54 @@
 use crate::{bounds2d::Bounds2D, bounds3d::Bounds3D, error_messages::*};
 use std::{mem::ManuallyDrop, ptr::NonNull};
 
+/// Used for FixedArray initialization for fallible versions.
+struct SafePtrWriter<T> {
+    ptr: NonNull<T>,
+    len: usize,
+    capacity: usize,
+}
+
+impl<T> SafePtrWriter<T> {
+    fn new(ptr: NonNull<T>, capacity: usize) -> Self {
+        Self {
+            ptr,
+            capacity,
+            len: 0,
+        }
+    }
+
+    /// This assumes that you do not push beyond the capacity.
+    unsafe fn push(&mut self, value: T) {
+        debug_assert!(self.len < self.capacity);
+        unsafe {
+            self.ptr.add(self.len).write(value);
+        }
+    }
+
+    /// Prevents the writer from running drop.
+    /// This expect that the array has already been initialized fully.
+    unsafe fn forget(self) {
+        debug_assert!(self.len == self.capacity);
+        // Safely place in a ManuallyDrop wrapper to prevent dropping
+        // since ownership of the pointer is being taken.
+        std::mem::forget(self);
+    }
+}
+
+impl<T> Drop for SafePtrWriter<T> {
+    fn drop(&mut self) {
+        for i in 0..self.len {
+            unsafe {
+                drop(self.ptr.add(i).read());
+            }
+        }
+        let layout = std::alloc::Layout::array::<T>(self.capacity).expect("Failed to create Layout for type.");
+        unsafe {
+            std::alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
+        }
+    }
+}
+
 /// An array of type `T`.
 /// This is an abstraction over the memory meant to be used in rolling grid
 /// implementations. This struct allows for taking values from the buffer without
@@ -75,19 +123,24 @@ impl<T> FixedArray<T> {
     /// initialization function.
     pub fn new_1d<F: FnMut(i32) -> T>(size: u32, offset: i32, mut init: F) -> Self {
         X_MAX_EXCEEDS_MAXIMUM.panic_if(offset as i64 + size as i64 > i32::MAX as i64);
-        unsafe {
-            let ptr = Self::prealloc(size as usize);
-            if std::mem::size_of::<T>() != 0 {
-                for i in 0..size as usize {
-                    let x = (offset as i64 + i as i64) as i32;
-                    let item = ptr.add(i);
-                    item.write(init(x));
+        let ptr = unsafe {
+            Self::prealloc(size as usize)
+        };
+        if std::mem::size_of::<T>() != 0 {
+            let mut writer = SafePtrWriter::new(ptr, size as usize);
+            for i in 0..size as usize {
+                let x = (offset as i64 + i as i64) as i32;
+                unsafe {
+                    writer.push(init(x));
                 }
             }
-            Self {
-                ptr: Some(ptr),
-                capacity: size as usize,
+            unsafe {
+                writer.forget();
             }
+        }
+        Self {
+            ptr: Some(ptr),
+            capacity: size as usize,
         }
     }
 
@@ -99,20 +152,25 @@ impl<T> FixedArray<T> {
         mut init: F,
     ) -> Result<Self, E> {
         X_MAX_EXCEEDS_MAXIMUM.panic_if(offset as i64 + size as i64 > i32::MAX as i64);
-        unsafe {
-            let ptr = Self::prealloc(size as usize);
-            if std::mem::size_of::<T>() != 0 {
-                for i in 0..size as usize {
-                    let x = (offset as i64 + i as i64) as i32;
-                    let item = ptr.add(i);
-                    item.write(init(x)?);
+        let ptr = unsafe {
+            Self::prealloc(size as usize)
+        };
+        if std::mem::size_of::<T>() != 0 {
+            let mut writer = SafePtrWriter::new(ptr, size as usize);
+            for i in 0..size as usize {
+                let x = (offset as i64 + i as i64) as i32;
+                unsafe {
+                    writer.push(init(x)?);
                 }
             }
-            Ok(Self {
-                ptr: Some(ptr),
-                capacity: size as usize,
-            })
+            unsafe {
+                writer.forget();
+            }
         }
+        Ok(Self {
+            ptr: Some(ptr),
+            capacity: size as usize,
+        })
     }
 
     /// Allocate a new [FixedArray] from a 2D size and offset with an
@@ -131,10 +189,15 @@ impl<T> FixedArray<T> {
     ) -> Self {
         let (ptr, bounds, capacity) = unsafe { Self::prealloc_2d(size, offset) };
         if std::mem::size_of::<T>() != 0 {
-            bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
-                let item = ptr.add(i);
-                item.write(init(pos));
-            });
+            let mut writer = SafePtrWriter::new(ptr, capacity);
+            for pos in bounds.iter() {
+                unsafe {
+                    writer.push(init(pos))
+                }
+            }
+            unsafe {
+                writer.forget();
+            }
         }
         Self {
             ptr: Some(ptr),
@@ -158,13 +221,15 @@ impl<T> FixedArray<T> {
     ) -> Result<Self, E> {
         let (ptr, bounds, capacity) = unsafe { Self::prealloc_2d(size, offset) };
         if std::mem::size_of::<T>() != 0 {
-            bounds.iter().enumerate().try_for_each(move |(i, pos)| {
+            let mut writer = SafePtrWriter::new(ptr, capacity);
+            for pos in bounds.iter() {
                 unsafe {
-                    let item = ptr.add(i);
-                    item.write(init(pos)?);
+                    writer.push(init(pos)?);
                 }
-                Ok(())
-            })?;
+            }
+            unsafe {
+                _ = writer.forget();
+            }
         }
         Ok(Self {
             ptr: Some(ptr),
@@ -192,10 +257,15 @@ impl<T> FixedArray<T> {
     ) -> Self {
         let (ptr, bounds, capacity) = unsafe { Self::prealloc_3d(size, offset) };
         if std::mem::size_of::<T>() != 0 {
-            bounds.iter().enumerate().for_each(move |(i, pos)| unsafe {
-                let item = ptr.add(i);
-                item.write(init(pos));
-            });
+            let mut writer = SafePtrWriter::new(ptr, capacity);
+            for pos in bounds.iter() {
+                unsafe {
+                    writer.push(init(pos));
+                }
+            }
+            unsafe {
+                writer.forget();
+            }
         }
         Self {
             ptr: Some(ptr),
@@ -221,15 +291,19 @@ impl<T> FixedArray<T> {
         offset: (i32, i32, i32),
         mut init: F,
     ) -> Result<Self, E> {
-        let (ptr, bounds, capacity) = unsafe { Self::prealloc_3d(size, offset) };
+        let (ptr, bounds, capacity) = unsafe {
+            Self::prealloc_3d(size, offset)
+        };
         if std::mem::size_of::<T>() != 0 {
-            bounds.iter().enumerate().try_for_each(move |(i, pos)| {
+            let mut writer = SafePtrWriter::new(ptr, capacity);
+            for pos in bounds.iter() {
                 unsafe {
-                    let item = ptr.add(i);
-                    item.write(init(pos)?);
+                    writer.push(init(pos)?);
                 }
-                Ok(())
-            })?;
+            }
+            unsafe {
+                writer.forget();
+            }
         }
         Ok(Self {
             ptr: Some(ptr),
@@ -240,13 +314,15 @@ impl<T> FixedArray<T> {
     /// Set `drop` to `false` if you have already manually dropped the items.
     pub(crate) unsafe fn internal_dealloc(&mut self, drop: bool) {
         if let Some(ptr) = self.ptr.take() {
-            unsafe {
-                if std::mem::needs_drop::<T>() && drop {
+            if std::mem::needs_drop::<T>() && drop {
+                unsafe {
                     (0..self.capacity).map(|i| ptr.add(i)).for_each(|mut item| {
                         std::ptr::drop_in_place(item.as_mut());
                     });
                 }
-                let layout = self.layout();
+            }
+            let layout = self.layout();
+            unsafe {
                 std::alloc::dealloc(ptr.as_ptr() as *mut u8, layout);
             }
         }
