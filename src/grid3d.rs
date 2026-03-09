@@ -1,6 +1,7 @@
 use crate::bounds3d::*;
 use crate::error_messages::*;
 use crate::fixedarray::FixedArray;
+use crate::fixedarray::NeedsDrop;
 use crate::math::*;
 
 /// A 3-Dimensional matrix.
@@ -19,10 +20,11 @@ impl<T> Grid3D<T> {
     pub fn new<F: FnMut((i32, i32, i32)) -> T>(
         size: (u32, u32, u32),
         offset: (i32, i32, i32),
-        init: F,
+        mut init: F,
     ) -> Self {
+        let needs_drop = NeedsDrop::for_ty::<T>();
         Self {
-            cells: FixedArray::new_3d(size, offset, init),
+            cells: FixedArray::new_3d(size, offset, move |pos| (init(pos), needs_drop)),
             size,
             offset,
         }

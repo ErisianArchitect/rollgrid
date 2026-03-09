@@ -3,58 +3,49 @@ use std::{mem::ManuallyDrop, ptr::NonNull};
 
 /// Used for FixedArray initialization for fallible versions.
 struct SafePtrWriter<T> {
-    ptr: Option<NonNull<T>>,
+    ptr: NonNull<T>,
     len: usize,
     capacity: usize,
-    needs_drop: Box<[u32]>
+    needs_drop: ManuallyDrop<Box<[u32]>>
 }
 
 impl<T> SafePtrWriter<T> {
     fn new(ptr: NonNull<T>, capacity: usize) -> Self {
         let needs_drop_capacity = (capacity + 31) / 32;
         Self {
-            ptr: Some(ptr),
+            ptr: ptr,
             capacity,
             len: 0,
-            needs_drop: Box::from_iter((0..needs_drop_capacity).map(|_| 0u32)),
+            needs_drop: ManuallyDrop::new(Box::from_iter((0..needs_drop_capacity).map(|_| 0u32))),
         }
     }
 
-    fn set_needs_drop(&mut self, index: usize, needs_drop: NeedsDrop) {
+    fn mark_for_drop(&mut self, index: usize) {
         let stride = index / 32;
-        let bit_mask = (index & 31) as u32;
+        let bit_mask = 1 << (index & 31) as u32;
         let mask = self.needs_drop[stride];
-        self.needs_drop[stride] = match needs_drop {
-            NeedsDrop::No => mask & !bit_mask,
-            NeedsDrop::Yes => mask | bit_mask,
-        };
-    }
-
-    fn get_needs_drop(&self, index: usize) -> bool {
-        let stride = index / 32;
-        let bit_mask = (index & 31) as u32;
-        let mask = self.needs_drop[stride];
-        (mask & bit_mask) == bit_mask
+        self.needs_drop[stride] = mask | bit_mask;
     }
 
     /// This assumes that you do not push beyond the capacity.
     unsafe fn push(&mut self, (value, needs_drop): (T, NeedsDrop)) {
         debug_assert!(self.len < self.capacity);
-        let ptr = self.ptr.unwrap();
         unsafe {
-            ptr.add(self.len).write(value);
+            self.ptr.add(self.len).write(value);
         }
-        self.set_needs_drop(self.len, needs_drop);
+        if std::mem::needs_drop::<T>() && needs_drop.needs_drop() {
+            self.mark_for_drop(self.len);
+        }
         self.len += 1;
     }
 
-    /// Prevents the writer from running drop.
+    /// Frees scratch memory and forgets the writer, preventing it from deallocating
+    /// the pointer.
     /// This expect that the array has already been initialized fully.
     unsafe fn finish(mut self) {
         debug_assert!(self.len == self.capacity);
-        // Safely place in a ManuallyDrop wrapper to prevent dropping
-        // since ownership of the pointer is being taken.
-        self.ptr.take();
+        ManuallyDrop::drop(&mut self.needs_drop);
+        std::mem::forget(self);
     }
 }
 
@@ -65,20 +56,52 @@ pub enum NeedsDrop {
     Yes = 1,
 }
 
+impl NeedsDrop {
+    #[must_use]
+    #[inline]
+    pub const fn from_bool(needs_drop: bool) -> Self {
+        if needs_drop {
+            Self::Yes
+        } else {
+            Self::No
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn for_ty<T>() -> Self {
+        if std::mem::needs_drop::<T>() {
+            Self::Yes
+        } else {
+            Self::No
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn needs_drop(self) -> bool {
+        matches!(self, Self::Yes)
+    }
+}
+
 impl<T> Drop for SafePtrWriter<T> {
     fn drop(&mut self) {
-        if let Some(ptr) = self.ptr {
-            for i in 0..self.len {
-                if self.get_needs_drop(i) {
-                    unsafe {
-                        drop(ptr.add(i).read());
-                    }
+        for stride in 0..self.needs_drop.len() {
+            let mut mask_unwind = self.needs_drop[stride];
+            while mask_unwind != 0 {
+                let next_bit_index = mask_unwind.trailing_zeros();
+                let next_bit = 1u32 << next_bit_index;
+                mask_unwind ^= next_bit;
+                let element_index = stride * 32 + next_bit_index as usize;
+                unsafe {
+                    drop(self.ptr.add(element_index).read())
                 }
             }
-            let layout = std::alloc::Layout::array::<T>(self.capacity).expect("Failed to create Layout for type.");
-            unsafe {
-                std::alloc::dealloc(ptr.as_ptr() as *mut u8, layout);
-            }
+        }
+        let layout = std::alloc::Layout::array::<T>(self.capacity).expect("Failed to create Layout for type.");
+        unsafe {
+            std::alloc::dealloc(self.ptr.as_ptr() as *mut u8, layout);
+            ManuallyDrop::drop(&mut self.needs_drop);
         }
     }
 }
@@ -262,7 +285,7 @@ impl<T> FixedArray<T> {
                 }
             }
             unsafe {
-                _ = writer.finish();
+                writer.finish();
             }
         }
         Ok(Self {
@@ -332,7 +355,6 @@ impl<T> FixedArray<T> {
             let mut writer = SafePtrWriter::new(ptr, capacity);
             for pos in bounds.iter() {
                 unsafe {
-                    let (value, needs_drop) = init(pos)?;
                     writer.push(init(pos)?);
                 }
             }

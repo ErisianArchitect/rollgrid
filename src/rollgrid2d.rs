@@ -21,7 +21,7 @@ impl<T: Default> RollGrid2D<T> {
     /// Create a new [RollGrid2D] with all the cells set to the default for `T`.
     pub fn new_default(size: (u32, u32), grid_offset: (i32, i32)) -> Self {
         Self {
-            cells: FixedArray::new_2d(size, grid_offset, move |_| (T::default(), NeedsDrop::Yes)),
+            cells: FixedArray::new_2d(size, grid_offset, move |_| (T::default(), NeedsDrop::for_ty::<T>())),
             size,
             grid_offset: grid_offset,
             wrap_offset: (0, 0),
@@ -52,7 +52,7 @@ impl<T> RollGrid2D<T> {
         mut init: F,
     ) -> Self {
         Self {
-            cells: FixedArray::new_2d(size, grid_offset, move |pos| (init(pos), NeedsDrop::Yes)),
+            cells: FixedArray::new_2d(size, grid_offset, move |pos| (init(pos), NeedsDrop::for_ty::<T>())),
             size,
             wrap_offset: (0, 0),
             grid_offset: grid_offset,
@@ -69,7 +69,7 @@ impl<T> RollGrid2D<T> {
         mut init: F,
     ) -> Result<Self, E> {
         Ok(Self {
-            cells: FixedArray::try_new_2d(size, grid_offset, move |pos| Ok((init(pos)?, NeedsDrop::Yes)))?,
+            cells: FixedArray::try_new_2d(size, grid_offset, move |pos| Ok((init(pos)?, NeedsDrop::for_ty::<T>())))?,
             size,
             wrap_offset: (0, 0),
             grid_offset: grid_offset,
@@ -139,6 +139,9 @@ impl<T> RollGrid2D<T> {
     /// # Panics
     /// - If either dimension of `inflate` exceeds `i32::MAX`.
     /// - If either dimension of the inflated size exceeds `u32::MAX`
+    /// # Safety
+    /// This method is unsafe as it calls the unsafe `resize_and_reposition` method, which can put the program
+    /// into an invalid state upon failure.
     /// # Example
     /// ```rust, no_run
     /// grid.try_inflate_size((1, 1), try_cell_manager(
@@ -163,7 +166,7 @@ impl<T> RollGrid2D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_inflate_size<E, M>(&mut self, inflate: (u32, u32), manage: M) -> Result<(), E>
+    pub unsafe fn try_inflate_size<E, M>(&mut self, inflate: (u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
@@ -253,6 +256,9 @@ impl<T> RollGrid2D<T> {
     /// # Panics
     /// - If either dimension of `inflate` exceeds `i32::MAX`.
     /// - If either dimension of the inflated size exceeds `u32::MAX`
+    /// # Safety
+    /// This method is unsafe as it calls the unsafe `resize_and_reposition` method, which can put the program
+    /// into an invalid state upon failure.
     /// # Example
     /// ```rust, no_run
     /// grid.try_deflate_size((1, 1), try_cell_manager(
@@ -277,7 +283,7 @@ impl<T> RollGrid2D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_deflate_size<E, M>(&mut self, deflate: (u32, u32), manage: M) -> Result<(), E>
+    pub unsafe fn try_deflate_size<E, M>(&mut self, deflate: (u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
@@ -337,6 +343,9 @@ impl<T> RollGrid2D<T> {
 
     /// Try to resize the grid with a fallible function without changing the offset.
     ///
+    /// # Safety
+    /// This method is unsafe as it calls the unsafe `resize_and_reposition` method, which can put the program
+    /// into an invalid state upon failure.
     /// # Example
     /// ```rust, no_run
     /// grid.try_resize(1, 1, cell_manager(
@@ -361,7 +370,7 @@ impl<T> RollGrid2D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_resize<E, M>(&mut self, new_size: (u32, u32), manage: M) -> Result<(), E>
+    pub unsafe fn try_resize<E, M>(&mut self, new_size: (u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32), T, E>,
     {
@@ -462,7 +471,7 @@ impl<T> RollGrid2D<T> {
                     let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     (unsafe { self.cells.read(index) }, NeedsDrop::No)
                 } else {
-                    (manage.load(pos), NeedsDrop::Yes)
+                    (manage.load(pos), NeedsDrop::for_ty::<T>())
                 }
             });
             self.size = size;
@@ -480,7 +489,7 @@ impl<T> RollGrid2D<T> {
                     manage.unload(pos, self.cells.read(index));
                 }
             });
-            let new_grid = FixedArray::new_2d(size, new_position, move |pos| (manage.load(pos), NeedsDrop::Yes));
+            let new_grid = FixedArray::new_2d(size, new_position, move |pos| (manage.load(pos), NeedsDrop::for_ty::<T>()));
             self.size = size;
             self.grid_offset = new_position;
             unsafe {
@@ -493,6 +502,9 @@ impl<T> RollGrid2D<T> {
 
     /// Try to resize and reposition the grid using a fallible function.
     ///
+    /// # Safety
+    /// This method is unsafe as it can put the program
+    /// into an invalid state upon failure.
     /// # Example
     /// ```rust, no_run
     /// grid.try_resize_and_reposition(3, 3, (4, 4), try_cell_manager(
@@ -517,7 +529,7 @@ impl<T> RollGrid2D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_resize_and_reposition<E, M>(
+    pub unsafe fn try_resize_and_reposition<E, M>(
         &mut self,
         new_size: (u32, u32),
         new_position: (i32, i32),
@@ -589,7 +601,7 @@ impl<T> RollGrid2D<T> {
                     let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
                     unsafe { Ok((self.cells.read(index), NeedsDrop::No)) }
                 } else {
-                    Ok((manage.try_load(pos)?, NeedsDrop::Yes))
+                    Ok((manage.try_load(pos)?, NeedsDrop::for_ty::<T>()))
                 }
             })?;
             self.size = size;
@@ -608,7 +620,7 @@ impl<T> RollGrid2D<T> {
                 }
                 Ok(())
             })?;
-            let new_grid = FixedArray::try_new_2d(size, new_position, move |pos| Ok((manage.try_load(pos)?, NeedsDrop::Yes)))?;
+            let new_grid = FixedArray::try_new_2d(size, new_position, move |pos| Ok((manage.try_load(pos)?, NeedsDrop::for_ty::<T>())))?;
             self.size = size;
             self.grid_offset = new_position;
             unsafe {
@@ -1053,7 +1065,7 @@ impl<T> RollGrid2D<T> {
         unsafe {
             let ptr = self.cells.as_ptr();
             // TODO: Update this closure to `move`. Also update for RollGrid3D.
-            let grid = Grid2D::new(bounds.size(), bounds.min, |pos| {
+            let grid = Grid2D::new(bounds.size(), bounds.min, move |pos| {
                 let index = self.offset_index(pos).unwrap();
                 let cell_ptr = ptr.add(index);
                 cell_ptr.as_ref().unwrap()
@@ -1075,7 +1087,7 @@ impl<T> RollGrid2D<T> {
         unsafe {
             let ptr = self.cells.as_ptr();
             // TODO: Update this closure to `move`. Also update for RollGrid3D.
-            let grid = Grid2D::new(bounds.size(), bounds.min, |pos| {
+            let grid = Grid2D::new(bounds.size(), bounds.min, move |pos| {
                 let index = self.offset_index(pos).unwrap();
                 let cell_ptr = ptr.add(index);
                 cell_ptr.cast_mut().as_mut().unwrap()

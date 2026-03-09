@@ -1,6 +1,7 @@
 use crate::bounds2d::*;
 use crate::error_messages::*;
 use crate::fixedarray::FixedArray;
+use crate::fixedarray::NeedsDrop;
 use crate::math::*;
 
 /// A 2-Dimensional matrix.
@@ -16,9 +17,10 @@ impl<T> Grid2D<T> {
     /// The init function should take as input the coordinate that is
     /// being initialized, and should return the desired value for the
     /// cell.
-    pub fn new<F: FnMut((i32, i32)) -> T>(size: (u32, u32), offset: (i32, i32), init: F) -> Self {
+    pub fn new<F: FnMut((i32, i32)) -> T>(size: (u32, u32), offset: (i32, i32), mut init: F) -> Self {
+        let needs_drop = NeedsDrop::for_ty::<T>();
         Self {
-            cells: FixedArray::new_2d(size, offset, init),
+            cells: FixedArray::new_2d(size, offset, move |pos| (init(pos), needs_drop)),
             size,
             offset,
         }

@@ -1,3 +1,4 @@
+use crate::fixedarray::NeedsDrop;
 use crate::grid3d::*;
 use crate::{
     bounds3d::*,
@@ -26,7 +27,7 @@ impl<T: Default> RollGrid3D<T> {
     /// Create a new [RollGrid3D] with all the cells set to the default for `T`.
     pub fn new_default(size: (u32, u32, u32), grid_offset: (i32, i32, i32)) -> Self {
         Self {
-            cells: FixedArray::new_3d(size, grid_offset, |_| T::default()),
+            cells: FixedArray::new_3d(size, grid_offset, move |_| (T::default(), NeedsDrop::for_ty::<T>())),
             size,
             grid_offset,
             wrap_offset: (0, 0, 0),
@@ -38,7 +39,7 @@ impl RollGrid3D<()> {
     /// Creates a new grid of unit types.
     pub fn new_zst(size: (u32, u32, u32), grid_offset: (i32, i32, i32)) -> Self {
         RollGrid3D {
-            cells: FixedArray::new_3d(size, grid_offset, |_| ()),
+            cells: FixedArray::new_3d(size, grid_offset, move |_| ((), NeedsDrop::No)),
             size,
             grid_offset,
             wrap_offset: (0, 0, 0),
@@ -55,10 +56,10 @@ impl<T> RollGrid3D<T> {
     pub fn new<F: FnMut((i32, i32, i32)) -> T>(
         size: (u32, u32, u32),
         grid_offset: (i32, i32, i32),
-        init: F,
+        mut init: F,
     ) -> Self {
         Self {
-            cells: FixedArray::new_3d(size, grid_offset, init),
+            cells: FixedArray::new_3d(size, grid_offset, move |pos| (init(pos), NeedsDrop::for_ty::<T>())),
             size,
             wrap_offset: (0, 0, 0),
             grid_offset,
@@ -72,10 +73,10 @@ impl<T> RollGrid3D<T> {
     pub fn try_new<E, F: FnMut((i32, i32, i32)) -> Result<T, E>>(
         size: (u32, u32, u32),
         grid_offset: (i32, i32, i32),
-        init: F,
+        mut init: F,
     ) -> Result<Self, E> {
         Ok(Self {
-            cells: FixedArray::try_new_3d(size, grid_offset, init)?,
+            cells: FixedArray::try_new_3d(size, grid_offset, move |pos| Ok((init(pos)?, NeedsDrop::for_ty::<T>())))?,
             size,
             wrap_offset: (0, 0, 0),
             grid_offset,
@@ -153,6 +154,9 @@ impl<T> RollGrid3D<T> {
     /// If the size is `(2, 2, 2)` with an offset of `(1, 1, 1)`, and you want to inflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(4, 4, 4)` and an offset of `(0, 0, 0)`.
     ///
+    /// # Safety
+    /// This method is unsafe as it calls the unsafe `resize_and_reposition` method, which can put the program
+    /// into an invalid state upon failure.
     /// # Example
     /// ```rust, no_run
     /// grid.try_inflate_size((1, 1, 1), try_cell_manager(
@@ -177,7 +181,7 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_inflate_size<E, M>(&mut self, inflate: (u32, u32, u32), manage: M) -> Result<(), E>
+    pub unsafe fn try_inflate_size<E, M>(&mut self, inflate: (u32, u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
@@ -283,6 +287,9 @@ impl<T> RollGrid3D<T> {
     /// If the size is `(4, 4, 4)` with an offset of `(0, 0, 0)`, and you want to deflate by `(1, 1, 1)`.
     /// The result of that operation would have a size of `(2, 2, 2)` and an offset of `(1, 1, 1)`.
     ///
+    /// # Safety
+    /// This method is unsafe as it calls the unsafe `resize_and_reposition` method, which can put the program
+    /// into an invalid state upon failure.
     /// # Example
     /// ```rust, no_run
     /// grid.try_deflate_size((1, 1, 1), try_cell_manager(
@@ -307,7 +314,7 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_deflate_size<E, M>(&mut self, deflate: (u32, u32, u32), manage: M) -> Result<(), E>
+    pub unsafe fn try_deflate_size<E, M>(&mut self, deflate: (u32, u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
@@ -375,6 +382,9 @@ impl<T> RollGrid3D<T> {
 
     /// Try to resize the grid with a fallible function without changing the offset.
     ///
+    /// # Safety
+    /// This method is unsafe as it calls the unsafe `resize_and_reposition` method, which can put the program
+    /// into an invalid state upon failure.
     /// # Example
     /// ```rust, no_run
     /// grid.try_resize((1, 1, 1), cell_manager(
@@ -399,7 +409,7 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_resize<E, M>(&mut self, size: (u32, u32, u32), manage: M) -> Result<(), E>
+    pub unsafe fn try_resize<E, M>(&mut self, size: (u32, u32, u32), manage: M) -> Result<(), E>
     where
         M: TryCellManage<(i32, i32, i32), T, E>,
     {
@@ -532,9 +542,9 @@ impl<T> RollGrid3D<T> {
             let new_grid = FixedArray::new_3d(size, new_position, |pos| {
                 if old_bounds.contains(pos) {
                     let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
-                    unsafe { self.cells.read(index) }
+                    (unsafe { self.cells.read(index) }, NeedsDrop::No)
                 } else {
-                    manage.load(pos)
+                    (manage.load(pos), NeedsDrop::for_ty::<T>())
                 }
             });
             self.size = size;
@@ -552,7 +562,7 @@ impl<T> RollGrid3D<T> {
                     manage.unload(pos, self.cells.read(index));
                 }
             });
-            let new_grid = FixedArray::new_3d(size, new_position, |pos| manage.load(pos));
+            let new_grid = FixedArray::new_3d(size, new_position, move |pos| (manage.load(pos), NeedsDrop::for_ty::<T>()));
             self.size = size;
             self.grid_offset = new_position;
             unsafe {
@@ -565,6 +575,9 @@ impl<T> RollGrid3D<T> {
 
     /// Try to resize and reposition the grid using a fallible function.
     ///
+    /// # Safety
+    /// This method is unsafe as it can put the program
+    /// into an invalid state upon failure.
     /// # Example
     /// ```rust, no_run
     /// grid.try_resize_and_reposition((3, 3, 3), (4, 4, 4), try_cell_manager(
@@ -589,7 +602,7 @@ impl<T> RollGrid3D<T> {
     /// ))
     /// ```
     /// See [TryCellManage].
-    pub fn try_resize_and_reposition<E, M>(
+    pub unsafe fn try_resize_and_reposition<E, M>(
         &mut self,
         size: (u32, u32, u32),
         new_position: (i32, i32, i32),
@@ -692,9 +705,9 @@ impl<T> RollGrid3D<T> {
             let new_grid = FixedArray::try_new_3d(size, new_position, |pos| {
                 if old_bounds.contains(pos) {
                     let index = self.offset_index(pos).expect(OUT_OF_BOUNDS.msg());
-                    unsafe { Ok(self.cells.read(index)) }
+                    unsafe { Ok((self.cells.read(index), NeedsDrop::No)) }
                 } else {
-                    manage.try_load(pos)
+                    Ok((manage.try_load(pos)?, NeedsDrop::for_ty::<T>()))
                 }
             })?;
             self.size = size;
@@ -714,7 +727,7 @@ impl<T> RollGrid3D<T> {
                 Ok(())
             })?;
             let size = (width, height, depth);
-            let new_grid = FixedArray::try_new_3d(size, new_position, |pos| manage.try_load(pos))?;
+            let new_grid = FixedArray::try_new_3d(size, new_position, move |pos| Ok((manage.try_load(pos)?, NeedsDrop::for_ty::<T>())))?;
             self.size = size;
             self.grid_offset = new_position;
             unsafe {
@@ -1888,7 +1901,7 @@ impl<T> RollGrid3D<T> {
         }
         unsafe {
             let ptr = self.cells.as_ptr();
-            let grid = Grid3D::new(bounds.size(), bounds.min, |pos| {
+            let grid = Grid3D::new(bounds.size(), bounds.min, move |pos| {
                 let index = self.offset_index(pos).unwrap();
                 let cell_ptr = ptr.add(index);
                 cell_ptr.as_ref().unwrap()
@@ -1911,7 +1924,7 @@ impl<T> RollGrid3D<T> {
         }
         unsafe {
             let ptr = self.cells.as_ptr();
-            let grid = Grid3D::new(bounds.size(), bounds.min, |pos| {
+            let grid = Grid3D::new(bounds.size(), bounds.min, move |pos| {
                 let index = self.offset_index(pos).unwrap();
                 let cell_ptr = ptr.add(index);
                 cell_ptr.cast_mut().as_mut().unwrap()
